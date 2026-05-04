@@ -19,17 +19,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <div className="min-h-screen flex flex-col">
           <header className="px-4 sm:px-6 pt-5 sm:pt-6 pb-3 sm:pb-4 max-w-6xl mx-auto w-full">
-            <Link href="/" className="inline-flex items-center gap-2 sm:gap-3 group">
+            <Link href="/" className="inline-block group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/Logo.svg"
-                alt=""
-                aria-hidden
-                className="size-9 sm:size-11 group-hover:animate-wiggle"
+                src="/Logo_Full.svg"
+                alt="Pointy Points"
+                className="h-10 sm:h-12 w-auto group-hover:animate-wiggle"
               />
-              <span className="text-2xl sm:text-3xl font-bold text-brand-700 tracking-tight">
-                Pointy Points
-              </span>
             </Link>
           </header>
           <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 pb-24">
