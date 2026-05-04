@@ -61,11 +61,9 @@ export async function deleteTaskAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing task id.");
 
-  // Soft-delete: just deactivate. Keeps history references valid.
-  const { error } = await supabaseAdmin
-    .from("tasks")
-    .update({ active: false })
-    .eq("id", id);
+  // Hard-delete. The completions FK is `on delete set null`, so completion
+  // history is preserved — only the template row is removed.
+  const { error } = await supabaseAdmin.from("tasks").delete().eq("id", id);
   if (error) throw error;
 
   revalidatePath("/parent/tasks");

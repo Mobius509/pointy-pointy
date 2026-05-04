@@ -1,4 +1,4 @@
--- Pointy Pointy initial schema.
+-- Pointy Points initial schema.
 -- Apply by either:
 --   1) supabase db push (if using the Supabase CLI), OR
 --   2) Pasting this whole file into Supabase Dashboard → SQL Editor and running it.

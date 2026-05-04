@@ -3,7 +3,7 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Pointy Pointy",
+  title: "Pointy Points",
   description: "Earn points toward your big goal!",
 };
 
@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 🐶
               </span>
               <span className="text-2xl sm:text-3xl font-bold text-brand-700 tracking-tight">
-                Pointy Pointy
+                Pointy Points
               </span>
             </Link>
           </header>

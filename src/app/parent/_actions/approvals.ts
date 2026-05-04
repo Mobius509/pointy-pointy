@@ -8,9 +8,23 @@ export async function approveCompletionAction(formData: FormData) {
   await requireParent();
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing id.");
+
+  // If a points value is supplied (kid proposal flow), update points too.
+  const pointsRaw = formData.get("points");
+  const update: { status: "approved"; points_snapshot?: number } = {
+    status: "approved",
+  };
+  if (pointsRaw !== null && pointsRaw !== "") {
+    const points = Number(pointsRaw);
+    if (!Number.isFinite(points) || points < 0 || points > 1000) {
+      throw new Error("Points must be between 0 and 1000.");
+    }
+    update.points_snapshot = Math.round(points);
+  }
+
   const { error } = await supabaseAdmin
     .from("completions")
-    .update({ status: "approved" })
+    .update(update)
     .eq("id", id);
   if (error) throw error;
 

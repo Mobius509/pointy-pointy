@@ -1,4 +1,4 @@
-# Pointy Pointy
+# Pointy Points
 
 A simple family task & points tracker. Daughter sees her daily checklist and progress toward a big goal (currently: a dog at 5,000 points). Parents share an admin view, gated by a 4–8 digit PIN, to manage tasks, award one-off bonuses, and undo entries.
 

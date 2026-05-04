@@ -91,17 +91,6 @@ export async function getAllTasks(): Promise<Task[]> {
   return (data as Task[]) ?? [];
 }
 
-export async function getActiveBonusTemplates(): Promise<Task[]> {
-  const { data, error } = await supabaseAdmin
-    .from("tasks")
-    .select("*")
-    .eq("active", true)
-    .eq("recurring", false)
-    .order("sort_order", { ascending: true });
-  if (error) throw error;
-  return (data as Task[]) ?? [];
-}
-
 export async function getTodayCompletions(timezone: string): Promise<Completion[]> {
   const today = todayInTimezone(timezone);
   const { data, error } = await supabaseAdmin

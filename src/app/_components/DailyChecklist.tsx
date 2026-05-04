@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { completeTaskForToday } from "@/app/_actions/completions";
+import {
+  cancelPendingTaskForToday,
+  completeTaskForToday,
+} from "@/app/_actions/completions";
 import { celebrate } from "./Confetti";
 
 type ItemState = "open" | "pending" | "approved";
@@ -26,12 +29,25 @@ export function DailyChecklist({ items }: Props) {
   const [, startTransition] = useTransition();
 
   const onCheck = (item: Item) => {
-    if (state[item.id] !== "open") return;
+    const current = state[item.id];
+    if (current === "approved") return;
+
     setError(null);
+
+    if (current === "pending") {
+      setState((s) => ({ ...s, [item.id]: "open" }));
+      startTransition(async () => {
+        const res = await cancelPendingTaskForToday(item.id);
+        if (!res.ok) {
+          setState((s) => ({ ...s, [item.id]: "pending" }));
+          setError(res.error);
+        }
+      });
+      return;
+    }
 
     setState((s) => ({ ...s, [item.id]: "pending" }));
     celebrate();
-
     startTransition(async () => {
       const res = await completeTaskForToday(item.id);
       if (!res.ok) {
@@ -65,7 +81,7 @@ export function DailyChecklist({ items }: Props) {
         const containerClass = isApproved
           ? "bg-emerald-50 ring-emerald-200 text-slate-500"
           : isPending
-            ? "bg-amber-50 ring-amber-200"
+            ? "bg-amber-50 ring-amber-200 hover:ring-amber-300 active:scale-[0.99]"
             : "bg-white ring-slate-200 hover:ring-brand-300 hover:shadow-sm active:scale-[0.99]";
 
         const iconClass = isApproved
@@ -87,7 +103,7 @@ export function DailyChecklist({ items }: Props) {
             key={item.id}
             type="button"
             onClick={() => onCheck(item)}
-            disabled={!isOpen}
+            disabled={isApproved}
             className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 ring-1 transition text-left ${containerClass}`}
           >
             <span
@@ -106,7 +122,7 @@ export function DailyChecklist({ items }: Props) {
               </span>
               <span className="block text-xs text-slate-500">
                 {isPending
-                  ? "Waiting for a parent to confirm…"
+                  ? "Waiting for a parent to confirm. Tap to cancel."
                   : item.description}
               </span>
             </span>

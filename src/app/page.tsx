@@ -8,6 +8,7 @@ import {
 } from "@/lib/data";
 import { ProgressVisual } from "./_components/ProgressVisual";
 import { DailyChecklist } from "./_components/DailyChecklist";
+import { KidProposal } from "./_components/KidProposal";
 import { RecentActivity } from "./_components/RecentActivity";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,10 @@ export default async function Home() {
     state: (stateByTaskId.get(t.id) ?? "open") as "open" | "pending" | "approved",
   }));
 
+  const pendingKidProposals = todayCompletions.filter(
+    (c) => c.is_bonus && c.task_id === null && c.status === "pending",
+  );
+
   const progress = goal ? await getGoalProgress(goal) : 0;
 
   return (
@@ -52,12 +57,16 @@ export default async function Home() {
       )}
 
       <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
-        <section className="card">
-          <h3 className="text-xl font-bold text-slate-800 mb-3">
-            Today&apos;s tasks
-          </h3>
-          <DailyChecklist items={items} />
-        </section>
+        <div className="space-y-6">
+          <section className="card">
+            <h3 className="text-xl font-bold text-slate-800 mb-3">
+              Today&apos;s tasks
+            </h3>
+            <DailyChecklist items={items} />
+          </section>
+
+          <KidProposal pendingProposals={pendingKidProposals} />
+        </div>
 
         <section className="card md:self-start">
           <h3 className="text-xl font-bold text-slate-800 mb-2">Recent</h3>
