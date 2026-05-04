@@ -1,0 +1,189 @@
+import { getAllTasks } from "@/lib/data";
+import {
+  createTaskAction,
+  deleteTaskAction,
+  updateTaskAction,
+} from "../_actions/tasks";
+
+export const dynamic = "force-dynamic";
+
+export default async function TasksPage() {
+  const tasks = await getAllTasks();
+  const recurring = tasks.filter((t) => t.recurring);
+  const bonus = tasks.filter((t) => !t.recurring);
+
+  return (
+    <div className="space-y-4">
+      <section className="card">
+        <h2 className="text-lg font-bold text-slate-800">Add a task</h2>
+        <form action={createTaskAction} className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label className="label" htmlFor="new-name">
+              Name
+            </label>
+            <input
+              id="new-name"
+              name="name"
+              required
+              className="input"
+              placeholder="Make bed"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="label" htmlFor="new-desc">
+              Description (optional)
+            </label>
+            <input
+              id="new-desc"
+              name="description"
+              className="input"
+              placeholder="Pillows up, blanket smooth"
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="new-points">
+              Points
+            </label>
+            <input
+              id="new-points"
+              name="points"
+              type="number"
+              min={0}
+              max={1000}
+              defaultValue={5}
+              required
+              className="input"
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="new-sort">
+              Sort order
+            </label>
+            <input
+              id="new-sort"
+              name="sort_order"
+              type="number"
+              defaultValue={100}
+              className="input"
+            />
+          </div>
+          <label className="sm:col-span-2 flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="recurring"
+              defaultChecked
+              className="size-5"
+            />
+            <span className="font-medium text-slate-700">
+              Show on daily checklist (uncheck for bonus-only)
+            </span>
+          </label>
+          <div className="sm:col-span-2">
+            <button type="submit" className="btn-primary">
+              Add task
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <TaskList title="Daily tasks" tasks={recurring} emptyText="No daily tasks yet." />
+      <TaskList title="Bonus templates" tasks={bonus} emptyText="No bonus templates yet." />
+    </div>
+  );
+}
+
+function TaskList({
+  title,
+  tasks,
+  emptyText,
+}: {
+  title: string;
+  tasks: Awaited<ReturnType<typeof getAllTasks>>;
+  emptyText: string;
+}) {
+  return (
+    <section className="card">
+      <h2 className="text-lg font-bold text-slate-800 mb-3">{title}</h2>
+      {tasks.length === 0 ? (
+        <p className="text-sm text-slate-500 italic">{emptyText}</p>
+      ) : (
+        <ul className="space-y-3">
+          {tasks.map((t) => (
+            <li
+              key={t.id}
+              className={`rounded-xl ring-1 ring-slate-200 p-3 ${
+                t.active ? "bg-white" : "bg-slate-50 opacity-70"
+              }`}
+            >
+              <form
+                action={updateTaskAction}
+                className="grid gap-2 sm:grid-cols-[1fr_5rem_5rem_auto] sm:items-end"
+              >
+                <input type="hidden" name="id" value={t.id} />
+                <div>
+                  <label className="label">Name</label>
+                  <input name="name" defaultValue={t.name} required className="input" />
+                  <input
+                    name="description"
+                    defaultValue={t.description ?? ""}
+                    placeholder="Description (optional)"
+                    className="input mt-2"
+                  />
+                </div>
+                <div>
+                  <label className="label">Points</label>
+                  <input
+                    name="points"
+                    type="number"
+                    min={0}
+                    max={1000}
+                    defaultValue={t.points}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="label">Order</label>
+                  <input
+                    name="sort_order"
+                    type="number"
+                    defaultValue={t.sort_order}
+                    className="input"
+                  />
+                </div>
+                <div className="flex flex-col gap-2 sm:items-stretch">
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      name="recurring"
+                      defaultChecked={t.recurring}
+                    />
+                    Daily
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      name="active"
+                      defaultChecked={t.active}
+                    />
+                    Active
+                  </label>
+                </div>
+                <div className="sm:col-span-4 flex gap-2">
+                  <button type="submit" className="btn-secondary">
+                    Save
+                  </button>
+                </div>
+              </form>
+              <form action={deleteTaskAction} className="mt-2">
+                <input type="hidden" name="id" value={t.id} />
+                <button type="submit" className="text-xs text-rose-600 hover:underline">
+                  Archive (deactivate)
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
