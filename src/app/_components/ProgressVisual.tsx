@@ -41,10 +41,7 @@ export function ProgressVisual({ goalName, current, target }: Props) {
             className="h-full rounded-full transition-[width] duration-700 ease-out"
             style={{ width: `${pct}%`, backgroundImage: FILL_BG }}
           />
-          <span
-            className="absolute inset-y-0 left-4 sm:left-5 flex items-center text-white font-extrabold text-xl sm:text-2xl tabular-nums z-10"
-            style={{ textShadow: "0 1px 2px rgba(0,0,0,0.25)" }}
-          >
+          <span className="absolute inset-y-0 left-4 sm:left-5 flex items-center text-slate-900 font-extrabold text-xl sm:text-2xl tabular-nums z-10">
             {current.toLocaleString()}
           </span>
           <span className="absolute inset-y-0 right-4 sm:right-5 flex items-center text-slate-900 font-extrabold text-xl sm:text-2xl tabular-nums">
