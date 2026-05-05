@@ -3,6 +3,21 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
+import type { Frequency } from "@/lib/time";
+
+const FREQUENCIES: ReadonlySet<Frequency> = new Set([
+  "daily",
+  "weekly",
+  "biweekly",
+  "monthly",
+  "yearly",
+]);
+
+function parseFrequency(raw: FormDataEntryValue | null): Frequency {
+  const v = String(raw ?? "daily");
+  if (FREQUENCIES.has(v as Frequency)) return v as Frequency;
+  throw new Error(`Invalid frequency "${v}".`);
+}
 
 function parsePoints(raw: FormDataEntryValue | null): number {
   const n = Number(raw);
@@ -31,6 +46,7 @@ export async function createTaskAction(formData: FormData) {
   if (!name) throw new Error("Name required.");
   const description = String(formData.get("description") ?? "").trim() || null;
   const points = parsePoints(formData.get("points"));
+  const frequency = parseFrequency(formData.get("frequency"));
   const sort_order = await nextSortOrder(household.id);
 
   const { error } = await supabaseV2Admin.from("tasks").insert({
@@ -40,6 +56,7 @@ export async function createTaskAction(formData: FormData) {
     points,
     recurring: true,
     sort_order,
+    frequency,
   });
   if (error) throw error;
 
@@ -57,11 +74,12 @@ export async function updateTaskAction(formData: FormData) {
   if (!name) throw new Error("Name required.");
   const description = String(formData.get("description") ?? "").trim() || null;
   const points = parsePoints(formData.get("points"));
+  const frequency = parseFrequency(formData.get("frequency"));
   const active = formData.get("active") === "on";
 
   const { error } = await supabaseV2Admin
     .from("tasks")
-    .update({ name, description, points, active })
+    .update({ name, description, points, active, frequency })
     .eq("id", id)
     .eq("household_id", household.id);
   if (error) throw error;

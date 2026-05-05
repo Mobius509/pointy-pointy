@@ -32,6 +32,7 @@ export async function awardCustomBonusAction(formData: FormData) {
     is_bonus: true,
     status: "approved",
     note,
+    period_key: `D-${today}`,
   });
   if (error) throw error;
 

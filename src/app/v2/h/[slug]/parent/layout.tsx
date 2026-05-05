@@ -39,8 +39,6 @@ export default async function ParentAdminLayout({
         <nav className="flex flex-wrap gap-2 text-sm pt-2 mb-4">
           <NavLink href={base}>Overview</NavLink>
           <NavLink href={`${base}/tasks`}>Tasks</NavLink>
-          <NavLink href={`${base}/kids`}>Kids</NavLink>
-          <NavLink href={`${base}/bonus`}>Award bonus</NavLink>
           <NavLink href={`${base}/activity`}>Activity</NavLink>
           <NavLink href={`${base}/goal`}>Goal</NavLink>
           <NavLink href={`${base}/settings`}>Settings</NavLink>

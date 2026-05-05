@@ -4,6 +4,7 @@ import {
   getHouseholdPendingCompletions,
   getKidProfiles,
 } from "@/lib/v2/data";
+import { AwardBonusButton } from "./_components/AwardBonusButton";
 import { PendingApprovals } from "./_components/PendingApprovals";
 
 export const dynamic = "force-dynamic";
@@ -21,23 +22,28 @@ export default async function ParentOverviewPage({
   return (
     <div className="space-y-4">
       <section className="card">
-        <h2 className="text-lg font-bold text-slate-800">
-          Welcome, {household.name}
-        </h2>
-        <p className="text-sm text-slate-600 mt-1">
-          {kids.length === 0
-            ? "Get started by adding your first kid."
-            : `${kids.length} ${kids.length === 1 ? "kid" : "kids"} set up. Tasks, goals, and bonuses live under the tabs above.`}
-        </p>
-
-        {kids.length === 0 && (
-          <Link
-            href={`/v2/h/${household.slug}/parent/kids`}
-            className="btn-primary mt-3 inline-flex"
-          >
-            Add a kid
-          </Link>
-        )}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">
+              Welcome, {household.name}
+            </h2>
+            <p className="text-sm text-slate-600 mt-1">
+              {kids.length === 0
+                ? "Get started by adding your first kid in Settings."
+                : `${kids.length} ${kids.length === 1 ? "kid" : "kids"} set up. Manage tasks and goals in the tabs above.`}
+            </p>
+          </div>
+          {kids.length === 0 ? (
+            <Link
+              href={`/v2/h/${household.slug}/parent/settings`}
+              className="btn-primary"
+            >
+              Add a kid
+            </Link>
+          ) : (
+            <AwardBonusButton slug={slug} kids={kids} />
+          )}
+        </div>
       </section>
 
       {kids.length > 0 && (

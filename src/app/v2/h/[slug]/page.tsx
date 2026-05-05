@@ -6,12 +6,14 @@ import { clearKidSession, getKidSession } from "@/lib/v2/auth";
 import {
   getActiveGoalForKid,
   getActiveRecurringTasks,
+  getKidCompletionsForPeriods,
   getKidGoalProgress,
   getKidProfile,
   getKidProfiles,
   getKidRecentCompletions,
   getKidTodayCompletions,
 } from "@/lib/v2/data";
+import { computePeriodKey, frequencyLabel, type Frequency } from "@/lib/time";
 import { ProgressVisual } from "@/app/_components/ProgressVisual";
 import { RecentActivity } from "@/app/_components/RecentActivity";
 import { KidPicker } from "./_components/KidPicker";
@@ -89,17 +91,33 @@ export default async function KidViewPage({
     ? await getKidGoalProgress(household.id as string, kid.id, goal)
     : 0;
 
-  // Map task → state (open / pending / approved) using this kid's completions.
+  // For each task frequency in use, compute the current period key and look
+  // up completions sitting in any of those periods. That covers all
+  // cadences (daily/weekly/biweekly/monthly/yearly) in one query.
+  const tz = household.timezone as string;
+  const taskPeriodKey = new Map<string, string>(
+    tasks.map((t) => [t.id, computePeriodKey(t.frequency, tz)]),
+  );
+  const distinctPeriodKeys = [...new Set(taskPeriodKey.values())];
+  const periodCompletions = await getKidCompletionsForPeriods(
+    household.id as string,
+    kid.id,
+    distinctPeriodKeys,
+  );
+
   const stateByTaskId = new Map<string, "pending" | "approved">();
-  for (const c of todayCompletions) {
+  for (const c of periodCompletions) {
     if (c.is_bonus || !c.task_id) continue;
-    stateByTaskId.set(c.task_id, c.status);
+    if (taskPeriodKey.get(c.task_id) === c.period_key) {
+      stateByTaskId.set(c.task_id, c.status);
+    }
   }
   const items = tasks.map((t) => ({
     id: t.id,
     name: t.name,
     description: t.description,
     points: t.points,
+    frequency: t.frequency,
     state: (stateByTaskId.get(t.id) ?? "open") as
       | "open"
       | "pending"

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { celebrate } from "@/app/_components/Confetti";
+import { frequencyLabel, type Frequency } from "@/lib/time";
 import {
   cancelPendingTaskForTodayAction,
   completeTaskForTodayAction,
@@ -14,6 +15,7 @@ type Item = {
   name: string;
   description: string | null;
   points: number;
+  frequency: Frequency;
   state: ItemState;
 };
 
@@ -114,12 +116,19 @@ export function V2DailyChecklist({
               {icon}
             </span>
             <span className="flex-1 min-w-0">
-              <span
-                className={`block font-semibold ${
-                  isApproved ? "line-through" : ""
-                }`}
-              >
-                {item.name}
+              <span className="flex items-center gap-2">
+                <span
+                  className={`font-semibold ${
+                    isApproved ? "line-through" : ""
+                  }`}
+                >
+                  {item.name}
+                </span>
+                {item.frequency !== "daily" && (
+                  <span className="rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                    {frequencyLabel(item.frequency)}
+                  </span>
+                )}
               </span>
               <span className="block text-xs text-slate-500">
                 {isPending

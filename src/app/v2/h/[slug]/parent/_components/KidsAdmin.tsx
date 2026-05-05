@@ -1,5 +1,4 @@
-import { requireHouseholdAccess } from "@/lib/v2/auth";
-import { getKidProfiles } from "@/lib/v2/data";
+import type { KidProfile } from "@/lib/v2/data";
 import {
   createKidAction,
   deleteKidAction,
@@ -7,19 +6,17 @@ import {
   updateKidAction,
 } from "../_actions/kids";
 
-export const dynamic = "force-dynamic";
-
 const AVATARS = ["🐶", "🐱", "🦊", "🐻", "🦄", "🐯", "🐸", "🐵", "🦖", "🐧"];
 
-export default async function KidsPage({
-  params,
+// Server component used inside the Settings page. Renders the add-a-kid
+// form and the list of existing kids with edit / reset-PIN / delete forms.
+export function KidsAdmin({
+  slug,
+  kids,
 }: {
-  params: Promise<{ slug: string }>;
+  slug: string;
+  kids: KidProfile[];
 }) {
-  const { slug } = await params;
-  const household = await requireHouseholdAccess(slug);
-  const kids = await getKidProfiles(household.id);
-
   return (
     <div className="space-y-4">
       <section className="card">
@@ -27,10 +24,7 @@ export default async function KidsPage({
         <p className="text-sm text-slate-600 mt-1">
           Each kid gets their own PIN to unlock their checklist.
         </p>
-        <form
-          action={createKidAction}
-          className="mt-3 grid gap-3 sm:grid-cols-2"
-        >
+        <form action={createKidAction} className="mt-3 grid gap-3 sm:grid-cols-2">
           <input type="hidden" name="slug" value={slug} />
           <div>
             <label className="label" htmlFor="kid-new-name">

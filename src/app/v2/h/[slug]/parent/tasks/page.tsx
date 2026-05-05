@@ -1,5 +1,6 @@
 import { requireHouseholdAccess } from "@/lib/v2/auth";
 import { getAllTasks } from "@/lib/v2/data";
+import { frequencyLabel } from "@/lib/time";
 import {
   createTaskAction,
   deleteTaskAction,
@@ -9,6 +10,14 @@ import {
 } from "../_actions/tasks";
 
 export const dynamic = "force-dynamic";
+
+const FREQUENCY_OPTIONS = [
+  "daily",
+  "weekly",
+  "biweekly",
+  "monthly",
+  "yearly",
+] as const;
 
 export default async function ParentTasksPage({
   params,
@@ -54,7 +63,7 @@ export default async function ParentTasksPage({
               placeholder="Pillows up, blanket smooth"
             />
           </div>
-          <div className="sm:col-span-2">
+          <div>
             <label className="label" htmlFor="new-points">
               Points
             </label>
@@ -68,6 +77,23 @@ export default async function ParentTasksPage({
               required
               className="input"
             />
+          </div>
+          <div>
+            <label className="label" htmlFor="new-frequency">
+              How often
+            </label>
+            <select
+              id="new-frequency"
+              name="frequency"
+              defaultValue="daily"
+              className="input"
+            >
+              {FREQUENCY_OPTIONS.map((f) => (
+                <option key={f} value={f}>
+                  {frequencyLabel(f)}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="sm:col-span-2">
             <button type="submit" className="btn-primary">
@@ -123,7 +149,7 @@ export default async function ParentTasksPage({
 
                     <form
                       action={updateTaskAction}
-                      className="flex-1 grid gap-2 sm:grid-cols-[1fr_5rem_auto] sm:items-end"
+                      className="flex-1 grid gap-2 sm:grid-cols-[1fr_5rem_7rem_auto] sm:items-end"
                     >
                       <input type="hidden" name="slug" value={slug} />
                       <input type="hidden" name="id" value={t.id} />
@@ -153,6 +179,20 @@ export default async function ParentTasksPage({
                           className="input"
                         />
                       </div>
+                      <div>
+                        <label className="label">How often</label>
+                        <select
+                          name="frequency"
+                          defaultValue={t.frequency}
+                          className="input"
+                        >
+                          {FREQUENCY_OPTIONS.map((f) => (
+                            <option key={f} value={f}>
+                              {frequencyLabel(f)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                         <input
                           type="checkbox"
@@ -161,7 +201,7 @@ export default async function ParentTasksPage({
                         />
                         Active
                       </label>
-                      <div className="sm:col-span-3 flex gap-2">
+                      <div className="sm:col-span-4 flex gap-2">
                         <button type="submit" className="btn-secondary">
                           Save
                         </button>

@@ -1,8 +1,9 @@
 import "server-only";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
-import { todayInTimezone } from "@/lib/time";
+import { todayInTimezone, type Frequency } from "@/lib/time";
 
 export type CompletionStatus = "pending" | "approved";
+export type { Frequency } from "@/lib/time";
 
 export type KidProfile = {
   id: string;
@@ -21,6 +22,7 @@ export type V2Task = {
   recurring: boolean;
   active: boolean;
   sort_order: number;
+  frequency: Frequency;
 };
 
 export type V2Completion = {
@@ -35,6 +37,7 @@ export type V2Completion = {
   is_bonus: boolean;
   status: CompletionStatus;
   note: string | null;
+  period_key: string | null;
 };
 
 export type V2Goal = {
@@ -171,6 +174,25 @@ export async function getKidTodayCompletions(
     .eq("household_id", householdId)
     .eq("kid_profile_id", kidProfileId)
     .eq("completed_on", today);
+  if (error) throw error;
+  return (data as V2Completion[]) ?? [];
+}
+
+// Fetch all of this kid's completions whose period_key matches one of the
+// supplied keys. Used to figure out which non-daily tasks are already
+// completed for the current period (week/month/year).
+export async function getKidCompletionsForPeriods(
+  householdId: string,
+  kidProfileId: string,
+  periodKeys: string[],
+): Promise<V2Completion[]> {
+  if (periodKeys.length === 0) return [];
+  const { data, error } = await supabaseV2Admin
+    .from("completions")
+    .select("*")
+    .eq("household_id", householdId)
+    .eq("kid_profile_id", kidProfileId)
+    .in("period_key", periodKeys);
   if (error) throw error;
   return (data as V2Completion[]) ?? [];
 }

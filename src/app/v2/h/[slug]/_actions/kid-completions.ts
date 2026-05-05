@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getKidSession } from "@/lib/v2/auth";
-import { todayInTimezone } from "@/lib/time";
+import { computePeriodKey, todayInTimezone, type Frequency } from "@/lib/time";
 
 // All actions in this file require a valid kid_session cookie. The cookie
 // pins the household_id + kid_profile_id, so a kid can only act for
@@ -44,7 +44,7 @@ export async function completeTaskForTodayAction(
 
   const { data: task, error: taskErr } = await supabaseV2Admin
     .from("tasks")
-    .select("id, name, points, recurring, active, household_id")
+    .select("id, name, points, recurring, active, household_id, frequency")
     .eq("id", taskId)
     .eq("household_id", s.householdId)
     .maybeSingle();
@@ -54,6 +54,10 @@ export async function completeTaskForTodayAction(
   }
 
   const today = todayInTimezone(s.timezone);
+  const periodKey = computePeriodKey(
+    (task.frequency ?? "daily") as Frequency,
+    s.timezone,
+  );
 
   const { error } = await supabaseV2Admin.from("completions").insert({
     household_id: s.householdId,
@@ -64,6 +68,7 @@ export async function completeTaskForTodayAction(
     completed_on: today,
     is_bonus: false,
     status: "pending",
+    period_key: periodKey,
   });
 
   if (error) {
@@ -87,7 +92,16 @@ export async function cancelPendingTaskForTodayAction(
     return { ok: false, error: (e as Error).message };
   }
 
-  const today = todayInTimezone(s.timezone);
+  // Look up the task's frequency so we delete the pending row in the right
+  // period bucket (a weekly task's pending row may not have completed_on=today).
+  const { data: task } = await supabaseV2Admin
+    .from("tasks")
+    .select("frequency")
+    .eq("id", taskId)
+    .eq("household_id", s.householdId)
+    .maybeSingle();
+  const frequency = (task?.frequency ?? "daily") as Frequency;
+  const periodKey = computePeriodKey(frequency, s.timezone);
 
   const { error } = await supabaseV2Admin
     .from("completions")
@@ -95,7 +109,7 @@ export async function cancelPendingTaskForTodayAction(
     .eq("household_id", s.householdId)
     .eq("kid_profile_id", s.kidProfileId)
     .eq("task_id", taskId)
-    .eq("completed_on", today)
+    .eq("period_key", periodKey)
     .eq("status", "pending");
   if (error) return { ok: false, error: error.message };
 
@@ -132,6 +146,7 @@ export async function submitKidProposalAction(
     completed_on: today,
     is_bonus: true,
     status: "pending",
+    period_key: `D-${today}`,
   });
   if (error) return { ok: false, error: error.message };
 

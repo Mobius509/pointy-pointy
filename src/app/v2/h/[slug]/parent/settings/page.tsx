@@ -1,7 +1,9 @@
 import { requireHouseholdAccess } from "@/lib/v2/auth";
+import { getKidProfiles } from "@/lib/v2/data";
 import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
 import { updateHouseholdSettingsAction } from "../_actions/settings";
 import { CoParentManager } from "../_components/CoParentManager";
+import { KidsAdmin } from "../_components/KidsAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +30,12 @@ export default async function ParentSettingsPage({
   const household = await requireHouseholdAccess(slug);
   const members = await getHouseholdMembers(household.id);
   const invites = await getPendingInvites(household.id);
+  const kids = await getKidProfiles(household.id);
 
   return (
     <div className="space-y-4">
+      <KidsAdmin slug={slug} kids={kids} />
+
       <CoParentManager slug={slug} members={members} invites={invites} />
 
       <section className="card">
