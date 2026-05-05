@@ -13,9 +13,14 @@ const SOURCES = [
   "/emojis/game.png",
   "/emojis/unicorn.png",
   "/emojis/cat2.png",
+  "/emojis/fish.png",
+  "/emojis/gift.png",
+  "/emojis/money.png",
+  "/emojis/shoes2.png",
+  "/emojis/vacation.png",
 ];
 
-const COUNT = 14;
+const COUNT = 18;
 const SIZE = 150; // px, square
 // Treat each emoji as a circle a bit smaller than its bbox so transparent
 // padding around the artwork doesn't make collisions feel off.
