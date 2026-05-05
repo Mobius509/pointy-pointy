@@ -1,5 +1,7 @@
 import { requireHouseholdAccess } from "@/lib/v2/auth";
+import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
 import { updateHouseholdSettingsAction } from "../_actions/settings";
+import { CoParentManager } from "../_components/CoParentManager";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +26,13 @@ export default async function ParentSettingsPage({
 }) {
   const { slug } = await params;
   const household = await requireHouseholdAccess(slug);
+  const members = await getHouseholdMembers(household.id);
+  const invites = await getPendingInvites(household.id);
 
   return (
     <div className="space-y-4">
+      <CoParentManager slug={slug} members={members} invites={invites} />
+
       <section className="card">
         <h2 className="text-lg font-bold text-slate-800">Family settings</h2>
         <p className="text-sm text-slate-600 mt-1">

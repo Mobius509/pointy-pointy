@@ -3,7 +3,13 @@
 import { useState, useTransition } from "react";
 import { signUpAction } from "./_actions";
 
-export function SignUpForm() {
+export function SignUpForm({
+  inviteCode = "",
+  showHouseholdName = true,
+}: {
+  inviteCode?: string;
+  showHouseholdName?: boolean;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -18,20 +24,23 @@ export function SignUpForm() {
       }
       className="mt-4 space-y-3"
     >
-      <div>
-        <label className="label" htmlFor="su-name">
-          Family name
-        </label>
-        <input
-          id="su-name"
-          name="household_name"
-          required
-          autoFocus
-          maxLength={80}
-          placeholder="Steenburgs"
-          className="input"
-        />
-      </div>
+      <input type="hidden" name="invite" value={inviteCode} />
+      {showHouseholdName && (
+        <div>
+          <label className="label" htmlFor="su-name">
+            Family name
+          </label>
+          <input
+            id="su-name"
+            name="household_name"
+            required
+            autoFocus
+            maxLength={80}
+            placeholder="Steenburgs"
+            className="input"
+          />
+        </div>
+      )}
       <div>
         <label className="label" htmlFor="su-email">
           Email
@@ -41,6 +50,7 @@ export function SignUpForm() {
           name="email"
           type="email"
           required
+          autoFocus={!showHouseholdName}
           autoComplete="email"
           className="input"
         />
@@ -65,7 +75,11 @@ export function SignUpForm() {
         </p>
       )}
       <button type="submit" className="btn-primary w-full" disabled={pending}>
-        {pending ? "Creating…" : "Create family"}
+        {pending
+          ? "Creating…"
+          : showHouseholdName
+            ? "Create family"
+            : "Join family"}
       </button>
     </form>
   );

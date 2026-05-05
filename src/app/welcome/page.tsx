@@ -1,12 +1,22 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getFirstHouseholdForCurrentUser } from "@/lib/v2/auth";
 import { EmojiRain } from "./_components/EmojiRain";
+import { AuthModalControls } from "./_components/AuthModal";
 
 export const metadata = {
   title: "Pointy Points — A new way to reward kids",
 };
 
-export default function WelcomePage() {
+// Public marketing page + entry point for v2. Already-signed-in parents skip
+// straight to their household admin.
+export default async function WelcomePage() {
+  const household = await getFirstHouseholdForCurrentUser();
+  if (household) {
+    redirect(`/v2/h/${household.slug}/parent`);
+  }
+
   return (
     <div
       className="relative min-h-screen flex flex-col overflow-hidden"
@@ -29,20 +39,8 @@ export default function WelcomePage() {
             What is Pointy Points
           </span>
         </Link>
-        <nav className="flex items-center gap-5 text-orange-800 font-semibold">
-          <Link
-            href="/welcome#signin"
-            className="underline underline-offset-4 hover:text-orange-900"
-          >
-            Sign In
-          </Link>
-          <Link
-            href="/welcome#signup"
-            className="underline underline-offset-4 hover:text-orange-900"
-          >
-            Sign Up
-          </Link>
-        </nav>
+        {/* Right side of the header (Sign In / Sign Up) is rendered by the
+            client AuthModalControls component below so taps open the modal. */}
       </header>
 
       <main className="relative z-20 flex-1 flex flex-col items-center justify-center px-6 pb-[300px] text-center">
@@ -64,34 +62,7 @@ export default function WelcomePage() {
         </p>
       </main>
 
-      <div
-        id="signin"
-        className="fixed bottom-0 inset-x-0 z-30 flex justify-center"
-      >
-        <div
-          className="w-full max-w-2xl bg-white/60 backdrop-blur-md pt-20 pb-[60px] px-6 sm:px-[100px]"
-          style={{ borderTopLeftRadius: 58, borderTopRightRadius: 58 }}
-        >
-          <button
-            type="button"
-            className="block mx-auto w-[280px] rounded-full bg-cyan-200 hover:bg-cyan-300 active:scale-[0.99] transition text-cyan-950 font-bold py-3 text-base"
-          >
-            Sign In (Parents)
-          </button>
-          <button
-            type="button"
-            className="mt-3 block mx-auto w-[280px] rounded-full bg-cyan-200 hover:bg-cyan-300 active:scale-[0.99] transition text-cyan-950 font-bold py-3 text-base"
-          >
-            Sign In (Kids)
-          </button>
-          <button
-            type="button"
-            className="mt-4 mx-auto block text-cyan-950 font-semibold hover:underline"
-          >
-            Sign Up
-          </button>
-        </div>
-      </div>
+      <AuthModalControls />
     </div>
   );
 }
