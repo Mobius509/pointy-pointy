@@ -35,6 +35,10 @@ const GRAVITY = 0.009;
 const MAX_FALL_SPEED = 2.8;
 const WALL_DAMP = 0.55;
 const COLLISION_RESTITUTION = 0.55;
+// How many recent drag samples to keep for computing throw velocity.
+const VELOCITY_SAMPLE_WINDOW_MS = 80;
+
+type Sample = { x: number; y: number; t: number };
 
 type Particle = {
   el: HTMLImageElement;
@@ -48,6 +52,14 @@ type Particle = {
   // heavier ones fall faster — varied terminal velocities means fast ones
   // catch up to slow ones and they bump.
   gravityMul: number;
+  // Drag state. While a particle is being grabbed, physics integration is
+  // skipped for it but it still participates in collisions so the user can
+  // shove other particles around with it.
+  dragging: boolean;
+  // Cursor offset within the particle's bounding box at grab time.
+  dragOffsetX: number;
+  dragOffsetY: number;
+  samples: Sample[];
 };
 
 function rand(min: number, max: number) {
@@ -84,9 +96,15 @@ export function EmojiRain() {
       el.style.height = `${size}px`;
       el.style.willChange = "transform";
       el.style.userSelect = "none";
+      el.style.touchAction = "none";
+      // Container has pointer-events:none so transparent space passes clicks
+      // through to underlying buttons; individual particles opt in here so
+      // they're grabbable.
+      el.style.pointerEvents = "auto";
+      el.style.cursor = "grab";
       container.appendChild(el);
 
-      particles.push({
+      const p: Particle = {
         el,
         // Spread initial particles across (and above) the viewport so the
         // page doesn't start empty.
@@ -97,7 +115,85 @@ export function EmojiRain() {
         rot: rand(0, 360),
         rotSpeed: rand(-1.2, 1.2),
         gravityMul: rand(0.4, 1.6),
+        dragging: false,
+        dragOffsetX: 0,
+        dragOffsetY: 0,
+        samples: [],
+      };
+      particles.push(p);
+      attachDragHandlers(p);
+    }
+
+    // ------------------------------------------------------------------------
+    // Drag handling. Uses Pointer Events so mouse + touch flow through one
+    // path. Pointer capture means the move/up events keep firing on the
+    // particle even if the cursor leaves it.
+    // ------------------------------------------------------------------------
+    function attachDragHandlers(p: Particle) {
+      p.el.addEventListener("pointerdown", (e: PointerEvent) => {
+        e.preventDefault();
+        p.dragging = true;
+        p.vx = 0;
+        p.vy = 0;
+        // Where inside the particle did they grab? We move the particle so
+        // the same pixel stays under the cursor as the mouse moves.
+        p.dragOffsetX = e.clientX - p.x;
+        p.dragOffsetY = e.clientY - p.y;
+        p.samples = [{ x: e.clientX, y: e.clientY, t: e.timeStamp }];
+        p.el.style.cursor = "grabbing";
+        p.el.style.zIndex = "10";
+        p.el.setPointerCapture(e.pointerId);
       });
+
+      p.el.addEventListener("pointermove", (e: PointerEvent) => {
+        if (!p.dragging) return;
+        e.preventDefault();
+        p.x = e.clientX - p.dragOffsetX;
+        p.y = e.clientY - p.dragOffsetY;
+        // Keep the most recent samples for velocity calc on release.
+        p.samples.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
+        const cutoff = e.timeStamp - VELOCITY_SAMPLE_WINDOW_MS;
+        while (p.samples.length > 0 && p.samples[0].t < cutoff) {
+          p.samples.shift();
+        }
+      });
+
+      const onRelease = (e: PointerEvent) => {
+        if (!p.dragging) return;
+        e.preventDefault();
+        p.dragging = false;
+        p.el.style.cursor = "grab";
+        p.el.style.zIndex = "";
+        try {
+          p.el.releasePointerCapture(e.pointerId);
+        } catch {
+          /* already released */
+        }
+        // Compute throw velocity from the recent samples. Convert from
+        // pixels-per-second-ish to per-frame (where 1 frame ≈ 16.67ms).
+        const samples = p.samples;
+        if (samples.length >= 2) {
+          const a = samples[0];
+          const b = samples[samples.length - 1];
+          const ms = Math.max(1, b.t - a.t);
+          const pxPerMs = {
+            x: (b.x - a.x) / ms,
+            y: (b.y - a.y) / ms,
+          };
+          // 16.67 ms per "frame" in our physics units.
+          p.vx = pxPerMs.x * 16.67;
+          p.vy = pxPerMs.y * 16.67;
+          // Cap so a violent flick doesn't fling it light-years off-screen.
+          const MAX_FLING = 40;
+          p.vx = Math.max(-MAX_FLING, Math.min(MAX_FLING, p.vx));
+          p.vy = Math.max(-MAX_FLING, Math.min(MAX_FLING, p.vy));
+          // Spin a little when thrown horizontally.
+          p.rotSpeed = pxPerMs.x * 0.4;
+        }
+        p.samples = [];
+      };
+      p.el.addEventListener("pointerup", onRelease);
+      p.el.addEventListener("pointercancel", onRelease);
     }
 
     let raf = 0;
@@ -113,8 +209,11 @@ export function EmojiRain() {
       const w = W();
       const h = H();
 
-      // Integrate motion.
+      // Integrate motion (skip dragged particles — their position is set
+      // directly by the pointer handler).
       for (const p of particles) {
+        if (p.dragging) continue;
+
         p.vy = Math.min(
           p.vy + GRAVITY * p.gravityMul * dt,
           MAX_FALL_SPEED * p.gravityMul,
@@ -135,7 +234,9 @@ export function EmojiRain() {
       }
 
       // Pair-wise circle collisions: separate overlapping pairs and
-      // exchange velocity along the contact normal (subtle elastic).
+      // exchange velocity along the contact normal (subtle elastic). A
+      // dragged particle still participates so users can shove others
+      // around with it; we just don't give the dragged one a velocity kick.
       const minDist = radius * 2;
       const minDistSq = minDist * minDist;
       for (let i = 0; i < particles.length; i++) {
@@ -154,23 +255,41 @@ export function EmojiRain() {
             const nx = dx / dist;
             const ny = dy / dist;
             const overlap = minDist - dist;
-            a.x -= nx * overlap * 0.5;
-            a.y -= ny * overlap * 0.5;
-            b.x += nx * overlap * 0.5;
-            b.y += ny * overlap * 0.5;
 
+            // Position correction: push only non-dragged particles. If both
+            // are dragged that's impossible (one pointer at a time) but we
+            // guard anyway.
+            if (a.dragging && !b.dragging) {
+              b.x += nx * overlap;
+              b.y += ny * overlap;
+            } else if (b.dragging && !a.dragging) {
+              a.x -= nx * overlap;
+              a.y -= ny * overlap;
+            } else if (!a.dragging && !b.dragging) {
+              a.x -= nx * overlap * 0.5;
+              a.y -= ny * overlap * 0.5;
+              b.x += nx * overlap * 0.5;
+              b.y += ny * overlap * 0.5;
+            }
+
+            // Velocity exchange — but a dragged particle's velocity is
+            // controlled by the user; only kick the other one.
             const av = a.vx * nx + a.vy * ny;
             const bv = b.vx * nx + b.vy * ny;
             const exchange = (av - bv) * COLLISION_RESTITUTION;
-            a.vx -= exchange * nx;
-            a.vy -= exchange * ny;
-            b.vx += exchange * nx;
-            b.vy += exchange * ny;
+            if (!a.dragging) {
+              a.vx -= exchange * nx;
+              a.vy -= exchange * ny;
+            }
+            if (!b.dragging) {
+              b.vx += exchange * nx;
+              b.vy += exchange * ny;
+            }
 
             // Tiny rotational kick so collisions feel alive.
             const tangentialKick = (a.rotSpeed - b.rotSpeed) * 0.05;
-            a.rotSpeed -= tangentialKick;
-            b.rotSpeed += tangentialKick;
+            if (!a.dragging) a.rotSpeed -= tangentialKick;
+            if (!b.dragging) b.rotSpeed += tangentialKick;
           }
         }
       }
@@ -178,6 +297,7 @@ export function EmojiRain() {
       // Respawn at the top once a particle falls past the bottom. Re-roll
       // gravity multiplier so the speed mix keeps shuffling over time.
       for (const p of particles) {
+        if (p.dragging) continue;
         if (p.y > h + size) {
           p.y = -size - rand(0, 200);
           p.x = rand(0, Math.max(0, W() - size));
