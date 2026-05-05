@@ -20,8 +20,8 @@ const SIZE = 150; // px, square
 // Treat each emoji as a circle a bit smaller than its bbox so transparent
 // padding around the artwork doesn't make collisions feel off.
 const RADIUS = (SIZE / 2) * 0.78;
-const GRAVITY = 0.022;
-const MAX_FALL_SPEED = 4.2;
+const GRAVITY = 0.009;
+const MAX_FALL_SPEED = 2.8;
 const WALL_DAMP = 0.55;
 const COLLISION_RESTITUTION = 0.55;
 
@@ -33,6 +33,10 @@ type Particle = {
   vy: number;
   rot: number;
   rotSpeed: number;
+  // Per-particle gravity multiplier. Lighter particles drift slowly while
+  // heavier ones fall faster — varied terminal velocities means fast ones
+  // catch up to slow ones and they bump.
+  gravityMul: number;
 };
 
 function rand(min: number, max: number) {
@@ -72,10 +76,11 @@ export function EmojiRain() {
         // page doesn't start empty.
         x: rand(0, Math.max(0, W() - SIZE)),
         y: rand(-H(), H() - SIZE),
-        vx: rand(-0.4, 0.4),
-        vy: rand(0.4, 1.6),
+        vx: rand(-0.3, 0.3),
+        vy: rand(0.05, 1.0),
         rot: rand(0, 360),
-        rotSpeed: rand(-1.5, 1.5),
+        rotSpeed: rand(-1.2, 1.2),
+        gravityMul: rand(0.4, 1.6),
       });
     }
 
@@ -94,7 +99,10 @@ export function EmojiRain() {
 
       // Integrate motion.
       for (const p of particles) {
-        p.vy = Math.min(p.vy + GRAVITY * dt, MAX_FALL_SPEED);
+        p.vy = Math.min(
+          p.vy + GRAVITY * p.gravityMul * dt,
+          MAX_FALL_SPEED * p.gravityMul,
+        );
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         p.rot += p.rotSpeed * dt;
@@ -151,14 +159,16 @@ export function EmojiRain() {
         }
       }
 
-      // Respawn at the top once a particle falls past the bottom.
+      // Respawn at the top once a particle falls past the bottom. Re-roll
+      // gravity multiplier so the speed mix keeps shuffling over time.
       for (const p of particles) {
         if (p.y > h + SIZE) {
           p.y = -SIZE - rand(0, 200);
           p.x = rand(0, Math.max(0, W() - SIZE));
-          p.vx = rand(-0.4, 0.4);
-          p.vy = rand(0.4, 1.2);
-          p.rotSpeed = rand(-1.5, 1.5);
+          p.vx = rand(-0.3, 0.3);
+          p.vy = rand(0.05, 0.8);
+          p.rotSpeed = rand(-1.2, 1.2);
+          p.gravityMul = rand(0.4, 1.6);
         }
       }
 
