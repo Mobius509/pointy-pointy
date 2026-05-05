@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
-import { getKidProfiles } from "@/lib/v2/data";
+import {
+  getHouseholdPendingCompletions,
+  getKidProfiles,
+} from "@/lib/v2/data";
+import { PendingApprovals } from "./_components/PendingApprovals";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +16,7 @@ export default async function ParentOverviewPage({
   const { slug } = await params;
   const household = await requireHouseholdAccess(slug);
   const kids = await getKidProfiles(household.id);
+  const pending = await getHouseholdPendingCompletions(household.id);
 
   return (
     <div className="space-y-4">
@@ -36,6 +41,10 @@ export default async function ParentOverviewPage({
       </section>
 
       {kids.length > 0 && (
+        <PendingApprovals slug={slug} items={pending} kids={kids} />
+      )}
+
+      {kids.length > 0 && (
         <section className="card">
           <h3 className="text-lg font-bold text-slate-800 mb-3">Your kids</h3>
           <ul className="grid gap-3 sm:grid-cols-2">
@@ -47,7 +56,13 @@ export default async function ParentOverviewPage({
                 <span className="text-3xl" aria-hidden>
                   {k.avatar_emoji}
                 </span>
-                <span className="font-semibold">{k.name}</span>
+                <span className="font-semibold flex-1">{k.name}</span>
+                <Link
+                  href={`/v2/h/${household.slug}/parent/goal?kid=${k.id}`}
+                  className="text-xs font-semibold text-brand-700 hover:underline"
+                >
+                  Goal →
+                </Link>
               </li>
             ))}
           </ul>
