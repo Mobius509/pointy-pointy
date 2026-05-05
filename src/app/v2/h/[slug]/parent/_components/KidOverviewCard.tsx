@@ -48,8 +48,8 @@ export function KidOverviewCard({
     : 0;
 
   return (
-    <section className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
-      <div className="grid gap-6 md:grid-cols-[180px_1fr]">
+    <section className="rounded-2xl bg-white shadow-sm overflow-hidden">
+      <div className="grid gap-6 p-5 sm:p-6 md:grid-cols-[180px_1fr]">
         {/* Left: avatar + points */}
         <div className="flex flex-col items-center md:items-start">
           <div className="size-20 rounded-full bg-amber-100 grid place-items-center text-5xl">
@@ -149,19 +149,23 @@ export function KidOverviewCard({
         </div>
       </div>
 
-      {/* Goal progress bar — full width across the card */}
+      {/* Goal progress strip inset at the bottom of the card. Edge-to-edge
+          within the card (overflow-hidden on the parent clips its corners). */}
       {goal && (
-        <div className="mt-6 flex items-center gap-4">
-          <span className="text-sm font-semibold text-slate-700 truncate">
+        <div
+          className="flex items-center gap-4 px-5 sm:px-8 py-5"
+          style={{ background: "#ECD2BD" }}
+        >
+          <span className="text-sm font-semibold text-slate-800 truncate">
             {goal.name}
           </span>
-          <div className="flex-1 h-3 rounded-full bg-orange-100 overflow-hidden">
+          <div className="flex-1 h-3 rounded-full bg-white/70 overflow-hidden">
             <div
-              className="h-full bg-orange-600 transition-[width] duration-500 ease-out"
+              className="h-full rounded-full bg-orange-600 transition-[width] duration-500 ease-out"
               style={{ width: `${goalPct}%` }}
             />
           </div>
-          <span className="text-sm font-semibold text-slate-700 tabular-nums">
+          <span className="text-sm font-semibold text-slate-800 tabular-nums">
             {goal.target_points.toLocaleString()}
           </span>
         </div>
