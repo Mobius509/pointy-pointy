@@ -202,7 +202,7 @@ function SignInBody() {
           {error}
         </p>
       )}
-      <button type="submit" className="btn-primary w-full" disabled={pending}>
+      <button type="submit" className="btn-cyan w-full" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}
       </button>
     </form>
@@ -273,7 +273,7 @@ function SignUpBody() {
           {error}
         </p>
       )}
-      <button type="submit" className="btn-primary w-full" disabled={pending}>
+      <button type="submit" className="btn-cyan w-full" disabled={pending}>
         {pending ? "Creating…" : "Create family"}
       </button>
       <p className="text-xs text-slate-500 text-center">

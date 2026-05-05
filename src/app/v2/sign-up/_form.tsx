@@ -74,7 +74,7 @@ export function SignUpForm({
           {error}
         </p>
       )}
-      <button type="submit" className="btn-primary w-full" disabled={pending}>
+      <button type="submit" className="btn-cyan w-full" disabled={pending}>
         {pending
           ? "Creating…"
           : showHouseholdName

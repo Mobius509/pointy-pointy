@@ -51,7 +51,7 @@ export function SignInForm({ next }: { next: string }) {
           {error}
         </p>
       )}
-      <button type="submit" className="btn-primary w-full" disabled={pending}>
+      <button type="submit" className="btn-cyan w-full" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}
       </button>
     </form>
