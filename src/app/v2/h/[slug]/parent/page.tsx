@@ -1,11 +1,14 @@
-import Link from "next/link";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
+import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import {
+  getActiveGoalForKid,
+  getActiveRecurringTasks,
   getHouseholdPendingCompletions,
+  getKidGoalProgress,
   getKidProfiles,
 } from "@/lib/v2/data";
-import { AwardBonusButton } from "./_components/AwardBonusButton";
-import { PendingApprovals } from "./_components/PendingApprovals";
+import { FamilyStatsCard } from "./_components/FamilyStatsCard";
+import { KidOverviewCard } from "./_components/KidOverviewCard";
 
 export const dynamic = "force-dynamic";
 
@@ -16,63 +19,63 @@ export default async function ParentOverviewPage({
 }) {
   const { slug } = await params;
   const household = await requireHouseholdAccess(slug);
-  const kids = await getKidProfiles(household.id);
-  const pending = await getHouseholdPendingCompletions(household.id);
+
+  const [kids, tasks, pendingAll, activeGoalsResult] = await Promise.all([
+    getKidProfiles(household.id),
+    getActiveRecurringTasks(household.id),
+    getHouseholdPendingCompletions(household.id),
+    supabaseV2Admin
+      .from("goals")
+      .select("id", { count: "exact", head: true })
+      .eq("household_id", household.id)
+      .is("redeemed_at", null),
+  ]);
+  const goalCount = activeGoalsResult.count ?? 0;
+  const taskById = new Map(tasks.map((t) => [t.id, t]));
+
+  // Per-kid: pending list + active goal + progress.
+  const kidCards = await Promise.all(
+    kids.map(async (kid) => {
+      const goal = await getActiveGoalForKid(household.id, kid.id);
+      const progress = goal
+        ? await getKidGoalProgress(household.id, kid.id, goal)
+        : 0;
+      const pending = pendingAll.filter((c) => c.kid_profile_id === kid.id);
+      return { kid, goal, progress, pending };
+    }),
+  );
 
   return (
-    <div className="space-y-4">
-      <section className="card">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-bold text-slate-800">
-              Welcome, {household.name}
-            </h2>
-            <p className="text-sm text-slate-600 mt-1">
-              {kids.length === 0
-                ? "Get started by adding your first kid in Settings."
-                : `${kids.length} ${kids.length === 1 ? "kid" : "kids"} set up. Manage tasks and goals in the tabs above.`}
-            </p>
-          </div>
-          {kids.length === 0 ? (
-            <Link
-              href={`/v2/h/${household.slug}/parent/settings`}
-              className="btn-primary"
-            >
-              Add a kid
-            </Link>
-          ) : (
-            <AwardBonusButton slug={slug} kids={kids} />
-          )}
-        </div>
-      </section>
+    <div className="space-y-6">
+      <h1 className="text-3xl sm:text-4xl font-extrabold text-orange-700">
+        Overview
+      </h1>
 
-      {kids.length > 0 && (
-        <PendingApprovals slug={slug} items={pending} kids={kids} />
-      )}
+      <FamilyStatsCard
+        householdName={household.name}
+        kids={kids}
+        taskCount={tasks.length}
+        goalCount={goalCount}
+      />
 
-      {kids.length > 0 && (
-        <section className="card">
-          <h3 className="text-lg font-bold text-slate-800 mb-3">Your kids</h3>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {kids.map((k) => (
-              <li
-                key={k.id}
-                className="flex items-center gap-3 rounded-xl bg-white ring-1 ring-slate-200 p-3"
-              >
-                <span className="text-3xl" aria-hidden>
-                  {k.avatar_emoji}
-                </span>
-                <span className="font-semibold flex-1">{k.name}</span>
-                <Link
-                  href={`/v2/h/${household.slug}/parent/goal?kid=${k.id}`}
-                  className="text-xs font-semibold text-brand-700 hover:underline"
-                >
-                  Goal →
-                </Link>
-              </li>
-            ))}
-          </ul>
+      {kids.length === 0 ? (
+        <section className="rounded-2xl bg-white p-6 text-center shadow-sm">
+          <p className="text-slate-700">
+            Get started by adding your first kid in Settings.
+          </p>
         </section>
+      ) : (
+        kidCards.map(({ kid, goal, progress, pending }) => (
+          <KidOverviewCard
+            key={kid.id}
+            slug={slug}
+            kid={kid}
+            taskById={taskById}
+            pending={pending}
+            goal={goal}
+            progress={progress}
+          />
+        ))
       )}
     </div>
   );
