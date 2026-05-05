@@ -7,7 +7,7 @@ import {
   getSettings,
   getTodayCompletions,
 } from "@/lib/data";
-import { ProgressVisual } from "../_components/ProgressVisual";
+import { ProgressVisual } from "@/app/_components/ProgressVisual";
 import { PendingApprovals } from "./_components/PendingApprovals";
 
 export const dynamic = "force-dynamic";

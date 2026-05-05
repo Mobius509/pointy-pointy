@@ -17,7 +17,17 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ['"Fredoka"', "system-ui", "sans-serif"],
+        sans: [
+          "var(--font-gotham)",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+        ],
       },
       animation: {
         "pop-in": "pop-in 0.3s ease-out",

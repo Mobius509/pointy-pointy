@@ -6,10 +6,10 @@ import {
   getSettings,
   getTodayCompletions,
 } from "@/lib/data";
-import { ProgressVisual } from "./_components/ProgressVisual";
-import { DailyChecklist } from "./_components/DailyChecklist";
-import { KidProposal } from "./_components/KidProposal";
-import { RecentActivity } from "./_components/RecentActivity";
+import { ProgressVisual } from "@/app/_components/ProgressVisual";
+import { DailyChecklist } from "@/app/_components/DailyChecklist";
+import { KidProposal } from "@/app/_components/KidProposal";
+import { RecentActivity } from "@/app/_components/RecentActivity";
 
 export const dynamic = "force-dynamic";
 

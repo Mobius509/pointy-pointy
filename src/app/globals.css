@@ -12,9 +12,16 @@ body {
 }
 
 body {
-  @apply bg-gradient-to-b from-amber-50 via-orange-50 to-rose-50 text-slate-900 antialiased;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  @apply text-slate-900 antialiased font-medium;
+}
+
+@keyframes fall {
+  0% {
+    transform: translateY(-15vh) rotate(var(--start-rot, 0deg));
+  }
+  100% {
+    transform: translateY(115vh) rotate(var(--end-rot, 360deg));
+  }
 }
 
 @layer components {
