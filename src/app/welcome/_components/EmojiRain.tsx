@@ -20,11 +20,17 @@ const SOURCES = [
   "/emojis/vacation.png",
 ];
 
-const COUNT = 18;
-const SIZE = 150; // px, square
-// Treat each emoji as a circle a bit smaller than its bbox so transparent
-// padding around the artwork doesn't make collisions feel off.
-const RADIUS = (SIZE / 2) * 0.78;
+// Pick count + size based on viewport so the rain doesn't feel crowded
+// on phones. Tuned by hand: phone ~6 small drops, tablet ~12 medium,
+// desktop full 18 at 150px.
+function pickCountAndSize(w: number): { count: number; size: number } {
+  if (w >= 1280) return { count: 18, size: 150 };
+  if (w >= 1024) return { count: 14, size: 140 };
+  if (w >= 768) return { count: 11, size: 120 };
+  if (w >= 480) return { count: 8, size: 100 };
+  return { count: 6, size: 90 };
+}
+
 const GRAVITY = 0.009;
 const MAX_FALL_SPEED = 2.8;
 const WALL_DAMP = 0.55;
@@ -58,10 +64,15 @@ export function EmojiRain() {
     const W = () => window.innerWidth;
     const H = () => window.innerHeight;
 
+    const { count, size } = pickCountAndSize(W());
+    // Treat each emoji as a circle a bit smaller than its bbox so transparent
+    // padding around the artwork doesn't make collisions feel off.
+    const radius = (size / 2) * 0.78;
+
     const particles: Particle[] = [];
 
     // Create img elements directly (avoids React re-renders per frame).
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0; i < count; i++) {
       const el = document.createElement("img");
       el.src = SOURCES[i % SOURCES.length];
       el.alt = "";
@@ -69,8 +80,8 @@ export function EmojiRain() {
       el.style.position = "absolute";
       el.style.left = "0";
       el.style.top = "0";
-      el.style.width = `${SIZE}px`;
-      el.style.height = `${SIZE}px`;
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
       el.style.willChange = "transform";
       el.style.userSelect = "none";
       container.appendChild(el);
@@ -79,8 +90,8 @@ export function EmojiRain() {
         el,
         // Spread initial particles across (and above) the viewport so the
         // page doesn't start empty.
-        x: rand(0, Math.max(0, W() - SIZE)),
-        y: rand(-H(), H() - SIZE),
+        x: rand(0, Math.max(0, W() - size)),
+        y: rand(-H(), H() - size),
         vx: rand(-0.3, 0.3),
         vy: rand(0.05, 1.0),
         rot: rand(0, 360),
@@ -117,24 +128,24 @@ export function EmojiRain() {
           p.x = 0;
           p.vx = Math.abs(p.vx) * WALL_DAMP;
         }
-        if (p.x > w - SIZE) {
-          p.x = w - SIZE;
+        if (p.x > w - size) {
+          p.x = w - size;
           p.vx = -Math.abs(p.vx) * WALL_DAMP;
         }
       }
 
       // Pair-wise circle collisions: separate overlapping pairs and
       // exchange velocity along the contact normal (subtle elastic).
-      const minDist = RADIUS * 2;
+      const minDist = radius * 2;
       const minDistSq = minDist * minDist;
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const a = particles[i];
           const b = particles[j];
-          const ax = a.x + SIZE / 2;
-          const ay = a.y + SIZE / 2;
-          const bx = b.x + SIZE / 2;
-          const by = b.y + SIZE / 2;
+          const ax = a.x + size / 2;
+          const ay = a.y + size / 2;
+          const bx = b.x + size / 2;
+          const by = b.y + size / 2;
           const dx = bx - ax;
           const dy = by - ay;
           const dSq = dx * dx + dy * dy;
@@ -167,9 +178,9 @@ export function EmojiRain() {
       // Respawn at the top once a particle falls past the bottom. Re-roll
       // gravity multiplier so the speed mix keeps shuffling over time.
       for (const p of particles) {
-        if (p.y > h + SIZE) {
-          p.y = -SIZE - rand(0, 200);
-          p.x = rand(0, Math.max(0, W() - SIZE));
+        if (p.y > h + size) {
+          p.y = -size - rand(0, 200);
+          p.x = rand(0, Math.max(0, W() - size));
           p.vx = rand(-0.3, 0.3);
           p.vy = rand(0.05, 0.8);
           p.rotSpeed = rand(-1.2, 1.2);

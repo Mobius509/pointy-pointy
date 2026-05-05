@@ -50,7 +50,9 @@ export default function WelcomePage() {
           src="/logos/logo_badge.svg"
           alt=""
           aria-hidden
-          className="h-20 sm:h-28 w-auto"
+          width={45}
+          height={68}
+          className="w-[45px] h-[68px]"
         />
         <img
           src="/logos/Logo_Type.svg"
