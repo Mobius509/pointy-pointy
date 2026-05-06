@@ -16,7 +16,7 @@ export function FamilyStatsCard({
 }: Props) {
   return (
     <section className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
-      <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+      <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2 text-[18px]">
         <Row label="Family" value={householdName} />
         <Row
           label="Tasks"
@@ -57,8 +57,8 @@ function Row({
 }) {
   return (
     <div className="flex items-center gap-6">
-      <dt className="w-16 shrink-0 text-sm text-slate-500">{label}</dt>
-      <dd className="text-base font-semibold text-orange-700">{value}</dd>
+      <dt className="w-16 shrink-0 text-[#6B5805]">{label}</dt>
+      <dd className="font-semibold text-[#D45B00]">{value}</dd>
     </div>
   );
 }

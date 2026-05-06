@@ -4,9 +4,11 @@ import {
   getActiveGoalForKid,
   getActiveRecurringTasks,
   getHouseholdPendingCompletions,
+  getKidCompletionsForPeriods,
   getKidGoalProgress,
   getKidProfiles,
 } from "@/lib/v2/data";
+import { computePeriodKey, type Frequency } from "@/lib/time";
 import { FamilyStatsCard } from "./_components/FamilyStatsCard";
 import { KidOverviewCard } from "./_components/KidOverviewCard";
 
@@ -33,7 +35,16 @@ export default async function ParentOverviewPage({
   const goalCount = activeGoalsResult.count ?? 0;
   const taskById = new Map(tasks.map((t) => [t.id, t]));
 
-  // Per-kid: pending list + active goal + progress.
+  // Pre-compute period keys per task — same value for tasks of the same
+  // frequency, but cached per task for downstream lookups.
+  const tz = household.timezone;
+  const periodKeyByTask = new Map<string, string>(
+    tasks.map((t) => [t.id, computePeriodKey(t.frequency, tz)]),
+  );
+  const distinctPeriodKeys = [...new Set(periodKeyByTask.values())];
+
+  // Per-kid: pending list, active goal + progress, and the set of tasks the
+  // kid hasn't yet acted on this period (those are 'outstanding').
   const kidCards = await Promise.all(
     kids.map(async (kid) => {
       const goal = await getActiveGoalForKid(household.id, kid.id);
@@ -41,13 +52,36 @@ export default async function ParentOverviewPage({
         ? await getKidGoalProgress(household.id, kid.id, goal)
         : 0;
       const pending = pendingAll.filter((c) => c.kid_profile_id === kid.id);
-      return { kid, goal, progress, pending };
+
+      const periodCompletions = await getKidCompletionsForPeriods(
+        household.id,
+        kid.id,
+        distinctPeriodKeys,
+      );
+      // Track tasks that have any completion (pending or approved) for the
+      // current period — those are NOT outstanding.
+      const acted = new Set<string>();
+      for (const c of periodCompletions) {
+        if (c.is_bonus || !c.task_id) continue;
+        if (periodKeyByTask.get(c.task_id) === c.period_key) {
+          acted.add(c.task_id);
+        }
+      }
+      const outstandingByFreq = new Map<Frequency, typeof tasks>();
+      for (const t of tasks) {
+        if (acted.has(t.id)) continue;
+        const arr = outstandingByFreq.get(t.frequency) ?? [];
+        arr.push(t);
+        outstandingByFreq.set(t.frequency, arr);
+      }
+
+      return { kid, goal, progress, pending, outstandingByFreq };
     }),
   );
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl sm:text-4xl font-extrabold text-orange-700">
+      <h1 className="text-[32px] font-medium text-[#D45B00] leading-none">
         Overview
       </h1>
 
@@ -65,13 +99,14 @@ export default async function ParentOverviewPage({
           </p>
         </section>
       ) : (
-        kidCards.map(({ kid, goal, progress, pending }) => (
+        kidCards.map(({ kid, goal, progress, pending, outstandingByFreq }) => (
           <KidOverviewCard
             key={kid.id}
             slug={slug}
             kid={kid}
             taskById={taskById}
             pending={pending}
+            outstandingByFreq={outstandingByFreq}
             goal={goal}
             progress={progress}
           />

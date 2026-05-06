@@ -37,7 +37,7 @@ export function BonusForKidButton({
           setError(null);
           setOpen(true);
         }}
-        className="inline-flex items-center gap-2 rounded-full bg-orange-600 hover:bg-orange-700 active:scale-[0.99] transition text-white font-semibold px-5 py-2 text-sm"
+        className="inline-flex items-center gap-2 rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-5 py-2 text-sm transition hover:bg-[#FFF7EE] active:scale-[0.99]"
       >
         <span aria-hidden>⭐</span>
         Award Bonus
