@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import {
-  cancelPendingTaskForToday,
-  completeTaskForToday,
-} from "@/app/_actions/completions";
+import { completeTaskForToday } from "@/app/_actions/completions";
+import { humanizeDate } from "@/lib/time";
 import { celebrate } from "./Confetti";
 
 type ItemState = "open" | "pending" | "approved";
@@ -15,6 +13,9 @@ type Item = {
   description: string | null;
   points: number;
   state: ItemState;
+  // ISO timestamp of when the kid submitted this completion (pending or
+  // approved). Null when state is "open".
+  submittedAt: string | null;
 };
 
 type Props = {
@@ -22,36 +23,39 @@ type Props = {
 };
 
 export function DailyChecklist({ items }: Props) {
-  const [state, setState] = useState<Record<string, ItemState>>(
-    () => Object.fromEntries(items.map((i) => [i.id, i.state])),
+  const [state, setState] = useState<Record<string, ItemState>>(() =>
+    Object.fromEntries(items.map((i) => [i.id, i.state])),
+  );
+  // When a kid taps a task, the optimistic "submitted just now" timestamp
+  // shows immediately — no need to wait for a refresh from the server.
+  const [submittedAt, setSubmittedAt] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      items
+        .filter((i) => i.submittedAt)
+        .map((i) => [i.id, i.submittedAt as string]),
+    ),
   );
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const onCheck = (item: Item) => {
     const current = state[item.id];
-    if (current === "approved") return;
+    // Once submitted, the kid can't take it back — parent has to deny.
+    if (current !== "open") return;
 
     setError(null);
-
-    if (current === "pending") {
-      setState((s) => ({ ...s, [item.id]: "open" }));
-      startTransition(async () => {
-        const res = await cancelPendingTaskForToday(item.id);
-        if (!res.ok) {
-          setState((s) => ({ ...s, [item.id]: "pending" }));
-          setError(res.error);
-        }
-      });
-      return;
-    }
-
     setState((s) => ({ ...s, [item.id]: "pending" }));
+    setSubmittedAt((m) => ({ ...m, [item.id]: new Date().toISOString() }));
     celebrate();
     startTransition(async () => {
       const res = await completeTaskForToday(item.id);
       if (!res.ok) {
         setState((s) => ({ ...s, [item.id]: "open" }));
+        setSubmittedAt((m) => {
+          const { [item.id]: _, ...rest } = m;
+          void _;
+          return rest;
+        });
         setError(res.error);
       }
     });
@@ -74,14 +78,14 @@ export function DailyChecklist({ items }: Props) {
       )}
       {items.map((item) => {
         const s = state[item.id];
-        const isOpen = s === "open";
         const isPending = s === "pending";
         const isApproved = s === "approved";
+        const submitted = submittedAt[item.id];
 
         const containerClass = isApproved
           ? "bg-emerald-50 ring-emerald-200 text-slate-500"
           : isPending
-            ? "bg-amber-50 ring-amber-200 hover:ring-amber-300 active:scale-[0.99]"
+            ? "bg-amber-50 ring-amber-200"
             : "bg-white ring-slate-200 hover:ring-brand-300 hover:shadow-sm active:scale-[0.99]";
 
         const iconClass = isApproved
@@ -98,12 +102,22 @@ export function DailyChecklist({ items }: Props) {
             ? "bg-amber-100 text-amber-700"
             : "bg-brand-100 text-brand-700";
 
+        const subtitle = isApproved
+          ? submitted
+            ? `Approved · submitted ${humanizeDate(submitted)}`
+            : "Approved"
+          : isPending
+            ? submitted
+              ? `Submitted ${humanizeDate(submitted)} · waiting for a parent`
+              : "Waiting for a parent to confirm"
+            : item.description;
+
         return (
           <button
             key={item.id}
             type="button"
             onClick={() => onCheck(item)}
-            disabled={isApproved}
+            disabled={isPending || isApproved}
             className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 ring-1 transition text-left ${containerClass}`}
           >
             <span
@@ -120,11 +134,9 @@ export function DailyChecklist({ items }: Props) {
               >
                 {item.name}
               </span>
-              <span className="block text-xs text-slate-500">
-                {isPending
-                  ? "Waiting for a parent to confirm. Tap to cancel."
-                  : item.description}
-              </span>
+              {subtitle && (
+                <span className="block text-xs text-slate-500">{subtitle}</span>
+              )}
             </span>
             <span
               className={`flex-shrink-0 rounded-full px-3 py-1 text-sm font-bold tabular-nums ${badgeClass}`}

@@ -2,13 +2,15 @@ import {
   getActiveGoal,
   getActiveRecurringTasks,
   getGoalProgress,
+  getOpenAndTodayCompletions,
   getRecentCompletions,
   getSettings,
-  getTodayCompletions,
 } from "@/lib/data";
+import { todayInTimezone } from "@/lib/time";
 import { ProgressVisual } from "@/app/_components/ProgressVisual";
 import { DailyChecklist } from "@/app/_components/DailyChecklist";
 import { KidProposal } from "@/app/_components/KidProposal";
+import { PushToggle } from "@/app/_components/PushToggle";
 import { RecentActivity } from "@/app/_components/RecentActivity";
 
 export const dynamic = "force-dynamic";
@@ -17,13 +19,30 @@ export default async function Home() {
   const settings = await getSettings();
   const goal = await getActiveGoal();
   const tasks = await getActiveRecurringTasks();
-  const todayCompletions = await getTodayCompletions(settings.timezone);
+  const completions = await getOpenAndTodayCompletions(settings.timezone);
   const recent = await getRecentCompletions(8);
+  const today = todayInTimezone(settings.timezone);
 
+  // For each task, derive state:
+  //   - "pending" if any unresolved submission exists (any date)
+  //   - "approved" if there's an approved completion completed_on=today
+  //   - else "open"
+  // Pending wins over approved so the kid sees their submission persist.
   const stateByTaskId = new Map<string, "pending" | "approved">();
-  for (const c of todayCompletions) {
+  const submittedAtByTaskId = new Map<string, string>();
+  for (const c of completions) {
     if (c.is_bonus || !c.task_id) continue;
-    stateByTaskId.set(c.task_id, c.status);
+    if (c.status === "pending") {
+      stateByTaskId.set(c.task_id, "pending");
+      submittedAtByTaskId.set(c.task_id, c.completed_at);
+    } else if (
+      c.status === "approved" &&
+      c.completed_on === today &&
+      stateByTaskId.get(c.task_id) !== "pending"
+    ) {
+      stateByTaskId.set(c.task_id, "approved");
+      submittedAtByTaskId.set(c.task_id, c.completed_at);
+    }
   }
 
   const items = tasks.map((t) => ({
@@ -31,10 +50,16 @@ export default async function Home() {
     name: t.name,
     description: t.description,
     points: t.points,
-    state: (stateByTaskId.get(t.id) ?? "open") as "open" | "pending" | "approved",
+    state: (stateByTaskId.get(t.id) ?? "open") as
+      | "open"
+      | "pending"
+      | "approved",
+    submittedAt: submittedAtByTaskId.get(t.id) ?? null,
   }));
 
-  const pendingKidProposals = todayCompletions.filter(
+  // Kid bonus proposals: any still-pending one (regardless of date) sticks
+  // around in the kid's "Waiting on" panel until a parent acts.
+  const pendingKidProposals = completions.filter(
     (c) => c.is_bonus && c.task_id === null && c.status === "pending",
   );
 
@@ -68,10 +93,15 @@ export default async function Home() {
           <KidProposal pendingProposals={pendingKidProposals} />
         </div>
 
-        <section className="card md:self-start">
-          <h3 className="text-xl font-bold text-slate-800 mb-2">Recent</h3>
-          <RecentActivity items={recent} />
-        </section>
+        <div className="space-y-6 md:self-start">
+          <section className="card">
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Recent</h3>
+            <RecentActivity items={recent} />
+          </section>
+          <section className="card">
+            <PushToggle role="kid" label="Tell me when a parent approves" />
+          </section>
+        </div>
       </div>
     </div>
   );

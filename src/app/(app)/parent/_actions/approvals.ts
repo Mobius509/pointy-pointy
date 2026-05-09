@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireParent } from "@/lib/auth/pin";
+import { sendPushToRole } from "@/lib/push";
 
 export async function approveCompletionAction(formData: FormData) {
   await requireParent();
@@ -22,11 +23,20 @@ export async function approveCompletionAction(formData: FormData) {
     update.points_snapshot = Math.round(points);
   }
 
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from("completions")
     .update(update)
-    .eq("id", id);
+    .eq("id", id)
+    .select("task_name_snapshot, points_snapshot")
+    .single();
   if (error) throw error;
+
+  await sendPushToRole("kid", {
+    title: "🎉 Approved!",
+    body: `${data.task_name_snapshot} · +${data.points_snapshot} points`,
+    url: "/",
+    tag: `approve-${id}`,
+  });
 
   revalidatePath("/parent");
   revalidatePath("/parent/activity");
@@ -37,11 +47,27 @@ export async function denyCompletionAction(formData: FormData) {
   await requireParent();
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing id.");
+
+  const { data: row } = await supabaseAdmin
+    .from("completions")
+    .select("task_name_snapshot")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabaseAdmin
     .from("completions")
     .delete()
     .eq("id", id);
   if (error) throw error;
+
+  if (row?.task_name_snapshot) {
+    await sendPushToRole("kid", {
+      title: "Pointy Points",
+      body: `"${row.task_name_snapshot}" wasn't approved this time.`,
+      url: "/",
+      tag: `deny-${id}`,
+    });
+  }
 
   revalidatePath("/parent");
   revalidatePath("/parent/activity");

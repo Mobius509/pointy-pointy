@@ -74,3 +74,51 @@ export function frequencyLabel(f: Frequency): string {
       return "Yearly";
   }
 }
+
+// Format a timestamp as a friendly relative date+time.
+//   "just now" / "5 min ago" — within the last hour
+//   "Today at 3:04 PM" / "Yesterday at 3:04 PM"
+//   "Sunday at 3:04 PM" — within the last 7 days
+//   "May 9 at 3:04 PM" — older within this year
+//   "May 9, 2024 at 3:04 PM" — older still
+export function humanizeDate(input: string | Date, now: Date = new Date()): string {
+  const date = typeof input === "string" ? new Date(input) : input;
+  if (Number.isNaN(date.getTime())) return "";
+
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+
+  const time = date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  const startOfDay = (d: Date) => {
+    const c = new Date(d);
+    c.setHours(0, 0, 0, 0);
+    return c;
+  };
+  const today = startOfDay(now);
+  const dayDiff = Math.floor(
+    (today.getTime() - startOfDay(date).getTime()) / 86_400_000,
+  );
+
+  if (dayDiff === 0) return `Today at ${time}`;
+  if (dayDiff === 1) return `Yesterday at ${time}`;
+  if (dayDiff > 1 && dayDiff < 7) {
+    const day = date.toLocaleDateString("en-US", { weekday: "long" });
+    return `${day} at ${time}`;
+  }
+
+  const sameYear = date.getFullYear() === now.getFullYear();
+  const datePart = date.toLocaleDateString(
+    "en-US",
+    sameYear
+      ? { month: "long", day: "numeric" }
+      : { month: "long", day: "numeric", year: "numeric" },
+  );
+  return `${datePart} at ${time}`;
+}

@@ -101,6 +101,22 @@ export async function getTodayCompletions(timezone: string): Promise<Completion[
   return (data as Completion[]) ?? [];
 }
 
+// Used by the kid view to show each task's state. Any pending submission
+// keeps the task locked as "pending" until a parent approves or denies —
+// even if the kid submitted on a previous day. Today's approved completions
+// also come back so already-done daily tasks render as approved.
+export async function getOpenAndTodayCompletions(
+  timezone: string,
+): Promise<Completion[]> {
+  const today = todayInTimezone(timezone);
+  const { data, error } = await supabaseAdmin
+    .from("completions")
+    .select("*")
+    .or(`status.eq.pending,completed_on.eq.${today}`);
+  if (error) throw error;
+  return (data as Completion[]) ?? [];
+}
+
 export async function getRecentCompletions(limit = 12): Promise<Completion[]> {
   const { data, error } = await supabaseAdmin
     .from("completions")

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { todayInTimezone } from "@/lib/time";
 import { getSettings } from "@/lib/data";
+import { sendPushToRole } from "@/lib/push";
 
 // Kid taps a recurring task → row inserted as pending. The unique index
 // enforces one completion per recurring task per day.
@@ -36,6 +37,14 @@ export async function completeTaskForToday(taskId: string): Promise<
     if (error.code === "23505") return { ok: true }; // already submitted today
     return { ok: false, error: error.message };
   }
+
+  // Notify parents that there's something to approve.
+  await sendPushToRole("parent", {
+    title: "Pointy Points",
+    body: `Kid submitted "${task.name}" (+${task.points})`,
+    url: "/parent",
+    tag: `submit-${task.id}`,
+  });
 
   revalidatePath("/");
   return { ok: true };
@@ -84,6 +93,13 @@ export async function submitKidProposal(name: string): Promise<
     status: "pending",
   });
   if (error) return { ok: false, error: error.message };
+
+  await sendPushToRole("parent", {
+    title: "Pointy Points · suggestion",
+    body: `Kid suggested "${trimmed}"`,
+    url: "/parent",
+    tag: "kid-proposal",
+  });
 
   revalidatePath("/");
   return { ok: true };
