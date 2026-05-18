@@ -37,12 +37,13 @@ export type Goal = {
 export type Settings = {
   timezone: string;
   parent_pin_hash: string | null;
+  kid_name: string | null;
 };
 
 export async function getSettings(): Promise<Settings> {
   const { data, error } = await supabaseAdmin
     .from("settings")
-    .select("timezone, parent_pin_hash")
+    .select("timezone, parent_pin_hash, kid_name")
     .eq("id", 1)
     .single();
   if (error) throw error;

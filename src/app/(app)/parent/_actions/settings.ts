@@ -55,3 +55,18 @@ export async function updateTimezoneAction(formData: FormData) {
   revalidatePath("/parent/settings");
   revalidatePath("/");
 }
+
+export async function updateKidNameAction(formData: FormData) {
+  await requireParent();
+  const name = String(formData.get("kid_name") ?? "").trim();
+  if (!name) throw new Error("Kid name required.");
+  if (name.length > 60) throw new Error("Keep it under 60 characters.");
+
+  const { error } = await supabaseAdmin
+    .from("settings")
+    .update({ kid_name: name })
+    .eq("id", 1);
+  if (error) throw error;
+
+  revalidatePath("/parent/settings");
+}

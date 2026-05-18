@@ -1,5 +1,8 @@
 import { getSettings } from "@/lib/data";
-import { updateTimezoneAction } from "../_actions/settings";
+import {
+  updateKidNameAction,
+  updateTimezoneAction,
+} from "../_actions/settings";
 import { ChangePinForm } from "./_form";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +32,35 @@ export default async function SettingsPage() {
           The PIN protects parent admin actions on shared devices.
         </p>
         <ChangePinForm />
+      </section>
+
+      <section className="card">
+        <h2 className="text-lg font-bold text-slate-800">Kid&apos;s name</h2>
+        <p className="text-sm text-slate-600 mt-1">
+          Shown in push notifications so you know who submitted what.
+        </p>
+        <form
+          action={updateKidNameAction}
+          className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
+        >
+          <div>
+            <label className="label" htmlFor="kid-name">
+              Name
+            </label>
+            <input
+              id="kid-name"
+              name="kid_name"
+              defaultValue={settings.kid_name ?? ""}
+              required
+              maxLength={60}
+              className="input"
+              placeholder="Freya"
+            />
+          </div>
+          <button type="submit" className="btn-primary">
+            Save
+          </button>
+        </form>
       </section>
 
       <section className="card">

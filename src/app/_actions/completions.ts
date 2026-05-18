@@ -39,9 +39,10 @@ export async function completeTaskForToday(taskId: string): Promise<
   }
 
   // Notify parents that there's something to approve.
+  const kidName = settings.kid_name?.trim() || "Your kid";
   await sendPushToRole("parent", {
     title: "Pointy Points",
-    body: `Kid submitted "${task.name}" (+${task.points})`,
+    body: `${kidName} submitted "${task.name}" (+${task.points})`,
     url: "/parent",
     tag: `submit-${task.id}`,
   });
@@ -94,9 +95,11 @@ export async function submitKidProposal(name: string): Promise<
   });
   if (error) return { ok: false, error: error.message };
 
+  const proposalKidName =
+    (await getSettings()).kid_name?.trim() || "Your kid";
   await sendPushToRole("parent", {
     title: "Pointy Points · suggestion",
-    body: `Kid suggested "${trimmed}"`,
+    body: `${proposalKidName} suggested "${trimmed}"`,
     url: "/parent",
     tag: "kid-proposal",
   });
