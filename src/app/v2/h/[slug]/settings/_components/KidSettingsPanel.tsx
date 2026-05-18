@@ -143,7 +143,11 @@ export function KidSettingsPanel({
       </h2>
 
       <div className="mt-4">
-        <AvatarPicker defaultValue={initialAvatar} onChange={onAvatarChange} />
+        <AvatarPicker
+          defaultValue={initialAvatar}
+          onChange={onAvatarChange}
+          bleed
+        />
         <div className="mt-2 min-h-[18px] text-xs">
           {avatarPending && <span className="text-[#C3A38A]">Saving…</span>}
           {!avatarPending && avatarMsg?.kind === "ok" && (

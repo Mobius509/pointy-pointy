@@ -15,10 +15,16 @@ export function AvatarPicker({
   name = "avatar_emoji",
   defaultValue,
   onChange,
+  bleed = false,
 }: {
   name?: string;
   defaultValue?: string | null;
   onChange?: (avatar: AvatarId) => void;
+  // When true, the scroll container extends past the parent's p-6/p-8
+  // padding so partial tiles bleed off the parent card's edge. Used in
+  // the kid settings modal. Default off so the picker stays self-contained
+  // in normal form layouts.
+  bleed?: boolean;
 }) {
   const [selected, setSelected] = useState<AvatarId>(avatarId(defaultValue));
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -40,18 +46,27 @@ export function AvatarPicker({
     onChange?.(id);
   };
 
+  // `min-w-0` is critical: without it CSS grid/flex parents would let the
+  // picker's intrinsic content width (~5500px of tiles) drive their own
+  // size, blowing out the page layout horizontally.
   return (
-    <>
+    <div className="min-w-0">
       <input type="hidden" name={name} value={selected} />
-      {/* The scroll container extends to BOTH card edges (-mx-6 sm:-mx-8)
-          so partial tiles can bleed off the modal edge without being
-          clipped abruptly. Internal padding (px-6 sm:px-8) keeps the
-          first tile aligned with the section title; pt-2 pb-4 gives the
+      {/* In bleed mode the scroll container extends past the parent's
+          p-6/p-8 padding so partial tiles bleed off the card edge.
+          Otherwise the container is fully contained. py-{2,4} gives the
           selected tile's ring vertical room and the scrollbar bottom
           space (overflow-x:auto implicitly clips the y-axis too once x
           overflows). */}
-      <div ref={scrollRef} className="overflow-x-auto -mx-6 sm:-mx-8">
-        <div className="flex gap-3 sm:gap-4 px-6 sm:px-8 pt-2 pb-4">
+      <div
+        ref={scrollRef}
+        className={`overflow-x-auto ${bleed ? "-mx-6 sm:-mx-8" : ""}`}
+      >
+        <div
+          className={`flex gap-3 sm:gap-4 pt-2 pb-4 ${
+            bleed ? "px-6 sm:px-8" : ""
+          }`}
+        >
           {orderedIds.map((id) => {
             const isSelected = id === selected;
             return (
@@ -99,6 +114,6 @@ export function AvatarPicker({
           })}
         </div>
       </div>
-    </>
+    </div>
   );
 }
