@@ -7,6 +7,7 @@ import {
   getKidCompletionsForPeriods,
   getKidGoalProgress,
   getKidProfiles,
+  getKidRecentCompletions,
 } from "@/lib/v2/data";
 import { computePeriodKey, type Frequency } from "@/lib/time";
 import { FamilyStatsCard } from "./_components/FamilyStatsCard";
@@ -75,7 +76,22 @@ export default async function ParentOverviewPage({
         outstandingByFreq.set(t.frequency, arr);
       }
 
-      return { kid, goal, progress, pending, outstandingByFreq };
+      // Last 8 approved items for the kid — feeds the 'Previously Approved'
+      // strip. Fetch a few extra and filter to approved in case there's a
+      // recent pending row in front.
+      const recent = await getKidRecentCompletions(household.id, kid.id, 30);
+      const recentApproved = recent
+        .filter((c) => c.status === "approved")
+        .slice(0, 8);
+
+      return {
+        kid,
+        goal,
+        progress,
+        pending,
+        outstandingByFreq,
+        recentApproved,
+      };
     }),
   );
 
@@ -99,18 +115,28 @@ export default async function ParentOverviewPage({
           </p>
         </section>
       ) : (
-        kidCards.map(({ kid, goal, progress, pending, outstandingByFreq }) => (
-          <KidOverviewCard
-            key={kid.id}
-            slug={slug}
-            kid={kid}
-            taskById={taskById}
-            pending={pending}
-            outstandingByFreq={outstandingByFreq}
-            goal={goal}
-            progress={progress}
-          />
-        ))
+        kidCards.map(
+          ({
+            kid,
+            goal,
+            progress,
+            pending,
+            outstandingByFreq,
+            recentApproved,
+          }) => (
+            <KidOverviewCard
+              key={kid.id}
+              slug={slug}
+              kid={kid}
+              taskById={taskById}
+              pending={pending}
+              outstandingByFreq={outstandingByFreq}
+              recentApproved={recentApproved}
+              goal={goal}
+              progress={progress}
+            />
+          ),
+        )
       )}
     </div>
   );

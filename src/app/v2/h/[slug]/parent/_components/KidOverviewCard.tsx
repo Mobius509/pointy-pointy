@@ -1,10 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 import type { KidProfile, V2Completion, V2Goal, V2Task } from "@/lib/v2/data";
-import { frequencyLabel, type Frequency } from "@/lib/time";
+import { frequencyLabel, humanizeDate, type Frequency } from "@/lib/time";
 import {
   approveCompletionAction,
   denyCompletionAction,
 } from "../_actions/approvals";
+import { ApprovedRowMenu } from "./ApprovedRowMenu";
 import { BonusForKidButton } from "./BonusForKidButton";
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
   pending: V2Completion[];
   taskById: Map<string, V2Task>;
   outstandingByFreq: Map<Frequency, V2Task[]>;
+  recentApproved: V2Completion[];
   goal: V2Goal | null;
   progress: number;
 };
@@ -60,6 +62,7 @@ export function KidOverviewCard({
   pending,
   taskById,
   outstandingByFreq,
+  recentApproved,
   goal,
   progress,
 }: Props) {
@@ -306,6 +309,40 @@ export function KidOverviewCard({
               {goal.target_points.toLocaleString()}
             </span>
           </div>
+        </div>
+      )}
+      {/* Previously Approved — recent approved completions for this kid.
+          Uses the same white-card-with-rounded-corners treatment as the
+          main card above. */}
+      {recentApproved.length > 0 && (
+        <div className="bg-white rounded-[32px] p-5 sm:p-8 shadow-sm text-[14px]">
+          <SectionPill>Previously Approved</SectionPill>
+          <ul className="mt-3 divide-y divide-slate-100">
+            {recentApproved.map((c) => (
+              <li
+                key={c.id}
+                className="py-3 flex items-center gap-3"
+              >
+                <span className="flex-1 min-w-0">
+                  <span className="block font-medium text-slate-800 truncate">
+                    {c.is_bonus ? "⭐ " : "✅ "}
+                    {c.task_name_snapshot}
+                  </span>
+                  <span className="block text-xs text-[#C3A38A]">
+                    {humanizeDate(c.completed_at)}
+                  </span>
+                </span>
+                <span className="font-semibold text-[#D45B00] tabular-nums">
+                  +{c.points_snapshot}
+                </span>
+                <ApprovedRowMenu
+                  slug={slug}
+                  id={c.id}
+                  label={c.task_name_snapshot}
+                />
+              </li>
+            ))}
+          </ul>
         </div>
       )}
       {/* taskById reserved for future per-task callouts in the pending list. */}
