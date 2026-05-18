@@ -7,7 +7,6 @@ import {
 } from "../_actions/approvals";
 import { ApprovedRowMenu } from "./ApprovedRowMenu";
 import { BonusForKidButton } from "./BonusForKidButton";
-import { SectionPill } from "./ui";
 
 type Props = {
   slug: string;
@@ -20,6 +19,9 @@ type Props = {
   progress: number;
 };
 
+// Always shown in the Outstanding section (even when empty). Bi-weekly and
+// yearly are tacked on only when the household actually uses them.
+const ALWAYS_SHOW_FREQUENCIES: Frequency[] = ["daily", "weekly", "monthly"];
 const FREQUENCY_ORDER: Frequency[] = [
   "daily",
   "weekly",
@@ -46,8 +48,6 @@ function avatarSrc(emoji: string): string {
   }
 }
 
-// Evenly-spaced milestone markers at 20/40/60/80% of the goal, snapped to
-// a round step so the labels read cleanly (e.g. 1000 / 2000 / 3000 / 4000).
 function buildMilestones(target: number): number[] {
   if (target <= 0) return [];
   return [0.2, 0.4, 0.6, 0.8].map((frac) => {
@@ -55,6 +55,26 @@ function buildMilestones(target: number): number[] {
     const step = target >= 1000 ? 100 : target >= 100 ? 10 : 1;
     return Math.round(raw / step) * step;
   });
+}
+
+// Crisp downward chevron used in the Outstanding accordion summaries.
+function ChevronIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      fill="none"
+      className="size-4 text-[#733405] transition-transform group-open:rotate-180"
+    >
+      <path
+        d="M4 6L8 10L12 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 export function KidOverviewCard({
@@ -75,15 +95,21 @@ export function KidOverviewCard({
     : 0;
   const milestones = goal ? buildMilestones(goal.target_points) : [];
 
+  // Pick the frequency groups to render: always-show set, plus any
+  // additional frequencies that actually have outstanding tasks.
+  const visibleFrequencies: Frequency[] = FREQUENCY_ORDER.filter((f) => {
+    if (ALWAYS_SHOW_FREQUENCIES.includes(f)) return true;
+    return (outstandingByFreq.get(f)?.length ?? 0) > 0;
+  });
+
   return (
-    <section className="space-y-3">
-      {/* White card — fully rounded on all 4 corners. */}
+    <section>
+      {/* White card with the kid's profile + To Approve + Outstanding.
+          Fully rounded; the goal strip attaches directly underneath. */}
       <div className="bg-white rounded-[32px] p-5 sm:p-8 shadow-sm">
         <div className="grid gap-6 md:grid-cols-[130px_1fr] text-[14px]">
-          {/* Left column: avatar card → points card (with Award Bonus
-              button straddling the bottom edge). */}
+          {/* Left column: avatar card + points card (with Award Bonus). */}
           <div className="space-y-6">
-            {/* Avatar + name */}
             <div className="bg-[#F9EBE3] rounded-[22px] w-[130px] px-3 pt-5 pb-4 text-center">
               <img
                 src={avatarSrc(kid.avatar_emoji)}
@@ -99,9 +125,6 @@ export function KidOverviewCard({
               </h3>
             </div>
 
-            {/* Points + 'Current Points' caption. Award Bonus button is
-                absolutely positioned at the bottom so it visually straddles
-                the edge of the card. */}
             <div className="relative bg-[#F9EBE3] rounded-[22px] w-[130px] px-3 pt-5 pb-7 text-center mb-5">
               <div
                 className="text-[#D45B00] tabular-nums leading-none"
@@ -121,29 +144,36 @@ export function KidOverviewCard({
             </div>
           </div>
 
-          {/* Right column: To Approve + Outstanding (14px throughout via
-              the parent grid). */}
+          {/* Right column. */}
           <div className="space-y-6">
             {/* To Approve */}
             <div>
-              <SectionPill>To Approve</SectionPill>
+              <h4
+                className="text-[#D45B00]"
+                style={{ fontSize: 14, fontWeight: 600 }}
+              >
+                To Approve
+              </h4>
               {pending.length === 0 ? (
-                <p className="mt-3 text-slate-500 italic">
+                <p className="mt-2 italic" style={{ color: "#C3A38A", fontSize: 12 }}>
                   Nothing waiting on you.
                 </p>
               ) : (
-                <ul className="mt-3 divide-y divide-slate-100">
+                <ul className="mt-2 divide-y divide-[#F9EBE3]">
                   {pending.map((c) => {
                     const isProposal = c.task_id === null && c.is_bonus;
                     return (
                       <li
                         key={c.id}
-                        className="py-3 flex flex-wrap items-center gap-3"
+                        className="py-2 flex flex-wrap items-center gap-3"
                       >
-                        <span className="flex-1 min-w-0 font-medium text-slate-800 truncate">
+                        <span
+                          className="flex-1 min-w-0 truncate"
+                          style={{ color: "#733405", fontSize: 12, fontWeight: 500 }}
+                        >
                           {c.task_name_snapshot}
                           {isProposal && (
-                            <span className="ml-2 text-xs text-amber-700">
+                            <span className="ml-2 text-[11px] text-amber-700">
                               · suggested
                             </span>
                           )}
@@ -154,7 +184,7 @@ export function KidOverviewCard({
                             <input type="hidden" name="id" value={c.id} />
                             <button
                               type="submit"
-                              className="rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-5 py-1.5 transition hover:bg-[#FFF7EE] active:scale-[0.99]"
+                              className="rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-4 py-1 text-[12px] transition hover:bg-[#FFF7EE] active:scale-[0.99]"
                             >
                               Deny
                             </button>
@@ -174,12 +204,12 @@ export function KidOverviewCard({
                                 defaultValue={5}
                                 required
                                 aria-label="Points"
-                                className="w-14 rounded-full border-[#F1D1BD] bg-white px-2 py-1 text-center ring-1 ring-[#F1D1BD] focus:outline-none focus:ring-2 focus:ring-[#D45B00]"
+                                className="w-12 rounded-full border-[#F1D1BD] bg-white px-2 py-1 text-[12px] text-center ring-1 ring-[#F1D1BD] focus:outline-none focus:ring-2 focus:ring-[#D45B00]"
                               />
                             )}
                             <button
                               type="submit"
-                              className="rounded-full bg-[#FBE3CF] text-[#D45B00] font-semibold px-5 py-1.5 transition hover:bg-[#F7D2B3] active:scale-[0.99]"
+                              className="rounded-full bg-[#FBE3CF] text-[#D45B00] font-semibold px-4 py-1 text-[12px] transition hover:bg-[#F7D2B3] active:scale-[0.99]"
                             >
                               Approve
                             </button>
@@ -192,36 +222,49 @@ export function KidOverviewCard({
               )}
             </div>
 
-            {/* Outstanding */}
+            {/* Outstanding — always shows Daily / Weekly / Monthly. */}
             <div>
-              <SectionPill>Outstanding</SectionPill>
-              {outstandingByFreq.size === 0 ? (
-                <p className="mt-3 text-slate-500 italic">
-                  All caught up — nothing outstanding.
-                </p>
-              ) : (
-                <div className="mt-3 divide-y divide-slate-100">
-                  {FREQUENCY_ORDER.filter((f) =>
-                    outstandingByFreq.has(f),
-                  ).map((freq) => {
-                    const list = outstandingByFreq.get(freq)!;
-                    return (
-                      <details key={freq} className="group py-3">
-                        <summary className="flex items-center justify-between cursor-pointer list-none font-medium text-slate-800">
-                          <span>
-                            {list.length} {frequencyLabel(freq)}{" "}
-                            {list.length === 1 ? "Task" : "Tasks"}
-                          </span>
-                          <span
-                            aria-hidden
-                            className="text-slate-400 transition-transform group-open:rotate-180"
-                          >
-                            ▾
-                          </span>
-                        </summary>
-                        <ul className="mt-2 ml-1 space-y-1 text-slate-600">
+              <h4
+                className="text-[#D45B00]"
+                style={{ fontSize: 14, fontWeight: 600 }}
+              >
+                Outstanding
+              </h4>
+              <div className="mt-2 divide-y divide-[#F9EBE3]">
+                {visibleFrequencies.map((freq) => {
+                  const list = outstandingByFreq.get(freq) ?? [];
+                  const defaultOpen = freq === "daily";
+                  return (
+                    <details
+                      key={freq}
+                      className="group py-3"
+                      open={defaultOpen}
+                    >
+                      <summary
+                        className="flex items-center justify-between cursor-pointer list-none font-medium"
+                        style={{ color: "#733405", fontSize: 12 }}
+                      >
+                        <span>
+                          {list.length} {frequencyLabel(freq)}{" "}
+                          {list.length === 1 ? "Task" : "Tasks"}
+                        </span>
+                        <ChevronIcon />
+                      </summary>
+                      {list.length === 0 ? (
+                        <p
+                          className="mt-2 italic"
+                          style={{ color: "#C3A38A", fontSize: 11 }}
+                        >
+                          Nothing in this bucket right now.
+                        </p>
+                      ) : (
+                        <ul className="mt-2 ml-1 space-y-1">
                           {list.map((t) => (
-                            <li key={t.id} className="flex items-center gap-2">
+                            <li
+                              key={t.id}
+                              className="flex items-center gap-2"
+                              style={{ color: "#733405", fontSize: 12 }}
+                            >
                               <span aria-hidden>○</span>
                               <span className="flex-1">{t.name}</span>
                               <span className="font-semibold text-[#D45B00] tabular-nums">
@@ -230,18 +273,19 @@ export function KidOverviewCard({
                             </li>
                           ))}
                         </ul>
-                      </details>
-                    );
-                  })}
-                </div>
-              )}
+                      )}
+                    </details>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Goal strip — inset from the white card edges (mx-4), separate
-          rounded panel with #F0DCCF bg. */}
+      {/* Goal strip — attached directly under the white card (no top
+          margin), indented by 16px from each side. Both the white card
+          above and this strip have rounded corners. */}
       {goal && (
         <div className="mx-4 bg-[#F0DCCF] rounded-[24px] px-6 sm:px-8 py-4 sm:py-5">
           <div className="flex items-center gap-3 sm:gap-5">
@@ -255,7 +299,6 @@ export function KidOverviewCard({
               {goal.name}
             </span>
 
-            {/* Bar with milestone labels absolutely positioned just above */}
             <div className="relative flex-1 min-w-[120px]">
               <div
                 className="absolute inset-x-0 pointer-events-none h-4"
@@ -312,28 +355,35 @@ export function KidOverviewCard({
           </div>
         </div>
       )}
-      {/* Previously Approved — recent approved completions for this kid.
-          Uses the same white-card-with-rounded-corners treatment as the
-          main card above. */}
+
+      {/* Previously Approved — separate card below, spaced. */}
       {recentApproved.length > 0 && (
-        <div className="bg-white rounded-[32px] p-5 sm:p-8 shadow-sm text-[14px]">
-          <SectionPill>Previously Approved</SectionPill>
-          <ul className="mt-3 divide-y divide-slate-100">
+        <div className="mt-6 bg-white rounded-[32px] p-5 sm:p-8 shadow-sm text-[14px]">
+          <h4
+            className="text-[#D45B00]"
+            style={{ fontSize: 14, fontWeight: 600 }}
+          >
+            Previously Approved
+          </h4>
+          <ul className="mt-3 divide-y divide-[#F9EBE3]">
             {recentApproved.map((c) => (
               <li
                 key={c.id}
                 className="py-3 flex items-center gap-3"
               >
                 <span className="flex-1 min-w-0">
-                  <span className="block font-medium text-slate-800 truncate">
+                  <span
+                    className="block font-medium truncate"
+                    style={{ color: "#733405", fontSize: 12 }}
+                  >
                     {c.is_bonus ? "⭐ " : "✅ "}
                     {c.task_name_snapshot}
                   </span>
-                  <span className="block text-xs text-[#C3A38A]">
+                  <span className="block text-[11px] text-[#C3A38A]">
                     {humanizeDate(c.completed_at)}
                   </span>
                 </span>
-                <span className="font-semibold text-[#D45B00] tabular-nums">
+                <span className="font-semibold text-[#D45B00] tabular-nums text-[12px]">
                   +{c.points_snapshot}
                 </span>
                 <ApprovedRowMenu
@@ -351,4 +401,3 @@ export function KidOverviewCard({
     </section>
   );
 }
-
