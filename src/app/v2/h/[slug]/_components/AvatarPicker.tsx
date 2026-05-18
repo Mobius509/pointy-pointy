@@ -47,29 +47,29 @@ export function AvatarPicker({
                 onClick={() => pick(id)}
                 aria-pressed={isSelected}
                 aria-label={`Choose ${id} avatar`}
-                className={`relative flex-shrink-0 rounded-2xl bg-[#FEEFE3] transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#D45B00] ${
+                className={`relative flex-shrink-0 rounded-[24px] bg-[#FEEFE3] transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#D45B00] ${
                   isSelected
                     ? "ring-2 ring-[#D45B00]"
                     : "ring-1 ring-[#F1D1BD] hover:ring-[#E6BA9D]"
                 }`}
-                style={{ width: 116, height: 116 }}
+                style={{ width: 160, height: 160 }}
               >
                 <img
                   src={`/avatars/${id}.png`}
                   alt=""
                   aria-hidden
-                  className="absolute inset-0 w-full h-full object-contain p-2"
+                  className="absolute inset-0 w-full h-full object-contain p-3"
                 />
                 <span
                   aria-hidden
-                  className={`absolute top-2 right-2 inline-flex items-center justify-center size-6 rounded-full ${
+                  className={`absolute top-2.5 right-2.5 inline-flex items-center justify-center size-7 rounded-full ${
                     isSelected
                       ? "bg-[#D45B00] text-white"
                       : "bg-white ring-1 ring-[#F1D1BD]"
                   }`}
                 >
                   {isSelected && (
-                    <svg viewBox="0 0 20 20" fill="none" className="size-3.5">
+                    <svg viewBox="0 0 20 20" fill="none" className="size-4">
                       <path
                         d="M5 10l3 3 7-7"
                         stroke="currentColor"
