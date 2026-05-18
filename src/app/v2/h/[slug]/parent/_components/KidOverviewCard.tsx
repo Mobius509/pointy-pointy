@@ -7,6 +7,7 @@ import {
 } from "../_actions/approvals";
 import { ApprovedRowMenu } from "./ApprovedRowMenu";
 import { BonusForKidButton } from "./BonusForKidButton";
+import { SectionPill } from "./ui";
 
 type Props = {
   slug: string;
@@ -351,10 +352,3 @@ export function KidOverviewCard({
   );
 }
 
-function SectionPill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-block rounded-full bg-[#F9EBE3] text-[#D45B00] px-4 py-1 font-semibold">
-      {children}
-    </span>
-  );
-}

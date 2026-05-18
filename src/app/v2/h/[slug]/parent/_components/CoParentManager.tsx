@@ -52,9 +52,11 @@ export function CoParentManager({
   const generatedUrl = generated ? inviteUrl(generated) : null;
 
   return (
-    <section className="card">
-      <h2 className="text-lg font-bold text-slate-800">Co-parents</h2>
-      <p className="text-sm text-slate-600 mt-1">
+    <section className="card-warm">
+      <span className="inline-block rounded-full bg-[#F9EBE3] text-[#D45B00] px-4 py-1 text-[14px] font-semibold">
+        Co-parents
+      </span>
+      <p className="text-[#C3A38A] mt-2">
         Anyone who joins via your invite link can manage the family with you.
       </p>
 
@@ -65,13 +67,15 @@ export function CoParentManager({
               key={m.user_id}
               className="py-2 flex items-center justify-between gap-3"
             >
-              <span className="text-sm">
-                <span className="font-semibold">{m.email ?? "(no email)"}</span>
+              <span>
+                <span className="font-semibold text-slate-800">
+                  {m.email ?? "(no email)"}
+                </span>
                 <span className="ml-2 rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs">
                   parent
                 </span>
               </span>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-[#C3A38A]">
                 Joined {new Date(m.created_at).toLocaleDateString()}
               </span>
             </li>
@@ -81,7 +85,11 @@ export function CoParentManager({
 
       <form action={onCreate} className="mt-4">
         <input type="hidden" name="slug" value={slug} />
-        <button type="submit" className="btn-primary" disabled={pending}>
+        <button
+          type="submit"
+          className="btn-warm-primary"
+          disabled={pending}
+        >
           {pending ? "Generating…" : "Invite a co-parent"}
         </button>
       </form>
@@ -93,22 +101,22 @@ export function CoParentManager({
       )}
 
       {generatedUrl && (
-        <div className="mt-3 rounded-xl bg-amber-50 ring-1 ring-amber-200 p-3">
-          <p className="text-sm font-semibold text-amber-900">
+        <div className="mt-3 rounded-2xl bg-[#F9EBE3] ring-1 ring-[#F1D1BD] p-3">
+          <p className="text-sm font-semibold text-[#D45B00]">
             New invite link
           </p>
-          <p className="text-xs text-slate-600 mt-1">
+          <p className="text-xs text-[#C3A38A] mt-1">
             Send this URL to your co-parent. It works for 14 days and can only
             be used once.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <code className="flex-1 min-w-0 truncate text-xs bg-white rounded-lg ring-1 ring-slate-200 px-2 py-1">
+            <code className="flex-1 min-w-0 truncate text-xs bg-white rounded-lg ring-1 ring-[#F1D1BD] px-2 py-1 text-slate-700">
               {generatedUrl}
             </code>
             <button
               type="button"
               onClick={() => copyToClipboard(generatedUrl)}
-              className="btn-secondary text-xs"
+              className="btn-warm-secondary text-xs px-3 py-1"
             >
               {copied === generatedUrl ? "Copied!" : "Copy"}
             </button>
@@ -118,7 +126,7 @@ export function CoParentManager({
 
       {invites.length > 0 && (
         <div className="mt-4">
-          <h3 className="text-sm font-semibold text-slate-700">
+          <h3 className="text-[12px] font-semibold text-[#C3A38A] uppercase tracking-wide">
             Pending invites
           </h3>
           <ul className="mt-2 space-y-2">
@@ -127,19 +135,18 @@ export function CoParentManager({
               return (
                 <li
                   key={inv.id}
-                  className="rounded-xl bg-white ring-1 ring-slate-200 p-2 flex flex-wrap items-center gap-2"
+                  className="rounded-2xl bg-white ring-1 ring-[#F1D1BD] p-2 flex flex-wrap items-center gap-2"
                 >
-                  <code className="flex-1 min-w-0 truncate text-xs">
+                  <code className="flex-1 min-w-0 truncate text-xs text-slate-700">
                     {url}
                   </code>
-                  <span className="text-xs text-slate-500">
-                    expires{" "}
-                    {new Date(inv.expires_at).toLocaleDateString()}
+                  <span className="text-xs text-[#C3A38A]">
+                    expires {new Date(inv.expires_at).toLocaleDateString()}
                   </span>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(url)}
-                    className="text-xs font-semibold text-slate-700 hover:underline"
+                    className="text-xs font-semibold text-[#D45B00] hover:underline"
                   >
                     {copied === url ? "Copied!" : "Copy"}
                   </button>

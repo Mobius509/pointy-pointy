@@ -11,6 +11,7 @@ import {
   startNewGoalAction,
   updateGoalAction,
 } from "../_actions/goal";
+import { PageTitle, SectionPill, SectionTitle } from "../_components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +29,15 @@ export default async function ParentGoalPage({
 
   if (kids.length === 0) {
     return (
-      <section className="card">
-        <h2 className="text-lg font-bold text-slate-800">Goals</h2>
-        <p className="text-sm text-slate-600 mt-1">
-          Add at least one kid first under the Kids tab.
-        </p>
-      </section>
+      <div className="space-y-6 text-[14px]">
+        <PageTitle>Goal</PageTitle>
+        <section className="card-warm">
+          <SectionTitle>Goals</SectionTitle>
+          <p className="text-[#C3A38A] mt-2">
+            Add at least one kid first in Settings.
+          </p>
+        </section>
+      </div>
     );
   }
 
@@ -45,7 +49,9 @@ export default async function ParentGoalPage({
     : 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 text-[14px]">
+      <PageTitle>Goal</PageTitle>
+
       <KidPicker
         slug={slug}
         kids={kids}
@@ -54,27 +60,27 @@ export default async function ParentGoalPage({
       />
 
       {active ? (
-        <section className="card">
-          <h2 className="text-lg font-bold text-slate-800">
+        <section className="card-warm">
+          <SectionPill>
             Active goal · {selectedKid.avatar_emoji} {selectedKid.name}
-          </h2>
+          </SectionPill>
           <form
             action={updateGoalAction}
-            className="mt-3 grid gap-3 sm:grid-cols-[1fr_8rem_auto] sm:items-end"
+            className="mt-4 grid gap-3 sm:grid-cols-[1fr_8rem_auto] sm:items-end"
           >
             <input type="hidden" name="slug" value={slug} />
             <input type="hidden" name="id" value={active.id} />
             <div>
-              <label className="label">Name</label>
+              <label className="label-warm">Name</label>
               <input
                 name="name"
                 defaultValue={active.name}
                 required
-                className="input"
+                className="input-warm"
               />
             </div>
             <div>
-              <label className="label">Target points</label>
+              <label className="label-warm">Target points</label>
               <input
                 name="target_points"
                 type="number"
@@ -82,62 +88,60 @@ export default async function ParentGoalPage({
                 max={1_000_000}
                 defaultValue={active.target_points}
                 required
-                className="input"
+                className="input-warm"
               />
             </div>
-            <button type="submit" className="btn-secondary">
+            <button type="submit" className="btn-warm-secondary">
               Save
             </button>
           </form>
-          <div className="mt-3 text-sm text-slate-600">
+          <div className="mt-4 text-[#C3A38A]">
             Progress so far:{" "}
-            <span className="font-semibold tabular-nums">
+            <span className="font-semibold text-[#D45B00] tabular-nums">
               {progress.toLocaleString()} /{" "}
               {active.target_points.toLocaleString()}
             </span>
           </div>
-          <form action={redeemGoalAction} className="mt-3">
+          <form action={redeemGoalAction} className="mt-4">
             <input type="hidden" name="slug" value={slug} />
             <input type="hidden" name="id" value={active.id} />
-            <button type="submit" className="btn-danger">
+            <button type="submit" className="btn-warm-danger">
               Mark redeemed (archive)
             </button>
           </form>
         </section>
       ) : (
-        <section className="card">
-          <h2 className="text-lg font-bold text-slate-800">No active goal</h2>
-          <p className="text-sm text-slate-600 mt-1">
+        <section className="card-warm">
+          <SectionTitle>No active goal</SectionTitle>
+          <p className="text-[#C3A38A] mt-2">
             Start a new one for {selectedKid.name} below.
           </p>
         </section>
       )}
 
-      <section className="card">
-        <h2 className="text-lg font-bold text-slate-800">
-          Start a new goal for {selectedKid.name}
-        </h2>
-        <p className="text-sm text-slate-600 mt-1">
+      <section className="card-warm">
+        <SectionPill>Start a new goal for {selectedKid.name}</SectionPill>
+        <p className="text-[#C3A38A] mt-2">
           Closes any active goal and starts fresh. Past completions stay in
           the activity log.
         </p>
         <form
           action={startNewGoalAction}
-          className="mt-3 grid gap-3 sm:grid-cols-[1fr_8rem_auto] sm:items-end"
+          className="mt-4 grid gap-3 sm:grid-cols-[1fr_8rem_auto] sm:items-end"
         >
           <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="kid_profile_id" value={selectedKid.id} />
           <div>
-            <label className="label">Name</label>
+            <label className="label-warm">Name</label>
             <input
               name="name"
               required
-              className="input"
+              className="input-warm"
               placeholder="Trip to the trampoline park"
             />
           </div>
           <div>
-            <label className="label">Target points</label>
+            <label className="label-warm">Target points</label>
             <input
               name="target_points"
               type="number"
@@ -145,37 +149,35 @@ export default async function ParentGoalPage({
               max={1_000_000}
               defaultValue={1000}
               required
-              className="input"
+              className="input-warm"
             />
           </div>
-          <button type="submit" className="btn-primary">
+          <button type="submit" className="btn-warm-primary">
             Start goal
           </button>
         </form>
       </section>
 
-      <section className="card">
-        <h2 className="text-lg font-bold text-slate-800 mb-2">
-          History · {selectedKid.name}
-        </h2>
+      <section className="card-warm">
+        <SectionPill>History · {selectedKid.name}</SectionPill>
         {all.length === 0 ? (
-          <p className="text-sm text-slate-500 italic">No goals yet.</p>
+          <p className="mt-4 text-slate-500 italic">No goals yet.</p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="mt-4 divide-y divide-slate-100">
             {all.map((g) => (
               <li
                 key={g.id}
                 className="flex items-center justify-between gap-3 py-2"
               >
                 <span className="min-w-0">
-                  <span className="font-medium">{g.name}</span>
-                  <span className="block text-xs text-slate-500">
+                  <span className="font-medium text-slate-800">{g.name}</span>
+                  <span className="block text-xs text-[#C3A38A]">
                     Started {new Date(g.started_at).toLocaleDateString()}
                     {g.redeemed_at &&
                       ` · Redeemed ${new Date(g.redeemed_at).toLocaleDateString()}`}
                   </span>
                 </span>
-                <span className="text-sm font-semibold tabular-nums">
+                <span className="font-semibold text-[#D45B00] tabular-nums">
                   {g.target_points.toLocaleString()} pts
                   {!g.redeemed_at && (
                     <span className="ml-2 rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs">
@@ -205,17 +207,17 @@ function KidPicker({
 }) {
   if (kids.length <= 1) return null;
   return (
-    <section className="card">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-semibold text-slate-700">Viewing:</span>
+    <section className="card-warm">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-[#C3A38A]">Viewing:</span>
         {kids.map((k) => (
           <Link
             key={k.id}
             href={`/v2/h/${slug}${basePath}?kid=${k.id}`}
             className={`rounded-full px-3 py-1 ring-1 transition ${
               k.id === selectedId
-                ? "bg-brand-100 text-brand-700 ring-brand-300 font-semibold"
-                : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50"
+                ? "bg-[#FBE3CF] text-[#D45B00] ring-[#F1D1BD] font-semibold"
+                : "bg-white text-[#C3A38A] ring-[#F1D1BD] hover:bg-[#FFF7EE]"
             }`}
           >
             {k.avatar_emoji} {k.name}

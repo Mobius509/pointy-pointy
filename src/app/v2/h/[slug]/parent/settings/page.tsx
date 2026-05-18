@@ -4,6 +4,7 @@ import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
 import { updateHouseholdSettingsAction } from "../_actions/settings";
 import { CoParentManager } from "../_components/CoParentManager";
 import { KidsAdmin } from "../_components/KidsAdmin";
+import { PageTitle, SectionPill } from "../_components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -33,23 +34,25 @@ export default async function ParentSettingsPage({
   const kids = await getKidProfiles(household.id);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 text-[14px]">
+      <PageTitle>Settings</PageTitle>
+
       <KidsAdmin slug={slug} kids={kids} />
 
       <CoParentManager slug={slug} members={members} invites={invites} />
 
-      <section className="card">
-        <h2 className="text-lg font-bold text-slate-800">Family settings</h2>
-        <p className="text-sm text-slate-600 mt-1">
+      <section className="card-warm">
+        <SectionPill>Family settings</SectionPill>
+        <p className="text-[#C3A38A] mt-2">
           The daily checklist resets at midnight in this timezone.
         </p>
         <form
           action={updateHouseholdSettingsAction}
-          className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
         >
           <input type="hidden" name="slug" value={slug} />
           <div>
-            <label className="label" htmlFor="settings-name">
+            <label className="label-warm" htmlFor="settings-name">
               Family name
             </label>
             <input
@@ -57,11 +60,11 @@ export default async function ParentSettingsPage({
               name="name"
               defaultValue={household.name}
               maxLength={80}
-              className="input"
+              className="input-warm"
             />
           </div>
           <div>
-            <label className="label" htmlFor="settings-tz">
+            <label className="label-warm" htmlFor="settings-tz">
               Timezone (IANA)
             </label>
             <input
@@ -70,7 +73,7 @@ export default async function ParentSettingsPage({
               defaultValue={household.timezone}
               required
               list="settings-tz-options"
-              className="input"
+              className="input-warm"
             />
             <datalist id="settings-tz-options">
               {COMMON_TIMEZONES.map((tz) => (
@@ -78,7 +81,7 @@ export default async function ParentSettingsPage({
               ))}
             </datalist>
           </div>
-          <button type="submit" className="btn-primary">
+          <button type="submit" className="btn-warm-primary">
             Save
           </button>
         </form>

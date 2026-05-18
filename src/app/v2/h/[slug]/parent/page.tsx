@@ -12,6 +12,7 @@ import {
 import { computePeriodKey, type Frequency } from "@/lib/time";
 import { FamilyStatsCard } from "./_components/FamilyStatsCard";
 import { KidOverviewCard } from "./_components/KidOverviewCard";
+import { PageTitle } from "./_components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -97,9 +98,7 @@ export default async function ParentOverviewPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-[32px] font-medium text-[#D45B00] leading-none">
-        Overview
-      </h1>
+      <PageTitle>Overview</PageTitle>
 
       <FamilyStatsCard
         householdName={household.name}

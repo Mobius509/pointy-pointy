@@ -8,6 +8,7 @@ import {
   moveTaskUpAction,
   updateTaskAction,
 } from "../_actions/tasks";
+import { PageTitle, SectionPill, SectionTitle } from "../_components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -29,42 +30,45 @@ export default async function ParentTasksPage({
   const tasks = (await getAllTasks(household.id)).filter((t) => t.recurring);
 
   return (
-    <div className="space-y-4">
-      <section className="card">
-        <h2 className="text-lg font-bold text-slate-800">Add a task</h2>
-        <p className="text-sm text-slate-600 mt-1">
+    <div className="space-y-6 text-[14px]">
+      <PageTitle>Tasks</PageTitle>
+
+      {/* Add task */}
+      <section className="card-warm">
+        <SectionTitle>Add a task</SectionTitle>
+        <p className="text-[#C3A38A] mt-1">
           New tasks appear on every kid&apos;s daily checklist.
         </p>
         <form
           action={createTaskAction}
-          className="mt-3 grid gap-3 sm:grid-cols-2"
+          className="mt-4 grid gap-3 sm:grid-cols-2"
         >
           <input type="hidden" name="slug" value={slug} />
           <div className="sm:col-span-2">
-            <label className="label" htmlFor="new-name">
+            <label className="label-warm" htmlFor="new-name">
               Name
             </label>
             <input
               id="new-name"
               name="name"
               required
-              className="input"
+              className="input-warm"
               placeholder="Make bed"
             />
           </div>
           <div className="sm:col-span-2">
-            <label className="label" htmlFor="new-desc">
+            <label className="label-warm" htmlFor="new-desc">
               Description (optional)
             </label>
             <input
               id="new-desc"
               name="description"
-              className="input"
+              className="input-warm"
               placeholder="Pillows up, blanket smooth"
             />
           </div>
           <div>
-            <label className="label" htmlFor="new-points">
+            <label className="label-warm" htmlFor="new-points">
               Points
             </label>
             <input
@@ -75,18 +79,18 @@ export default async function ParentTasksPage({
               max={1000}
               defaultValue={5}
               required
-              className="input"
+              className="input-warm"
             />
           </div>
           <div>
-            <label className="label" htmlFor="new-frequency">
+            <label className="label-warm" htmlFor="new-frequency">
               How often
             </label>
             <select
               id="new-frequency"
               name="frequency"
               defaultValue="daily"
-              className="input"
+              className="input-warm"
             >
               {FREQUENCY_OPTIONS.map((f) => (
                 <option key={f} value={f}>
@@ -96,31 +100,32 @@ export default async function ParentTasksPage({
             </select>
           </div>
           <div className="sm:col-span-2">
-            <button type="submit" className="btn-primary">
+            <button type="submit" className="btn-warm-primary">
               Add task
             </button>
           </div>
         </form>
       </section>
 
-      <section className="card">
-        <h2 className="text-lg font-bold text-slate-800 mb-3">Daily tasks</h2>
+      {/* Existing tasks */}
+      <section className="card-warm">
+        <SectionPill>Daily tasks</SectionPill>
         {tasks.length === 0 ? (
-          <p className="text-sm text-slate-500 italic">No daily tasks yet.</p>
+          <p className="mt-3 text-slate-500 italic">No daily tasks yet.</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="mt-4 space-y-3">
             {tasks.map((t, i) => {
               const isFirst = i === 0;
               const isLast = i === tasks.length - 1;
               return (
                 <li
                   key={t.id}
-                  className={`rounded-xl ring-1 ring-slate-200 p-3 ${
-                    t.active ? "bg-white" : "bg-slate-50 opacity-70"
+                  className={`rounded-2xl ring-1 ring-[#F1D1BD]/70 p-3 ${
+                    t.active ? "bg-[#FFFDF9]" : "bg-[#F9EBE3]/40 opacity-70"
                   }`}
                 >
                   <div className="flex items-start gap-2">
-                    <div className="flex flex-col gap-1 pt-6">
+                    <div className="flex flex-col gap-1 pt-7">
                       <form action={moveTaskUpAction}>
                         <input type="hidden" name="slug" value={slug} />
                         <input type="hidden" name="id" value={t.id} />
@@ -128,7 +133,7 @@ export default async function ParentTasksPage({
                           type="submit"
                           disabled={isFirst}
                           aria-label="Move up"
-                          className="grid place-items-center size-7 rounded-lg ring-1 ring-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="grid place-items-center size-7 rounded-lg ring-1 ring-[#F1D1BD] bg-white text-[#D45B00] hover:bg-[#FFF7EE] disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           ▲
                         </button>
@@ -140,7 +145,7 @@ export default async function ParentTasksPage({
                           type="submit"
                           disabled={isLast}
                           aria-label="Move down"
-                          className="grid place-items-center size-7 rounded-lg ring-1 ring-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="grid place-items-center size-7 rounded-lg ring-1 ring-[#F1D1BD] bg-white text-[#D45B00] hover:bg-[#FFF7EE] disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           ▼
                         </button>
@@ -154,37 +159,37 @@ export default async function ParentTasksPage({
                       <input type="hidden" name="slug" value={slug} />
                       <input type="hidden" name="id" value={t.id} />
                       <div>
-                        <label className="label">Name</label>
+                        <label className="label-warm">Name</label>
                         <input
                           name="name"
                           defaultValue={t.name}
                           required
-                          className="input"
+                          className="input-warm"
                         />
                         <input
                           name="description"
                           defaultValue={t.description ?? ""}
                           placeholder="Description (optional)"
-                          className="input mt-2"
+                          className="input-warm mt-2"
                         />
                       </div>
                       <div>
-                        <label className="label">Points</label>
+                        <label className="label-warm">Points</label>
                         <input
                           name="points"
                           type="number"
                           min={0}
                           max={1000}
                           defaultValue={t.points}
-                          className="input"
+                          className="input-warm"
                         />
                       </div>
                       <div>
-                        <label className="label">How often</label>
+                        <label className="label-warm">How often</label>
                         <select
                           name="frequency"
                           defaultValue={t.frequency}
-                          className="input"
+                          className="input-warm"
                         >
                           {FREQUENCY_OPTIONS.map((f) => (
                             <option key={f} value={f}>
@@ -193,16 +198,17 @@ export default async function ParentTasksPage({
                           ))}
                         </select>
                       </div>
-                      <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <label className="flex items-center gap-2 text-[#D45B00] font-semibold">
                         <input
                           type="checkbox"
                           name="active"
                           defaultChecked={t.active}
+                          className="accent-[#D45B00]"
                         />
                         Active
                       </label>
                       <div className="sm:col-span-4 flex gap-2">
-                        <button type="submit" className="btn-secondary">
+                        <button type="submit" className="btn-warm-primary">
                           Save
                         </button>
                       </div>
