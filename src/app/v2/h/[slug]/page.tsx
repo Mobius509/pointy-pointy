@@ -10,18 +10,44 @@ import {
   getKidGoalProgress,
   getKidProfile,
   getKidProfiles,
-  getKidRecentCompletions,
   getKidTodayCompletions,
 } from "@/lib/v2/data";
-import { computePeriodKey, frequencyLabel, type Frequency } from "@/lib/time";
-import { ProgressVisual } from "@/app/_components/ProgressVisual";
-import { RecentActivity } from "@/app/_components/RecentActivity";
+import { computePeriodKey } from "@/lib/time";
 import { KidPicker } from "./_components/KidPicker";
 import { V2DailyChecklist } from "./_components/V2DailyChecklist";
 import { V2KidProposal } from "./_components/V2KidProposal";
 import { kidSignOutAction } from "./_actions/kid-session";
 
 export const dynamic = "force-dynamic";
+
+// Map the kid's avatar_emoji to the matching emoji PNG. Falls back to the
+// dog illustration when the picker hasn't been built yet.
+function avatarSrc(emoji: string): string {
+  switch (emoji) {
+    case "🐶":
+      return "/emojis/dog1.png";
+    case "🐱":
+      return "/emojis/cat1.png";
+    case "🦄":
+      return "/emojis/unicorn.png";
+    case "🐯":
+      return "/emojis/cat2.png";
+    case "🐸":
+    case "🦖":
+      return "/emojis/gecko.png";
+    default:
+      return "/emojis/dog1.png";
+  }
+}
+
+function buildMilestones(target: number): number[] {
+  if (target <= 0) return [];
+  return [0.2, 0.4, 0.8].map((frac) => {
+    const raw = target * frac;
+    const step = target >= 1000 ? 100 : target >= 100 ? 10 : 1;
+    return Math.round(raw / step) * step;
+  });
+}
 
 export default async function KidViewPage({
   params,
@@ -46,18 +72,18 @@ export default async function KidViewPage({
   if (!sessionMatchesHousehold) {
     const kids = await getKidProfiles(household.id as string);
     return (
-      <Shell householdName={household.name as string}>
-        <div className="max-w-2xl mx-auto">
+      <Shell slug={slug}>
+        <div className="max-w-2xl mx-auto pt-6">
           {kids.length === 0 ? (
-            <div className="card text-center">
-              <p className="text-slate-700">
+            <div className="bg-white rounded-[32px] p-6 text-center">
+              <p className="text-[#733405]">
                 A parent hasn&apos;t set up any kids yet. Ask them to log in
                 and add you!
               </p>
             </div>
           ) : (
             <>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-orange-700 text-center mb-4">
+              <h1 className="text-[32px] font-medium text-[#D45B00] text-center mb-4">
                 Who&apos;s here?
               </h1>
               <KidPicker slug={household.slug as string} kids={kids} />
@@ -68,7 +94,7 @@ export default async function KidViewPage({
     );
   }
 
-  // Signed in — render this kid's checklist.
+  // Signed in — load the kid + today's checklist.
   const kid = await getKidProfile(session.kidProfileId);
   if (!kid) {
     await clearKidSession();
@@ -81,19 +107,11 @@ export default async function KidViewPage({
     kid.id,
     household.timezone as string,
   );
-  const recent = await getKidRecentCompletions(
-    household.id as string,
-    kid.id,
-    8,
-  );
   const goal = await getActiveGoalForKid(household.id as string, kid.id);
   const progress = goal
     ? await getKidGoalProgress(household.id as string, kid.id, goal)
     : 0;
 
-  // For each task frequency in use, compute the current period key and look
-  // up completions sitting in any of those periods. That covers all
-  // cadences (daily/weekly/biweekly/monthly/yearly) in one query.
   const tz = household.timezone as string;
   const taskPeriodKey = new Map<string, string>(
     tasks.map((t) => [t.id, computePeriodKey(t.frequency, tz)]),
@@ -128,55 +146,152 @@ export default async function KidViewPage({
     (c) => c.is_bonus && c.task_id === null && c.status === "pending",
   );
 
+  const fullName = `${kid.name} ${household.name as string}`;
+  const remaining = goal
+    ? Math.max(0, goal.target_points - progress)
+    : 0;
+  const goalPct = goal
+    ? Math.min(100, Math.round((progress / Math.max(1, goal.target_points)) * 100))
+    : 0;
+  const milestones = goal ? buildMilestones(goal.target_points) : [];
+
   return (
-    <Shell householdName={household.name as string}>
-      <div className="space-y-6 pt-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-2xl" aria-hidden>
-              {kid.avatar_emoji}
-            </span>
-            <span className="font-bold text-slate-800">Hi, {kid.name}!</span>
+    <Shell slug={slug}>
+      <div className="space-y-6">
+        {/* Profile row: avatar (left), name + family (left text), points (right) */}
+        <div className="flex flex-wrap items-center gap-4 px-2">
+          <img
+            src={avatarSrc(kid.avatar_emoji)}
+            alt=""
+            aria-hidden
+            className="w-28 h-28 sm:w-32 sm:h-32 object-contain"
+          />
+          <div className="flex-1 min-w-0">
+            <h1
+              className="text-[#D45B00] leading-tight"
+              style={{ fontSize: 26, fontWeight: 700 }}
+            >
+              {fullName}
+            </h1>
           </div>
-          <form action={kidSignOutAction}>
-            <input type="hidden" name="slug" value={slug} />
-            <button type="submit" className="btn-secondary">
-              Sign out
-            </button>
-          </form>
+          <div className="text-right">
+            <div
+              className="text-[#D45B00] tabular-nums leading-none"
+              style={{ fontSize: 40, fontWeight: 500 }}
+            >
+              {progress.toLocaleString()}
+            </div>
+            <div
+              className="mt-2 text-[#C3A38A]"
+              style={{ fontSize: 12, fontWeight: 500 }}
+            >
+              Current Points
+            </div>
+          </div>
         </div>
 
-        {goal ? (
-          <ProgressVisual
-            goalName={goal.name}
-            current={progress}
-            target={goal.target_points}
-          />
-        ) : (
-          <section className="card text-center">
-            <p className="text-slate-600">
-              No active goal yet. Ask a parent to set one up!
-            </p>
+        {/* Progress card */}
+        {goal && (
+          <section className="bg-white rounded-[32px] p-5 sm:p-7 shadow-sm">
+            <div className="flex items-center gap-3 sm:gap-5">
+              <span className="text-3xl sm:text-4xl flex-shrink-0" aria-hidden>
+                🐶
+              </span>
+              <span
+                className="flex-shrink-0 text-[#733405]"
+                style={{ fontSize: 16, fontWeight: 500 }}
+              >
+                {goal.name}
+              </span>
+
+              <div className="relative flex-1 min-w-[160px]">
+                {/* Milestone labels above */}
+                <div
+                  className="absolute inset-x-0 pointer-events-none h-4"
+                  style={{ bottom: "calc(100% + 6px)" }}
+                >
+                  {milestones.map((m) => {
+                    const left = Math.min(
+                      100,
+                      Math.max(0, (m / goal.target_points) * 100),
+                    );
+                    return (
+                      <span
+                        key={m}
+                        className="absolute -translate-x-1/2 text-[#C3A38A] tabular-nums"
+                        style={{ left: `${left}%`, fontSize: 12, fontWeight: 500 }}
+                      >
+                        {m.toLocaleString()}
+                      </span>
+                    );
+                  })}
+                </div>
+                {/* The track */}
+                <div className="relative h-5 rounded-full bg-[#F1D1BD]">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-[#D45B00] rounded-full transition-[width] duration-500 ease-out"
+                    style={{ width: `${goalPct}%` }}
+                  />
+                  {/* Current-points pill sits at the end of the orange fill */}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 rounded-full bg-[#D45B00] text-white tabular-nums font-semibold px-3 py-1 leading-none"
+                    style={{
+                      left: `calc(${goalPct}% - 1.6rem)`,
+                      fontSize: 12,
+                      minWidth: "3rem",
+                      textAlign: "center",
+                    }}
+                  >
+                    {progress.toLocaleString()}
+                  </div>
+                  {milestones.map((m) => {
+                    const left = Math.min(
+                      100,
+                      (m / goal.target_points) * 100,
+                    );
+                    return (
+                      <span
+                        key={m}
+                        aria-hidden
+                        className="absolute size-1.5 rounded-full bg-[#D45B00] -translate-x-1/2 -translate-y-1/2"
+                        style={{ left: `${left}%`, top: "50%" }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              <span
+                className="flex-shrink-0 text-[#733405] tabular-nums"
+                style={{ fontSize: 16, fontWeight: 500 }}
+              >
+                {goal.target_points.toLocaleString()}
+              </span>
+            </div>
+            <div className="mt-3 flex justify-between">
+              <span
+                className="text-[#D45B00]"
+                style={{ fontSize: 12, fontWeight: 600 }}
+              >
+                {goalPct}% There
+              </span>
+              <span
+                className="text-[#D45B00] tabular-nums"
+                style={{ fontSize: 12, fontWeight: 600 }}
+              >
+                {remaining.toLocaleString()} points to go
+              </span>
+            </div>
           </section>
         )}
 
-        <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
-          <div className="space-y-6">
-            <section className="card">
-              <h3 className="text-xl font-bold text-slate-800 mb-3">
-                Today&apos;s tasks
-              </h3>
-              <V2DailyChecklist slug={slug} items={items} />
-            </section>
+        {/* Tasks list */}
+        <section className="bg-white rounded-[32px] p-5 sm:p-8 shadow-sm">
+          <V2DailyChecklist slug={slug} items={items} />
+        </section>
 
-            <V2KidProposal slug={slug} pendingProposals={pendingProposals} />
-          </div>
-
-          <section className="card md:self-start">
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Recent</h3>
-            <RecentActivity items={recent} />
-          </section>
-        </div>
+        {/* Did something extra? */}
+        <V2KidProposal slug={slug} pendingProposals={pendingProposals} />
       </div>
     </Shell>
   );
@@ -184,27 +299,57 @@ export default async function KidViewPage({
 
 function Shell({
   children,
-  householdName,
+  slug,
 }: {
   children: React.ReactNode;
-  householdName: string;
+  slug: string;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-amber-50 via-orange-50 to-rose-50">
-      <header className="px-4 sm:px-6 pt-5 sm:pt-6 pb-3 sm:pb-4 max-w-6xl mx-auto w-full flex items-center justify-between">
-        <Link href="/v2" className="inline-block group">
+    <div
+      className="relative min-h-screen flex flex-col"
+      style={{
+        background: "linear-gradient(180deg, #E6BA9D 0%, #FFF2E9 100%)",
+      }}
+    >
+      <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-6 sm:px-8 py-5">
+        <Link href="/v2" aria-label="Pointy Points home" className="group">
           <img
-            src="/logos/Logo_Full.svg"
+            src="/logos/logo_badge.svg"
             alt="Pointy Points"
-            className="h-10 sm:h-12 w-auto group-hover:animate-wiggle"
+            width={28}
+            height={42}
+            className="w-7 h-[42px] group-hover:animate-wiggle"
           />
         </Link>
-        <span className="text-sm font-semibold text-slate-700">
-          {householdName}
-        </span>
+        <span aria-hidden />
+        <div className="justify-self-end flex items-center gap-5 text-sm">
+          <Link
+            href={`/v2/h/${slug}/parent/settings`}
+            className="inline-flex items-center gap-1 font-semibold text-[#D45B00] underline underline-offset-4 hover:opacity-80"
+          >
+            Settings
+            <svg
+              aria-hidden
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              className="size-3.5 opacity-80"
+            >
+              <path d="M8 1.5a1 1 0 00-1 1v.7a5.5 5.5 0 00-1.5.62l-.5-.49a1 1 0 00-1.42 0l-.7.71a1 1 0 000 1.41l.5.5A5.5 5.5 0 003.2 7H2.5a1 1 0 00-1 1v1a1 1 0 001 1h.7a5.5 5.5 0 00.62 1.5l-.49.5a1 1 0 000 1.42l.71.7a1 1 0 001.41 0l.5-.5A5.5 5.5 0 007 12.8v.7a1 1 0 001 1h1a1 1 0 001-1v-.7a5.5 5.5 0 001.5-.62l.5.49a1 1 0 001.42 0l.7-.71a1 1 0 000-1.41l-.5-.5A5.5 5.5 0 0012.8 9h.7a1 1 0 001-1V7a1 1 0 00-1-1h-.7a5.5 5.5 0 00-.62-1.5l.49-.5a1 1 0 000-1.42l-.71-.7a1 1 0 00-1.41 0l-.5.5A5.5 5.5 0 009 3.2V2.5a1 1 0 00-1-1zm.5 5a2 2 0 110 4 2 2 0 010-4z" />
+            </svg>
+          </Link>
+          <form action={kidSignOutAction}>
+            <input type="hidden" name="slug" value={slug} />
+            <button
+              type="submit"
+              className="font-semibold text-[#D45B00] underline underline-offset-4 hover:opacity-80"
+            >
+              Sign Out
+            </button>
+          </form>
+        </div>
       </header>
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 pb-24 pt-2">
-        {children}
+      <main className="flex-1 px-4 sm:px-6 pb-10">
+        <div className="mx-auto w-full max-w-4xl">{children}</div>
       </main>
     </div>
   );

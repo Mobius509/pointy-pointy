@@ -118,6 +118,44 @@ export async function cancelPendingTaskForTodayAction(
   return { ok: true };
 }
 
+// Kid pulls an APPROVED task back — deletes the completion entirely, so the
+// task flips back to open and the points come off the goal. Useful when a
+// parent approved by mistake or the kid changes their mind about counting it.
+export async function recallApprovedTaskAction(
+  slug: string,
+  taskId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let s;
+  try {
+    s = await requireKidSessionForSlug(slug);
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+
+  const { data: task } = await supabaseV2Admin
+    .from("tasks")
+    .select("frequency")
+    .eq("id", taskId)
+    .eq("household_id", s.householdId)
+    .maybeSingle();
+  const frequency = (task?.frequency ?? "daily") as Frequency;
+  const periodKey = computePeriodKey(frequency, s.timezone);
+
+  const { error } = await supabaseV2Admin
+    .from("completions")
+    .delete()
+    .eq("household_id", s.householdId)
+    .eq("kid_profile_id", s.kidProfileId)
+    .eq("task_id", taskId)
+    .eq("period_key", periodKey)
+    .eq("status", "approved");
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/v2/h/${slug}`);
+  revalidatePath(`/v2/h/${slug}/parent`);
+  return { ok: true };
+}
+
 export async function submitKidProposalAction(
   slug: string,
   name: string,

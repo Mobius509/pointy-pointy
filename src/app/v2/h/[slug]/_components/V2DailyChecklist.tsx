@@ -6,6 +6,7 @@ import { frequencyLabel, type Frequency } from "@/lib/time";
 import {
   cancelPendingTaskForTodayAction,
   completeTaskForTodayAction,
+  recallApprovedTaskAction,
 } from "../_actions/kid-completions";
 
 type ItemState = "open" | "pending" | "approved";
@@ -32,23 +33,8 @@ export function V2DailyChecklist({
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  const onCheck = (item: Item) => {
-    const current = state[item.id];
-    if (current === "approved") return;
+  const submit = (item: Item) => {
     setError(null);
-
-    if (current === "pending") {
-      setState((s) => ({ ...s, [item.id]: "open" }));
-      startTransition(async () => {
-        const res = await cancelPendingTaskForTodayAction(slug, item.id);
-        if (!res.ok) {
-          setState((s) => ({ ...s, [item.id]: "pending" }));
-          setError(res.error);
-        }
-      });
-      return;
-    }
-
     setState((s) => ({ ...s, [item.id]: "pending" }));
     celebrate();
     startTransition(async () => {
@@ -60,90 +46,144 @@ export function V2DailyChecklist({
     });
   };
 
+  const cancelPending = (item: Item) => {
+    setError(null);
+    setState((s) => ({ ...s, [item.id]: "open" }));
+    startTransition(async () => {
+      const res = await cancelPendingTaskForTodayAction(slug, item.id);
+      if (!res.ok) {
+        setState((s) => ({ ...s, [item.id]: "pending" }));
+        setError(res.error);
+      }
+    });
+  };
+
+  const recall = (item: Item) => {
+    setError(null);
+    setState((s) => ({ ...s, [item.id]: "open" }));
+    startTransition(async () => {
+      const res = await recallApprovedTaskAction(slug, item.id);
+      if (!res.ok) {
+        setState((s) => ({ ...s, [item.id]: "approved" }));
+        setError(res.error);
+      }
+    });
+  };
+
   if (items.length === 0) {
     return (
-      <p className="text-sm text-slate-500 italic">
+      <p className="text-sm text-[#C3A38A] italic">
         No daily tasks yet — ask a parent to add some!
       </p>
     );
   }
 
   return (
-    <div className="space-y-2">
+    <div>
       {error && (
-        <div className="rounded-xl bg-rose-50 ring-1 ring-rose-200 text-rose-800 px-3 py-2 text-sm">
+        <div className="mb-3 rounded-xl bg-rose-50 ring-1 ring-rose-200 text-rose-800 px-3 py-2 text-sm">
           {error}
         </div>
       )}
-      {items.map((item) => {
-        const s = state[item.id];
-        const isOpen = s === "open";
-        const isPending = s === "pending";
-        const isApproved = s === "approved";
-
-        const containerClass = isApproved
-          ? "bg-emerald-50 ring-emerald-200 text-slate-500"
-          : isPending
-            ? "bg-amber-50 ring-amber-200 hover:ring-amber-300 active:scale-[0.99]"
-            : "bg-white ring-slate-200 hover:ring-brand-300 hover:shadow-sm active:scale-[0.99]";
-
-        const iconClass = isApproved
-          ? "bg-emerald-500 text-white animate-pop-in"
-          : isPending
-            ? "bg-amber-400 text-white animate-pop-in"
-            : "bg-slate-100 text-slate-400";
-
-        const icon = isApproved ? "✓" : isPending ? "⏳" : "○";
-
-        const badgeClass = isApproved
-          ? "bg-emerald-100 text-emerald-700"
-          : isPending
-            ? "bg-amber-100 text-amber-700"
-            : "bg-brand-100 text-brand-700";
-
-        return (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onCheck(item)}
-            disabled={isApproved}
-            className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 ring-1 transition text-left ${containerClass}`}
-          >
-            <span
-              className={`flex-shrink-0 size-9 rounded-full grid place-items-center text-xl transition ${iconClass}`}
-              aria-hidden
+      <ul className="divide-y divide-[#F9EBE3]">
+        {items.map((item) => {
+          const s = state[item.id];
+          return (
+            <li
+              key={item.id}
+              className="py-4 flex flex-wrap items-center gap-4"
             >
-              {icon}
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="flex items-center gap-2">
-                <span
-                  className={`font-semibold ${
-                    isApproved ? "line-through" : ""
-                  }`}
+              {/* Left: frequency + points pills */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="inline-flex items-center justify-center rounded-full bg-[#FBE3CF] text-[#D45B00] text-[12px] font-semibold px-3 py-1">
+                  {frequencyLabel(item.frequency)}
+                </span>
+                <span className="inline-flex items-center justify-center rounded-full bg-[#E0F2FE] text-[#0369A1] text-[12px] font-semibold px-3 py-1 tabular-nums">
+                  +{item.points}
+                </span>
+              </div>
+
+              {/* Middle: task name + description */}
+              <div className="flex-1 min-w-0">
+                <div
+                  className="text-[#733405] font-semibold leading-tight"
+                  style={{ fontSize: 18 }}
                 >
                   {item.name}
-                </span>
-                {item.frequency !== "daily" && (
-                  <span className="rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
-                    {frequencyLabel(item.frequency)}
-                  </span>
+                </div>
+                {item.description && (
+                  <div className="text-[#D45B00] text-[12px] mt-0.5 leading-tight">
+                    {item.description}
+                  </div>
                 )}
-              </span>
-              <span className="block text-xs text-slate-500">
-                {isPending
-                  ? "Waiting for a parent to confirm. Tap to cancel."
-                  : (item.description ?? "")}
-              </span>
-            </span>
-            <span
-              className={`flex-shrink-0 rounded-full px-3 py-1 text-sm font-bold tabular-nums ${badgeClass}`}
-            >
-              +{item.points}
-            </span>
-          </button>
-        );
-      })}
+              </div>
+
+              {/* Right: state-aware action */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {s === "open" && (
+                  <button
+                    type="button"
+                    onClick={() => submit(item)}
+                    className="rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-6 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99]"
+                  >
+                    Done
+                  </button>
+                )}
+
+                {s === "pending" && (
+                  <button
+                    type="button"
+                    onClick={() => cancelPending(item)}
+                    aria-label="Tap to cancel"
+                    className="inline-flex items-center gap-2 rounded-full bg-[#FEF3C7] text-[#92400E] font-semibold px-4 py-2 text-[14px] transition hover:bg-[#FDE68A] active:scale-[0.99]"
+                  >
+                    <span
+                      aria-hidden
+                      className="inline-flex items-center justify-center size-5 rounded-full bg-[#F59E0B] text-white"
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="size-3">
+                        <circle cx="5" cy="10" r="1.5" />
+                        <circle cx="10" cy="10" r="1.5" />
+                        <circle cx="15" cy="10" r="1.5" />
+                      </svg>
+                    </span>
+                    Pending
+                  </button>
+                )}
+
+                {s === "approved" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => recall(item)}
+                      className="rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-5 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99]"
+                    >
+                      Recall
+                    </button>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-[#D1FAE5] text-[#065F46] font-semibold px-4 py-2 text-[14px]">
+                      <span
+                        aria-hidden
+                        className="inline-flex items-center justify-center size-5 rounded-full bg-[#10B981] text-white"
+                      >
+                        <svg viewBox="0 0 20 20" fill="none" className="size-3">
+                          <path
+                            d="M5 10l3 3 7-7"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                      Approved!
+                    </span>
+                  </>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

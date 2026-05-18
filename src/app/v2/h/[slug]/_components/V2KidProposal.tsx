@@ -44,33 +44,42 @@ export function V2KidProposal({
   };
 
   return (
-    <section className="card">
-      <h3 className="text-xl font-bold text-slate-800">
-        Did something extra?
-      </h3>
-      <p className="text-sm text-slate-600 mt-1">
-        Tell a parent what you did — they&apos;ll decide how many points it
-        deserves.
-      </p>
+    <section className="bg-white rounded-[32px] p-5 sm:p-8 shadow-sm">
+      <div className="grid gap-6 md:grid-cols-[1fr_2fr] items-start">
+        <div>
+          <h3
+            className="text-[#733405] leading-tight"
+            style={{ fontSize: 18, fontWeight: 700 }}
+          >
+            Did something extra?
+          </h3>
+          <p className="mt-2 text-[#D45B00] text-[12px] font-semibold leading-snug">
+            Tell a parent what you did — they&apos;ll decide how many points
+            it deserves.
+          </p>
+        </div>
 
-      <form onSubmit={onSubmit} className="mt-3 flex flex-wrap gap-2">
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={120}
-          placeholder="e.g. helped Mom carry groceries"
-          className="input flex-1 min-w-[14rem]"
-          disabled={pending}
-        />
-        <button
-          type="submit"
-          className="btn-primary"
-          disabled={pending || !name.trim()}
+        <form
+          onSubmit={onSubmit}
+          className="relative rounded-2xl bg-[#FAF4F0] ring-1 ring-[#F1D1BD] min-h-[110px] p-4"
         >
-          {pending ? "Sending…" : "Send to parents"}
-        </button>
-      </form>
+          <textarea
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={120}
+            placeholder="What was it?"
+            disabled={pending}
+            className="w-full min-h-[80px] bg-transparent border-0 resize-none focus:outline-none text-[14px] text-[#733405] placeholder:text-[#C3A38A] pr-32"
+          />
+          <button
+            type="submit"
+            disabled={pending || !name.trim()}
+            className="absolute bottom-3 right-3 rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-4 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {pending ? "Sending…" : "Send to Parents"}
+          </button>
+        </form>
+      </div>
 
       {error && (
         <p className="mt-2 text-sm text-rose-600" role="alert">
@@ -85,16 +94,16 @@ export function V2KidProposal({
 
       {pendingProposals.length > 0 && (
         <div className="mt-4">
-          <h4 className="text-sm font-semibold text-slate-700 mb-2">
+          <h4 className="text-[12px] font-semibold text-[#C3A38A] uppercase tracking-wide">
             Waiting on:
           </h4>
-          <ul className="space-y-2">
+          <ul className="mt-2 space-y-2">
             {pendingProposals.map((p) => (
               <li
                 key={p.id}
-                className="rounded-xl bg-amber-50 ring-1 ring-amber-200 px-3 py-2 flex items-center gap-2"
+                className="rounded-xl bg-[#FEF3C7] ring-1 ring-amber-200 px-3 py-2 flex items-center gap-2"
               >
-                <span className="flex-1 min-w-0 truncate">
+                <span className="flex-1 min-w-0 truncate text-[#92400E] text-[14px] font-medium">
                   ⏳ {p.task_name_snapshot}
                 </span>
                 <button
