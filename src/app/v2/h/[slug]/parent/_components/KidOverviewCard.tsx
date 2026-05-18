@@ -25,8 +25,6 @@ const FREQUENCY_ORDER: Frequency[] = [
   "yearly",
 ];
 
-// Avatar PNG placeholder — when we ship the avatar picker, this maps the
-// kid's chosen icon to its image. For now, all kids show the dog illustration.
 function avatarSrc(emoji: string): string {
   switch (emoji) {
     case "🐶":
@@ -45,13 +43,12 @@ function avatarSrc(emoji: string): string {
   }
 }
 
-// Build evenly-spaced milestone markers between 0 and the goal target. We
-// pick the 20/40/60/80% points and round to the nearest 'nice' number.
+// Evenly-spaced milestone markers at 20/40/60/80% of the goal, snapped to
+// a round step so the labels read cleanly (e.g. 1000 / 2000 / 3000 / 4000).
 function buildMilestones(target: number): number[] {
   if (target <= 0) return [];
   return [0.2, 0.4, 0.6, 0.8].map((frac) => {
     const raw = target * frac;
-    // Snap to a sensible step (10/100/1000) so the markers are readable.
     const step = target >= 1000 ? 100 : target >= 100 ? 10 : 1;
     return Math.round(raw / step) * step;
   });
@@ -75,35 +72,33 @@ export function KidOverviewCard({
   const milestones = goal ? buildMilestones(goal.target_points) : [];
 
   return (
-    <section>
-      {/* White card — rounded only at the TOP. The goal strip below shares
-          the bottom radius so they read as one continuous panel. */}
-      <div className="bg-white rounded-t-[32px] p-5 sm:p-8 shadow-sm">
-        <div className="grid gap-6 md:grid-cols-[210px_1fr]">
-          {/* Left: avatar card → points card → Award Bonus */}
-          <div className="space-y-3">
+    <section className="space-y-3">
+      {/* White card — fully rounded on all 4 corners. */}
+      <div className="bg-white rounded-[32px] p-5 sm:p-8 shadow-sm">
+        <div className="grid gap-6 md:grid-cols-[130px_1fr] text-[14px]">
+          {/* Left column: avatar card → points card (with Award Bonus
+              button straddling the bottom edge). */}
+          <div className="space-y-6">
             {/* Avatar + name */}
-            <div className="bg-[#F9EBE3] rounded-[28px] px-4 pt-6 pb-5 text-center">
+            <div className="bg-[#F9EBE3] rounded-[22px] w-[130px] px-3 pt-5 pb-4 text-center">
               <img
                 src={avatarSrc(kid.avatar_emoji)}
                 alt=""
                 aria-hidden
-                className="mx-auto w-32 h-32 object-contain"
+                className="mx-auto w-24 h-24 object-contain"
               />
               <h3
-                className="mt-3 text-[#D45B00]"
-                style={{
-                  fontSize: 22,
-                  fontWeight: 500,
-                  lineHeight: 1.1,
-                }}
+                className="mt-2 text-[#D45B00]"
+                style={{ fontSize: 22, fontWeight: 500, lineHeight: 1.1 }}
               >
                 {kid.name}
               </h3>
             </div>
 
-            {/* Points + Current Points label + Award Bonus pill */}
-            <div className="bg-[#F9EBE3] rounded-[28px] px-4 pt-6 pb-4 text-center">
+            {/* Points + 'Current Points' caption. Award Bonus button is
+                absolutely positioned at the bottom so it visually straddles
+                the edge of the card. */}
+            <div className="relative bg-[#F9EBE3] rounded-[22px] w-[130px] px-3 pt-5 pb-7 text-center mb-5">
               <div
                 className="text-[#D45B00] tabular-nums leading-none"
                 style={{ fontSize: 40, fontWeight: 500 }}
@@ -116,19 +111,20 @@ export function KidOverviewCard({
               >
                 Current Points
               </div>
-              <div className="mt-4 flex justify-center">
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-0 translate-y-1/2">
                 <BonusForKidButton slug={slug} kid={kid} />
               </div>
             </div>
           </div>
 
-          {/* Right: To Approve + Outstanding */}
+          {/* Right column: To Approve + Outstanding (14px throughout via
+              the parent grid). */}
           <div className="space-y-6">
             {/* To Approve */}
             <div>
               <SectionPill>To Approve</SectionPill>
               {pending.length === 0 ? (
-                <p className="mt-3 text-sm text-slate-500 italic">
+                <p className="mt-3 text-slate-500 italic">
                   Nothing waiting on you.
                 </p>
               ) : (
@@ -140,7 +136,7 @@ export function KidOverviewCard({
                         key={c.id}
                         className="py-3 flex flex-wrap items-center gap-3"
                       >
-                        <span className="flex-1 min-w-0 text-base font-medium text-slate-800 truncate">
+                        <span className="flex-1 min-w-0 font-medium text-slate-800 truncate">
                           {c.task_name_snapshot}
                           {isProposal && (
                             <span className="ml-2 text-xs text-amber-700">
@@ -154,7 +150,7 @@ export function KidOverviewCard({
                             <input type="hidden" name="id" value={c.id} />
                             <button
                               type="submit"
-                              className="rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-6 py-2 text-sm transition hover:bg-[#FFF7EE] active:scale-[0.99]"
+                              className="rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-5 py-1.5 transition hover:bg-[#FFF7EE] active:scale-[0.99]"
                             >
                               Deny
                             </button>
@@ -174,12 +170,12 @@ export function KidOverviewCard({
                                 defaultValue={5}
                                 required
                                 aria-label="Points"
-                                className="w-16 rounded-full border-[#F1D1BD] bg-white px-2 py-1.5 text-sm text-center ring-1 ring-[#F1D1BD] focus:outline-none focus:ring-2 focus:ring-[#D45B00]"
+                                className="w-14 rounded-full border-[#F1D1BD] bg-white px-2 py-1 text-center ring-1 ring-[#F1D1BD] focus:outline-none focus:ring-2 focus:ring-[#D45B00]"
                               />
                             )}
                             <button
                               type="submit"
-                              className="rounded-full bg-[#FBE3CF] text-[#D45B00] font-semibold px-6 py-2 text-sm transition hover:bg-[#F7D2B3] active:scale-[0.99]"
+                              className="rounded-full bg-[#FBE3CF] text-[#D45B00] font-semibold px-5 py-1.5 transition hover:bg-[#F7D2B3] active:scale-[0.99]"
                             >
                               Approve
                             </button>
@@ -192,11 +188,11 @@ export function KidOverviewCard({
               )}
             </div>
 
-            {/* Outstanding (active tasks not yet acted on this period) */}
+            {/* Outstanding */}
             <div>
               <SectionPill>Outstanding</SectionPill>
               {outstandingByFreq.size === 0 ? (
-                <p className="mt-3 text-sm text-slate-500 italic">
+                <p className="mt-3 text-slate-500 italic">
                   All caught up — nothing outstanding.
                 </p>
               ) : (
@@ -207,7 +203,7 @@ export function KidOverviewCard({
                     const list = outstandingByFreq.get(freq)!;
                     return (
                       <details key={freq} className="group py-3">
-                        <summary className="flex items-center justify-between cursor-pointer list-none text-base font-medium text-slate-800">
+                        <summary className="flex items-center justify-between cursor-pointer list-none font-medium text-slate-800">
                           <span>
                             {list.length} {frequencyLabel(freq)}{" "}
                             {list.length === 1 ? "Task" : "Tasks"}
@@ -219,12 +215,12 @@ export function KidOverviewCard({
                             ▾
                           </span>
                         </summary>
-                        <ul className="mt-2 ml-1 space-y-1 text-sm text-slate-600">
+                        <ul className="mt-2 ml-1 space-y-1 text-slate-600">
                           {list.map((t) => (
                             <li key={t.id} className="flex items-center gap-2">
                               <span aria-hidden>○</span>
                               <span className="flex-1">{t.name}</span>
-                              <span className="text-xs font-semibold text-[#D45B00] tabular-nums">
+                              <span className="font-semibold text-[#D45B00] tabular-nums">
                                 +{t.points}
                               </span>
                             </li>
@@ -240,11 +236,10 @@ export function KidOverviewCard({
         </div>
       </div>
 
-      {/* Goal strip — attached to the white card above (no top radius). The
-          dog emoji + goal name + milestone-marked progress + target sit in
-          one row. */}
+      {/* Goal strip — inset from the white card edges (mx-4), separate
+          rounded panel with #F0DCCF bg. */}
       {goal && (
-        <div className="bg-[#F0DCCF] rounded-b-[32px] px-5 sm:px-8 pt-6 pb-5">
+        <div className="mx-4 bg-[#F0DCCF] rounded-[24px] px-6 sm:px-8 py-4 sm:py-5">
           <div className="flex items-center gap-3 sm:gap-5">
             <span className="text-3xl sm:text-4xl flex-shrink-0" aria-hidden>
               🐶
@@ -256,18 +251,21 @@ export function KidOverviewCard({
               {goal.name}
             </span>
 
-            <div className="flex-1 min-w-[120px]">
-              {/* Milestone labels above the bar */}
-              <div className="relative h-5 mb-1">
+            {/* Bar with milestone labels absolutely positioned just above */}
+            <div className="relative flex-1 min-w-[120px]">
+              <div
+                className="absolute inset-x-0 pointer-events-none h-4"
+                style={{ bottom: "calc(100% + 2px)" }}
+              >
                 {milestones.map((m) => {
                   const left = Math.min(
-                    98,
-                    (m / goal.target_points) * 100,
+                    100,
+                    Math.max(0, (m / goal.target_points) * 100),
                   );
                   return (
                     <span
                       key={m}
-                      className="absolute -translate-x-1/2 text-xs text-[#D45B00] tabular-nums"
+                      className="absolute -translate-x-1/2 text-[#D45B00] tabular-nums"
                       style={{
                         left: `${left}%`,
                         fontSize: 12,
@@ -279,7 +277,6 @@ export function KidOverviewCard({
                   );
                 })}
               </div>
-              {/* The progress bar */}
               <div className="relative h-3 rounded-full bg-white/70">
                 <div
                   className="absolute inset-y-0 left-0 bg-[#D45B00] rounded-full transition-[width] duration-500 ease-out"
@@ -295,10 +292,7 @@ export function KidOverviewCard({
                       key={m}
                       aria-hidden
                       className="absolute size-1.5 rounded-full bg-[#D45B00] -translate-x-1/2 -translate-y-1/2"
-                      style={{
-                        left: `${left}%`,
-                        top: "50%",
-                      }}
+                      style={{ left: `${left}%`, top: "50%" }}
                     />
                   );
                 })}
@@ -314,8 +308,7 @@ export function KidOverviewCard({
           </div>
         </div>
       )}
-      {/* taskById is unused here right now but kept in the prop type for
-          future use (e.g. surfacing per-task description in the pending list). */}
+      {/* taskById reserved for future per-task callouts in the pending list. */}
       {void taskById}
     </section>
   );
@@ -323,7 +316,7 @@ export function KidOverviewCard({
 
 function SectionPill({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-block rounded-full bg-[#F9EBE3] text-[#D45B00] px-4 py-1 text-sm font-semibold">
+    <span className="inline-block rounded-full bg-[#F9EBE3] text-[#D45B00] px-4 py-1 font-semibold">
       {children}
     </span>
   );

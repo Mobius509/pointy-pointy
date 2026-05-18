@@ -16,7 +16,7 @@ export function FamilyStatsCard({
 }: Props) {
   return (
     <section className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
-      <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2 text-[18px]">
+      <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2 text-[14px]">
         <Row label="Family" value={householdName} />
         <Row
           label="Tasks"
