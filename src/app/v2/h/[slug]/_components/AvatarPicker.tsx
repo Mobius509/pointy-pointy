@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AVATAR_IDS, avatarId, type AvatarId } from "@/lib/avatar";
 
 // Horizontal scrollable grid of selectable avatars. Mirrors the modal in
@@ -21,6 +21,19 @@ export function AvatarPicker({
   onChange?: (avatar: AvatarId) => void;
 }) {
   const [selected, setSelected] = useState<AvatarId>(avatarId(defaultValue));
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Render the currently-selected avatar first, then the rest in their
+  // original order. Memoized so picking the same avatar doesn't churn.
+  const orderedIds = useMemo(() => {
+    return [selected, ...AVATAR_IDS.filter((id) => id !== selected)];
+  }, [selected]);
+
+  // After the order changes (i.e. a new avatar was picked), snap the
+  // scroll container back to the start so the now-first tile is visible.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+  }, [selected]);
 
   const pick = (id: AvatarId) => {
     setSelected(id);
@@ -33,12 +46,13 @@ export function AvatarPicker({
       {/* The scroll container extends to BOTH card edges (-mx-6 sm:-mx-8)
           so partial tiles can bleed off the modal edge without being
           clipped abruptly. Internal padding (px-6 sm:px-8) keeps the
-          first tile aligned with the section title; py-2 gives the
-          selected tile's ring vertical room (overflow-x:auto implicitly
-          clips the y-axis too once x overflows). */}
-      <div className="overflow-x-auto -mx-6 sm:-mx-8">
+          first tile aligned with the section title; pt-2 pb-4 gives the
+          selected tile's ring vertical room and the scrollbar bottom
+          space (overflow-x:auto implicitly clips the y-axis too once x
+          overflows). */}
+      <div ref={scrollRef} className="overflow-x-auto -mx-6 sm:-mx-8">
         <div className="flex gap-3 sm:gap-4 px-6 sm:px-8 pt-2 pb-4">
-          {AVATAR_IDS.map((id) => {
+          {orderedIds.map((id) => {
             const isSelected = id === selected;
             return (
               <button
