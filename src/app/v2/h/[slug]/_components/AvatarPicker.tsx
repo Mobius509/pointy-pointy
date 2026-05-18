@@ -30,12 +30,14 @@ export function AvatarPicker({
   return (
     <>
       <input type="hidden" name={name} value={selected} />
-      {/* Negative right margin lets the row of avatars scroll past the
-          card's right padding — partial tiles bleed off the edge instead
-          of getting visually clipped. Left edge still aligns with the
-          section title. */}
-      <div className="overflow-x-auto -mr-6 sm:-mr-8">
-        <div className="flex gap-3 sm:gap-4 pb-1 pr-6 sm:pr-8">
+      {/* The scroll container extends to BOTH card edges (-mx-6 sm:-mx-8)
+          so partial tiles can bleed off the modal edge without being
+          clipped abruptly. Internal padding (px-6 sm:px-8) keeps the
+          first tile aligned with the section title; py-2 gives the
+          selected tile's ring vertical room (overflow-x:auto implicitly
+          clips the y-axis too once x overflows). */}
+      <div className="overflow-x-auto -mx-6 sm:-mx-8">
+        <div className="flex gap-3 sm:gap-4 px-6 sm:px-8 py-2">
           {AVATAR_IDS.map((id) => {
             const isSelected = id === selected;
             return (
