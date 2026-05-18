@@ -157,42 +157,47 @@ export default async function KidViewPage({
 
   return (
     <Shell slug={slug}>
-      {/* Outer translucent panel — same shell treatment as the parent admin
-          (mx-auto max-w-5xl bg-white/60 backdrop-blur-md rounded-[32px]).
-          The avatar overlaps the top edge: half above, half inside. */}
-      <div className="relative bg-white/60 backdrop-blur-md rounded-[32px] p-6 sm:p-10 mt-16 sm:mt-20">
-        <img
-          src={avatarSrc(kid.avatar_emoji)}
-          alt=""
-          aria-hidden
-          className="absolute left-6 sm:left-10 top-0 -translate-y-1/2 w-28 h-28 sm:w-32 sm:h-32 object-contain z-10"
-        />
-
-        <div className="space-y-6">
-          {/* Profile row — left padding clears the overlapping avatar. */}
-          <div className="flex flex-wrap items-center gap-4 pl-32 sm:pl-40">
+      {/* Outer translucent panel — same shell treatment as the parent admin.
+          The avatar sits half above / half inside the panel; the name
+          appears directly beneath it, and 'Current Points' sits in the
+          top-right of the panel. */}
+      <div className="relative bg-white/60 backdrop-blur-md rounded-[32px] px-6 sm:px-10 pt-0 pb-6 sm:pb-10 mt-24 sm:mt-28">
+        <div className="grid grid-cols-[auto_1fr] gap-x-4 sm:gap-x-6 items-start">
+          {/* Left column: avatar (negative top margin pushes it half above
+              the panel) + the kid's full name directly beneath. */}
+          <div className="flex flex-col items-start">
+            <img
+              src={avatarSrc(kid.avatar_emoji)}
+              alt=""
+              aria-hidden
+              className="block w-40 h-40 -mt-20 object-contain"
+            />
             <h1
-              className="flex-1 min-w-0 text-[#D45B00] leading-tight"
+              className="mt-1 text-[#D45B00] leading-tight"
               style={{ fontSize: 26, fontWeight: 700 }}
             >
               {fullName}
             </h1>
-            <div className="text-right">
-              <div
-                className="text-[#D45B00] tabular-nums leading-none"
-                style={{ fontSize: 40, fontWeight: 500 }}
-              >
-                {progress.toLocaleString()}
-              </div>
-              <div
-                className="mt-2 text-[#C3A38A]"
-                style={{ fontSize: 12, fontWeight: 500 }}
-              >
-                Current Points
-              </div>
-            </div>
           </div>
 
+          {/* Right column: 'Current Points'. */}
+          <div className="text-right pt-4 sm:pt-6">
+            <div
+              className="text-[#D45B00] tabular-nums leading-none"
+              style={{ fontSize: 40, fontWeight: 500 }}
+            >
+              {progress.toLocaleString()}
+            </div>
+            <div
+              className="mt-2 text-[#C3A38A]"
+              style={{ fontSize: 12, fontWeight: 500 }}
+            >
+              Current Points
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-6">
           {/* Progress card */}
         {goal && (
           <section className="bg-white rounded-[32px] p-5 sm:p-7 shadow-sm">
@@ -207,60 +212,92 @@ export default async function KidViewPage({
                 {goal.name}
               </span>
 
-              <div className="relative flex-1 min-w-[160px]">
-                {/* Milestone labels above */}
-                <div
-                  className="absolute inset-x-0 pointer-events-none h-4"
-                  style={{ bottom: "calc(100% + 6px)" }}
-                >
-                  {milestones.map((m) => {
-                    const left = Math.min(
-                      100,
-                      Math.max(0, (m / goal.target_points) * 100),
-                    );
-                    return (
-                      <span
-                        key={m}
-                        className="absolute -translate-x-1/2 text-[#C3A38A] tabular-nums"
-                        style={{ left: `${left}%`, fontSize: 12, fontWeight: 500 }}
+              {/* Bar + footer live in one flex-1 wrapper so the footer
+                  inherits the bar's horizontal coordinate space. */}
+              <div className="flex-1 min-w-[160px]">
+                <div className="relative">
+                  {/* Milestone labels above the bar. */}
+                  <div
+                    className="absolute inset-x-0 pointer-events-none h-4"
+                    style={{ bottom: "calc(100% + 6px)" }}
+                  >
+                    {milestones.map((m) => {
+                      const left = Math.min(
+                        100,
+                        Math.max(0, (m / goal.target_points) * 100),
+                      );
+                      return (
+                        <span
+                          key={m}
+                          className="absolute -translate-x-1/2 text-[#C3A38A] tabular-nums"
+                          style={{
+                            left: `${left}%`,
+                            fontSize: 12,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {m.toLocaleString()}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  {/* Track: 32px tall outer pill with a 24px tall fill
+                      vertically centered. */}
+                  <div className="relative h-8 rounded-full bg-[#F1D1BD] flex items-center px-1">
+                    <div className="relative h-6 w-full">
+                      <div
+                        className="absolute inset-y-0 left-0 bg-[#D45B00] rounded-full transition-[width] duration-500 ease-out"
+                        style={{ width: `${goalPct}%` }}
+                      />
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 rounded-full bg-[#D45B00] text-white tabular-nums font-semibold px-3 py-1 leading-none"
+                        style={{
+                          left: `calc(${goalPct}% - 1.6rem)`,
+                          fontSize: 12,
+                          minWidth: "3rem",
+                          textAlign: "center",
+                        }}
                       >
-                        {m.toLocaleString()}
-                      </span>
-                    );
-                  })}
+                        {progress.toLocaleString()}
+                      </div>
+                      {milestones.map((m) => {
+                        const left = Math.min(
+                          100,
+                          (m / goal.target_points) * 100,
+                        );
+                        return (
+                          <span
+                            key={m}
+                            aria-hidden
+                            className="absolute size-1.5 rounded-full bg-[#D45B00] -translate-x-1/2 -translate-y-1/2"
+                            style={{ left: `${left}%`, top: "50%" }}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-                {/* The track */}
-                <div className="relative h-5 rounded-full bg-[#F1D1BD]">
-                  <div
-                    className="absolute inset-y-0 left-0 bg-[#D45B00] rounded-full transition-[width] duration-500 ease-out"
-                    style={{ width: `${goalPct}%` }}
-                  />
-                  {/* Current-points pill sits at the end of the orange fill */}
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 rounded-full bg-[#D45B00] text-white tabular-nums font-semibold px-3 py-1 leading-none"
+
+                {/* Footer — '% There' lines up with the pill on the bar
+                    (same horizontal position as the orange fill's end);
+                    'points to go' anchors to the right of the track. */}
+                <div className="relative mt-3 h-4">
+                  <span
+                    className="absolute -translate-x-1/2 text-[#D45B00] tabular-nums"
                     style={{
-                      left: `calc(${goalPct}% - 1.6rem)`,
+                      left: `${goalPct}%`,
                       fontSize: 12,
-                      minWidth: "3rem",
-                      textAlign: "center",
+                      fontWeight: 600,
                     }}
                   >
-                    {progress.toLocaleString()}
-                  </div>
-                  {milestones.map((m) => {
-                    const left = Math.min(
-                      100,
-                      (m / goal.target_points) * 100,
-                    );
-                    return (
-                      <span
-                        key={m}
-                        aria-hidden
-                        className="absolute size-1.5 rounded-full bg-[#D45B00] -translate-x-1/2 -translate-y-1/2"
-                        style={{ left: `${left}%`, top: "50%" }}
-                      />
-                    );
-                  })}
+                    {goalPct}% There
+                  </span>
+                  <span
+                    className="absolute right-0 text-[#D45B00] tabular-nums"
+                    style={{ fontSize: 12, fontWeight: 600 }}
+                  >
+                    {remaining.toLocaleString()} points to go
+                  </span>
                 </div>
               </div>
 
@@ -269,20 +306,6 @@ export default async function KidViewPage({
                 style={{ fontSize: 16, fontWeight: 500 }}
               >
                 {goal.target_points.toLocaleString()}
-              </span>
-            </div>
-            <div className="mt-3 flex justify-between">
-              <span
-                className="text-[#D45B00]"
-                style={{ fontSize: 12, fontWeight: 600 }}
-              >
-                {goalPct}% There
-              </span>
-              <span
-                className="text-[#D45B00] tabular-nums"
-                style={{ fontSize: 12, fontWeight: 600 }}
-              >
-                {remaining.toLocaleString()} points to go
               </span>
             </div>
           </section>
