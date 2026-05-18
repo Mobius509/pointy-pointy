@@ -157,40 +157,43 @@ export default async function KidViewPage({
 
   return (
     <Shell slug={slug}>
-      <div className="space-y-6">
-        {/* Profile row: avatar (left), name + family (left text), points (right) */}
-        <div className="flex flex-wrap items-center gap-4 px-2">
-          <img
-            src={avatarSrc(kid.avatar_emoji)}
-            alt=""
-            aria-hidden
-            className="w-28 h-28 sm:w-32 sm:h-32 object-contain"
-          />
-          <div className="flex-1 min-w-0">
+      {/* Outer translucent panel — same shell treatment as the parent admin
+          (mx-auto max-w-5xl bg-white/60 backdrop-blur-md rounded-[32px]).
+          The avatar overlaps the top edge: half above, half inside. */}
+      <div className="relative bg-white/60 backdrop-blur-md rounded-[32px] p-6 sm:p-10 mt-16 sm:mt-20">
+        <img
+          src={avatarSrc(kid.avatar_emoji)}
+          alt=""
+          aria-hidden
+          className="absolute left-6 sm:left-10 top-0 -translate-y-1/2 w-28 h-28 sm:w-32 sm:h-32 object-contain z-10"
+        />
+
+        <div className="space-y-6">
+          {/* Profile row — left padding clears the overlapping avatar. */}
+          <div className="flex flex-wrap items-center gap-4 pl-32 sm:pl-40">
             <h1
-              className="text-[#D45B00] leading-tight"
+              className="flex-1 min-w-0 text-[#D45B00] leading-tight"
               style={{ fontSize: 26, fontWeight: 700 }}
             >
               {fullName}
             </h1>
-          </div>
-          <div className="text-right">
-            <div
-              className="text-[#D45B00] tabular-nums leading-none"
-              style={{ fontSize: 40, fontWeight: 500 }}
-            >
-              {progress.toLocaleString()}
+            <div className="text-right">
+              <div
+                className="text-[#D45B00] tabular-nums leading-none"
+                style={{ fontSize: 40, fontWeight: 500 }}
+              >
+                {progress.toLocaleString()}
+              </div>
+              <div
+                className="mt-2 text-[#C3A38A]"
+                style={{ fontSize: 12, fontWeight: 500 }}
+              >
+                Current Points
+              </div>
             </div>
-            <div
-              className="mt-2 text-[#C3A38A]"
-              style={{ fontSize: 12, fontWeight: 500 }}
-            >
-              Current Points
-            </div>
           </div>
-        </div>
 
-        {/* Progress card */}
+          {/* Progress card */}
         {goal && (
           <section className="bg-white rounded-[32px] p-5 sm:p-7 shadow-sm">
             <div className="flex items-center gap-3 sm:gap-5">
@@ -290,8 +293,9 @@ export default async function KidViewPage({
           <V2DailyChecklist slug={slug} items={items} />
         </section>
 
-        {/* Did something extra? */}
-        <V2KidProposal slug={slug} pendingProposals={pendingProposals} />
+          {/* Did something extra? */}
+          <V2KidProposal slug={slug} pendingProposals={pendingProposals} />
+        </div>
       </div>
     </Shell>
   );
@@ -349,7 +353,7 @@ function Shell({
         </div>
       </header>
       <main className="flex-1 px-4 sm:px-6 pb-10">
-        <div className="mx-auto w-full max-w-4xl">{children}</div>
+        <div className="mx-auto w-full max-w-5xl">{children}</div>
       </main>
     </div>
   );
