@@ -46,25 +46,31 @@ export function AvatarPicker({
     onChange?.(id);
   };
 
-  // `min-w-0` is critical: without it CSS grid/flex parents would let the
-  // picker's intrinsic content width (~5500px of tiles) drive their own
-  // size, blowing out the page layout horizontally.
+  // `min-w-0` + `max-w-full` on the outer wrapper are critical: without
+  // them CSS grid/flex parents would let the picker's intrinsic content
+  // width (~5500px of tiles) drive their own size, blowing out the page
+  // layout horizontally. `overflow-hidden` is a final belt-and-suspenders
+  // clip so even if a wrapper somewhere grows past parent bounds, the
+  // picker can't visibly leak.
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 max-w-full overflow-hidden">
       <input type="hidden" name={name} value={selected} />
       {/* In bleed mode the scroll container extends past the parent's
           p-6/p-8 padding so partial tiles bleed off the card edge.
-          Otherwise the container is fully contained. py-{2,4} gives the
-          selected tile's ring vertical room and the scrollbar bottom
-          space (overflow-x:auto implicitly clips the y-axis too once x
-          overflows). */}
+          Otherwise the container is fully contained. px-1 in non-bleed
+          mode gives the first/last tile's ring (2px) horizontal room
+          inside the scroll viewport. py-{2,4} gives vertical ring room
+          and bottom scrollbar space (overflow-x:auto implicitly clips
+          the y-axis too once x overflows). */}
       <div
         ref={scrollRef}
-        className={`overflow-x-auto ${bleed ? "-mx-6 sm:-mx-8" : ""}`}
+        className={`overflow-x-auto max-w-full ${
+          bleed ? "-mx-6 sm:-mx-8" : ""
+        }`}
       >
         <div
-          className={`flex gap-3 sm:gap-4 pt-2 pb-4 ${
-            bleed ? "px-6 sm:px-8" : ""
+          className={`flex w-max gap-3 sm:gap-4 pt-2 pb-4 ${
+            bleed ? "px-6 sm:px-8" : "px-1"
           }`}
         >
           {orderedIds.map((id) => {
