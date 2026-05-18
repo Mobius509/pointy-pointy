@@ -37,7 +37,7 @@ export function AvatarPicker({
           selected tile's ring vertical room (overflow-x:auto implicitly
           clips the y-axis too once x overflows). */}
       <div className="overflow-x-auto -mx-6 sm:-mx-8">
-        <div className="flex gap-3 sm:gap-4 px-6 sm:px-8 py-2">
+        <div className="flex gap-3 sm:gap-4 px-6 sm:px-8 pt-2 pb-4">
           {AVATAR_IDS.map((id) => {
             const isSelected = id === selected;
             return (
