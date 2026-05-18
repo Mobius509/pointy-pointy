@@ -8,6 +8,7 @@ import {
   getTodayCompletions,
 } from "@/lib/data";
 import { ProgressVisual } from "@/app/_components/ProgressVisual";
+import { ActivityRowMenu } from "./_components/ActivityRowMenu";
 import { PendingApprovals } from "./_components/PendingApprovals";
 
 export const dynamic = "force-dynamic";
@@ -71,9 +72,9 @@ export default async function ParentOverview() {
               return (
                 <li
                   key={c.id}
-                  className="flex items-center justify-between gap-3 py-2"
+                  className="flex items-center justify-between gap-2 py-2"
                 >
-                  <span className="truncate">
+                  <span className="truncate flex-1 min-w-0">
                     {icon}
                     {c.task_name_snapshot}
                   </span>
@@ -86,6 +87,10 @@ export default async function ParentOverview() {
                   >
                     +{c.points_snapshot}
                   </span>
+                  <ActivityRowMenu
+                    id={c.id}
+                    label={c.task_name_snapshot}
+                  />
                 </li>
               );
             })}
