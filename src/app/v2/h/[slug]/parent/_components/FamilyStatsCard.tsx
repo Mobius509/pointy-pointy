@@ -57,7 +57,7 @@ function Row({
 }) {
   return (
     <div className="flex items-center gap-6">
-      <dt className="w-16 shrink-0 text-[#6B5805]">{label}</dt>
+      <dt className="w-16 shrink-0 text-[#C3A38A]">{label}</dt>
       <dd className="font-semibold text-[#D45B00]">{value}</dd>
     </div>
   );
