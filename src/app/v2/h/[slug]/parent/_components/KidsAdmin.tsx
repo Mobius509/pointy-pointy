@@ -1,4 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 import type { KidProfile } from "@/lib/v2/data";
+import { avatarSrc } from "@/lib/avatar";
 import {
   createKidAction,
   deleteKidAction,
@@ -6,8 +8,7 @@ import {
   updateKidAction,
 } from "../_actions/kids";
 import { SectionPill } from "./ui";
-
-const AVATARS = ["🐶", "🐱", "🦊", "🐻", "🦄", "🐯", "🐸", "🐵", "🦖", "🐧"];
+import { AvatarPicker } from "../../_components/AvatarPicker";
 
 // Settings sub-card for managing kids (create / edit / reset PIN / delete).
 export function KidsAdmin({
@@ -24,71 +25,60 @@ export function KidsAdmin({
         <p className="text-[#C3A38A] mt-2">
           Each kid gets their own PIN to unlock their checklist.
         </p>
-        <form action={createKidAction} className="mt-4 grid gap-3 sm:grid-cols-2">
+        <form action={createKidAction} className="mt-4 grid gap-4">
           <input type="hidden" name="slug" value={slug} />
           <div>
-            <label className="label-warm" htmlFor="kid-new-name">
-              Name
-            </label>
-            <input
-              id="kid-new-name"
-              name="name"
-              required
-              maxLength={40}
-              className="input-warm"
-              placeholder="Sam"
-            />
+            <label className="label-warm">Avatar</label>
+            <AvatarPicker />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="label-warm" htmlFor="kid-new-name">
+                Name
+              </label>
+              <input
+                id="kid-new-name"
+                name="name"
+                required
+                maxLength={40}
+                className="input-warm"
+                placeholder="Sam"
+              />
+            </div>
+            <div>
+              <label className="label-warm" htmlFor="kid-new-pin">
+                PIN (4–8 digits)
+              </label>
+              <input
+                id="kid-new-pin"
+                name="pin"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                minLength={4}
+                maxLength={8}
+                required
+                className="input-warm"
+              />
+            </div>
+            <div>
+              <label className="label-warm" htmlFor="kid-new-pin2">
+                Confirm PIN
+              </label>
+              <input
+                id="kid-new-pin2"
+                name="confirm_pin"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                minLength={4}
+                maxLength={8}
+                required
+                className="input-warm"
+              />
+            </div>
           </div>
           <div>
-            <label className="label-warm" htmlFor="kid-new-avatar">
-              Avatar
-            </label>
-            <select
-              id="kid-new-avatar"
-              name="avatar_emoji"
-              defaultValue="🐶"
-              className="input-warm"
-            >
-              {AVATARS.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="label-warm" htmlFor="kid-new-pin">
-              PIN (4–8 digits)
-            </label>
-            <input
-              id="kid-new-pin"
-              name="pin"
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              minLength={4}
-              maxLength={8}
-              required
-              className="input-warm"
-            />
-          </div>
-          <div>
-            <label className="label-warm" htmlFor="kid-new-pin2">
-              Confirm PIN
-            </label>
-            <input
-              id="kid-new-pin2"
-              name="confirm_pin"
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              minLength={4}
-              maxLength={8}
-              required
-              className="input-warm"
-            />
-          </div>
-          <div className="sm:col-span-2">
             <button type="submit" className="btn-warm-primary">
               Add kid
             </button>
@@ -107,39 +97,36 @@ export function KidsAdmin({
                 key={k.id}
                 className="rounded-2xl ring-1 ring-[#F1D1BD]/70 bg-[#FFFDF9] p-3"
               >
-                <form
-                  action={updateKidAction}
-                  className="grid gap-2 sm:grid-cols-[auto_1fr_auto] sm:items-end"
-                >
+                <form action={updateKidAction} className="grid gap-3">
                   <input type="hidden" name="slug" value={slug} />
                   <input type="hidden" name="id" value={k.id} />
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={avatarSrc(k.avatar_emoji)}
+                      alt=""
+                      aria-hidden
+                      className="w-12 h-12 object-contain flex-shrink-0"
+                    />
+                    <div className="flex-1">
+                      <label className="label-warm">Name</label>
+                      <input
+                        name="name"
+                        defaultValue={k.name}
+                        required
+                        maxLength={40}
+                        className="input-warm"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="label-warm">Avatar</label>
-                    <select
-                      name="avatar_emoji"
-                      defaultValue={k.avatar_emoji}
-                      className="input-warm"
-                    >
-                      {AVATARS.map((a) => (
-                        <option key={a} value={a}>
-                          {a}
-                        </option>
-                      ))}
-                    </select>
+                    <AvatarPicker defaultValue={k.avatar_emoji} />
                   </div>
                   <div>
-                    <label className="label-warm">Name</label>
-                    <input
-                      name="name"
-                      defaultValue={k.name}
-                      required
-                      maxLength={40}
-                      className="input-warm"
-                    />
+                    <button type="submit" className="btn-warm-secondary">
+                      Save
+                    </button>
                   </div>
-                  <button type="submit" className="btn-warm-secondary">
-                    Save
-                  </button>
                 </form>
 
                 <details className="mt-3">

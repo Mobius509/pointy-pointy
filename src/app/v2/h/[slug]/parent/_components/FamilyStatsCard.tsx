@@ -1,4 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 import type { KidProfile } from "@/lib/v2/data";
+import { avatarSrc } from "@/lib/avatar";
 
 type Props = {
   householdName: string;
@@ -30,8 +32,13 @@ export function FamilyStatsCard({
             ) : (
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 {kids.map((k) => (
-                  <span key={k.id} className="inline-flex items-center gap-1">
-                    <span aria-hidden>{k.avatar_emoji}</span>
+                  <span key={k.id} className="inline-flex items-center gap-1.5">
+                    <img
+                      src={avatarSrc(k.avatar_emoji)}
+                      alt=""
+                      aria-hidden
+                      className="w-5 h-5 object-contain"
+                    />
                     {k.name}
                   </span>
                 ))}

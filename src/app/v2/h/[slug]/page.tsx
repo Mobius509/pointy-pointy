@@ -13,32 +13,13 @@ import {
   getKidTodayCompletions,
 } from "@/lib/v2/data";
 import { computePeriodKey } from "@/lib/time";
+import { avatarSrc } from "@/lib/avatar";
 import { KidPicker } from "./_components/KidPicker";
 import { V2DailyChecklist } from "./_components/V2DailyChecklist";
 import { V2KidProposal } from "./_components/V2KidProposal";
 import { kidSignOutAction } from "./_actions/kid-session";
 
 export const dynamic = "force-dynamic";
-
-// Map the kid's avatar_emoji to the matching emoji PNG. Falls back to the
-// dog illustration when the picker hasn't been built yet.
-function avatarSrc(emoji: string): string {
-  switch (emoji) {
-    case "🐶":
-      return "/emojis/dog1.png";
-    case "🐱":
-      return "/emojis/cat1.png";
-    case "🦄":
-      return "/emojis/unicorn.png";
-    case "🐯":
-      return "/emojis/cat2.png";
-    case "🐸":
-    case "🦖":
-      return "/emojis/gecko.png";
-    default:
-      return "/emojis/dog1.png";
-  }
-}
 
 function buildMilestones(target: number): number[] {
   if (target <= 0) return [];
@@ -345,18 +326,18 @@ function Shell({
         <span aria-hidden />
         <div className="justify-self-end flex items-center gap-5 text-sm">
           <Link
-            href={`/v2/h/${slug}/parent/settings`}
-            className="inline-flex items-center gap-1 font-semibold text-[#D45B00] underline underline-offset-4 hover:opacity-80"
+            href={`/v2/h/${slug}/settings`}
+            className="inline-flex items-center gap-1.5 font-semibold text-[#D45B00] hover:opacity-80"
           >
-            Settings
-            <svg
+            <span className="underline underline-offset-4">Settings</span>
+            <img
+              src="/icons/Gear.svg"
+              alt=""
               aria-hidden
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              className="size-3.5 opacity-80"
-            >
-              <path d="M8 1.5a1 1 0 00-1 1v.7a5.5 5.5 0 00-1.5.62l-.5-.49a1 1 0 00-1.42 0l-.7.71a1 1 0 000 1.41l.5.5A5.5 5.5 0 003.2 7H2.5a1 1 0 00-1 1v1a1 1 0 001 1h.7a5.5 5.5 0 00.62 1.5l-.49.5a1 1 0 000 1.42l.71.7a1 1 0 001.41 0l.5-.5A5.5 5.5 0 007 12.8v.7a1 1 0 001 1h1a1 1 0 001-1v-.7a5.5 5.5 0 001.5-.62l.5.49a1 1 0 001.42 0l.7-.71a1 1 0 000-1.41l-.5-.5A5.5 5.5 0 0012.8 9h.7a1 1 0 001-1V7a1 1 0 00-1-1h-.7a5.5 5.5 0 00-.62-1.5l.49-.5a1 1 0 000-1.42l-.71-.7a1 1 0 00-1.41 0l-.5.5A5.5 5.5 0 009 3.2V2.5a1 1 0 00-1-1zm.5 5a2 2 0 110 4 2 2 0 010-4z" />
-            </svg>
+              width={18}
+              height={18}
+              className="w-[18px] h-[18px]"
+            />
           </Link>
           <form action={kidSignOutAction}>
             <input type="hidden" name="slug" value={slug} />

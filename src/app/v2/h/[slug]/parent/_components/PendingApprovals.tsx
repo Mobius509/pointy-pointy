@@ -1,4 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 import type { KidProfile, V2Completion } from "@/lib/v2/data";
+import { avatarSrc } from "@/lib/avatar";
 import {
   approveCompletionAction,
   denyCompletionAction,
@@ -46,17 +48,25 @@ export function PendingApprovals({
                   <span className="font-semibold block truncate">
                     {isKidProposal ? "💡" : "⏳"} {c.task_name_snapshot}
                   </span>
-                  <span className="block text-xs text-slate-500">
+                  <span className="flex items-center gap-1 text-xs text-slate-500">
                     {kid && (
                       <>
-                        {kid.avatar_emoji} {kid.name} ·{" "}
+                        <img
+                          src={avatarSrc(kid.avatar_emoji)}
+                          alt=""
+                          aria-hidden
+                          className="w-4 h-4 object-contain"
+                        />
+                        <span>{kid.name} ·</span>
                       </>
                     )}
-                    {isKidProposal ? "Suggested" : "Submitted"}{" "}
-                    {new Date(c.completed_at).toLocaleTimeString([], {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
+                    <span>
+                      {isKidProposal ? "Suggested" : "Submitted"}{" "}
+                      {new Date(c.completed_at).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </span>
                 </span>
                 {!isKidProposal && (

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
 import {
@@ -6,6 +7,7 @@ import {
   getKidGoalProgress,
   getKidProfiles,
 } from "@/lib/v2/data";
+import { avatarSrc } from "@/lib/avatar";
 import {
   redeemGoalAction,
   startNewGoalAction,
@@ -62,7 +64,16 @@ export default async function ParentGoalPage({
       {active ? (
         <section className="card-warm">
           <SectionPill>
-            Active goal · {selectedKid.avatar_emoji} {selectedKid.name}
+            <span className="inline-flex items-center gap-1.5">
+              Active goal ·
+              <img
+                src={avatarSrc(selectedKid.avatar_emoji)}
+                alt=""
+                aria-hidden
+                className="w-4 h-4 object-contain"
+              />
+              {selectedKid.name}
+            </span>
           </SectionPill>
           <form
             action={updateGoalAction}
@@ -214,13 +225,19 @@ function KidPicker({
           <Link
             key={k.id}
             href={`/v2/h/${slug}${basePath}?kid=${k.id}`}
-            className={`rounded-full px-3 py-1 ring-1 transition ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 ring-1 transition ${
               k.id === selectedId
                 ? "bg-[#FBE3CF] text-[#D45B00] ring-[#F1D1BD] font-semibold"
                 : "bg-white text-[#C3A38A] ring-[#F1D1BD] hover:bg-[#FFF7EE]"
             }`}
           >
-            {k.avatar_emoji} {k.name}
+            <img
+              src={avatarSrc(k.avatar_emoji)}
+              alt=""
+              aria-hidden
+              className="w-4 h-4 object-contain"
+            />
+            {k.name}
           </Link>
         ))}
       </div>

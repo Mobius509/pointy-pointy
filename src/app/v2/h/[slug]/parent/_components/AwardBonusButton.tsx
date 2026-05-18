@@ -109,7 +109,7 @@ export function AwardBonusButton({
                 >
                   {kids.map((k) => (
                     <option key={k.id} value={k.id}>
-                      {k.avatar_emoji} {k.name}
+                      {k.name}
                     </option>
                   ))}
                 </select>

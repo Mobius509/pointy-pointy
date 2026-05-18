@@ -3,6 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { hashPin, requireHouseholdAccess } from "@/lib/v2/auth";
+import { AVATAR_IDS, DEFAULT_AVATAR, avatarId } from "@/lib/avatar";
+
+// Validates the avatar value from a form. Accepts new-style ids
+// ("monster1") or legacy emoji ("🐶") — the latter gets normalized to its
+// matching id. Anything else falls back to DEFAULT_AVATAR.
+function readAvatar(formData: FormData): string {
+  const raw = String(formData.get("avatar_emoji") ?? "").trim();
+  if (!raw) return DEFAULT_AVATAR;
+  if ((AVATAR_IDS as readonly string[]).includes(raw)) return raw;
+  return avatarId(raw); // maps legacy emoji → id, else default
+}
 
 export async function createKidAction(formData: FormData) {
   const slug = String(formData.get("slug") ?? "");
@@ -10,7 +21,7 @@ export async function createKidAction(formData: FormData) {
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Name required.");
-  const avatar = String(formData.get("avatar_emoji") ?? "🐶").trim() || "🐶";
+  const avatar = readAvatar(formData);
   const pin = String(formData.get("pin") ?? "");
   const confirmPin = String(formData.get("confirm_pin") ?? "");
   if (pin !== confirmPin) throw new Error("PINs don't match.");
@@ -48,7 +59,7 @@ export async function updateKidAction(formData: FormData) {
   if (!id) throw new Error("Missing kid id.");
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Name required.");
-  const avatar = String(formData.get("avatar_emoji") ?? "🐶").trim() || "🐶";
+  const avatar = readAvatar(formData);
 
   const { error } = await supabaseV2Admin
     .from("kid_profiles")

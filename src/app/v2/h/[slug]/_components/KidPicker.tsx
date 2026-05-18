@@ -1,6 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useTransition } from "react";
+import { avatarSrc } from "@/lib/avatar";
 import type { KidProfile } from "@/lib/v2/data";
 import { kidSignInAction } from "../_actions/kid-session";
 
@@ -30,9 +32,12 @@ export function KidPicker({
             }}
             className="flex flex-col items-center gap-2 rounded-2xl bg-white ring-1 ring-slate-200 hover:ring-brand-300 active:scale-[0.98] transition p-5"
           >
-            <span className="text-5xl" aria-hidden>
-              {k.avatar_emoji}
-            </span>
+            <img
+              src={avatarSrc(k.avatar_emoji)}
+              alt=""
+              aria-hidden
+              className="w-20 h-20 object-contain"
+            />
             <span className="font-bold text-slate-800">{k.name}</span>
           </button>
         ))}
@@ -55,9 +60,12 @@ export function KidPicker({
       <input type="hidden" name="kid_profile_id" value={picked.id} />
 
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-4xl" aria-hidden>
-          {picked.avatar_emoji}
-        </span>
+        <img
+          src={avatarSrc(picked.avatar_emoji)}
+          alt=""
+          aria-hidden
+          className="w-14 h-14 object-contain"
+        />
         <div>
           <div className="font-bold text-xl text-slate-800">{picked.name}</div>
           <button

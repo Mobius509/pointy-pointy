@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import type { KidProfile, V2Completion, V2Goal, V2Task } from "@/lib/v2/data";
 import { frequencyLabel, humanizeDate, type Frequency } from "@/lib/time";
+import { avatarSrc } from "@/lib/avatar";
 import {
   approveCompletionAction,
   denyCompletionAction,
@@ -29,24 +30,6 @@ const FREQUENCY_ORDER: Frequency[] = [
   "monthly",
   "yearly",
 ];
-
-function avatarSrc(emoji: string): string {
-  switch (emoji) {
-    case "🐶":
-      return "/emojis/dog1.png";
-    case "🐱":
-      return "/emojis/cat1.png";
-    case "🦄":
-      return "/emojis/unicorn.png";
-    case "🐯":
-      return "/emojis/cat2.png";
-    case "🐸":
-    case "🦖":
-      return "/emojis/gecko.png";
-    default:
-      return "/emojis/dog1.png";
-  }
-}
 
 function buildMilestones(target: number): number[] {
   if (target <= 0) return [];

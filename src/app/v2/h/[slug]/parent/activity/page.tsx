@@ -1,5 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 import { requireHouseholdAccess } from "@/lib/v2/auth";
 import { getHouseholdRecentCompletions, getKidProfiles } from "@/lib/v2/data";
+import { avatarSrc } from "@/lib/avatar";
 import {
   approveCompletionAction,
   deleteCompletionAction,
@@ -81,8 +83,14 @@ export default async function ParentActivityPage({
                               {c.task_name_snapshot}
                             </span>
                             {kid && (
-                              <span className="ml-2 text-xs text-[#C3A38A]">
-                                {kid.avatar_emoji} {kid.name}
+                              <span className="ml-2 inline-flex items-center gap-1 text-xs text-[#C3A38A]">
+                                <img
+                                  src={avatarSrc(kid.avatar_emoji)}
+                                  alt=""
+                                  aria-hidden
+                                  className="w-4 h-4 object-contain"
+                                />
+                                {kid.name}
                               </span>
                             )}
                             {c.note && (
