@@ -241,21 +241,17 @@ export default async function KidViewPage({
                       );
                     })}
                   </div>
-                  {/* Track: 32px tall outer pill with a 24px tall fill
-                      vertically centered. */}
-                  <div className="relative h-8 rounded-full bg-[#F1D1BD] flex items-center px-1">
+                  {/* Track: 32px tall light-peach pill. The progress 'fill'
+                      IS the dark-orange pill — sized to max(progress%, 3rem)
+                      so the points number always fits inside even at low
+                      progress. */}
+                  <div className="relative h-8 rounded-full bg-[#F1D1BD] px-1 flex items-center">
                     <div className="relative h-6 w-full">
                       <div
-                        className="absolute inset-y-0 left-0 bg-[#D45B00] rounded-full transition-[width] duration-500 ease-out"
-                        style={{ width: `${goalPct}%` }}
-                      />
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 rounded-full bg-[#D45B00] text-white tabular-nums font-semibold px-3 py-1 leading-none"
+                        className="absolute inset-y-0 left-0 bg-[#D45B00] rounded-full flex items-center justify-center text-white tabular-nums font-semibold transition-[width] duration-500 ease-out"
                         style={{
-                          left: `calc(${goalPct}% - 1.6rem)`,
+                          width: `max(${goalPct}%, 3rem)`,
                           fontSize: 12,
-                          minWidth: "3rem",
-                          textAlign: "center",
                         }}
                       >
                         {progress.toLocaleString()}
@@ -269,7 +265,7 @@ export default async function KidViewPage({
                           <span
                             key={m}
                             aria-hidden
-                            className="absolute size-1.5 rounded-full bg-[#D45B00] -translate-x-1/2 -translate-y-1/2"
+                            className="absolute size-1.5 rounded-full bg-[#D45B00]/40 -translate-x-1/2 -translate-y-1/2"
                             style={{ left: `${left}%`, top: "50%" }}
                           />
                         );
@@ -278,14 +274,14 @@ export default async function KidViewPage({
                   </div>
                 </div>
 
-                {/* Footer — '% There' lines up with the pill on the bar
-                    (same horizontal position as the orange fill's end);
-                    'points to go' anchors to the right of the track. */}
+                {/* Footer — '% There' lines up with the leading edge of the
+                    orange pill (uses the same max() so it matches even at
+                    low progress); 'points to go' anchors to the right. */}
                 <div className="relative mt-3 h-4">
                   <span
                     className="absolute -translate-x-1/2 text-[#D45B00] tabular-nums"
                     style={{
-                      left: `${goalPct}%`,
+                      left: `max(${goalPct}%, 3rem)`,
                       fontSize: 12,
                       fontWeight: 600,
                     }}
