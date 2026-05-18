@@ -200,7 +200,7 @@ export default async function KidViewPage({
         <div className="mt-6 space-y-6">
           {/* Progress card */}
         {goal && (
-          <section className="bg-white rounded-[32px] px-5 sm:px-8 py-[26px] shadow-sm">
+          <section className="bg-white rounded-[32px] px-5 sm:px-8 py-[50px] shadow-sm">
             <div className="flex items-center gap-3 sm:gap-5">
               <span className="text-3xl sm:text-4xl flex-shrink-0" aria-hidden>
                 🐶

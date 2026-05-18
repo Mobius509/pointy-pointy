@@ -106,8 +106,8 @@ export function V2DailyChecklist({
               {/* Middle: task name + description */}
               <div className="flex-1 min-w-0">
                 <div
-                  className="text-[#733405] font-semibold leading-tight"
-                  style={{ fontSize: 18 }}
+                  className="text-[#733405] leading-tight"
+                  style={{ fontSize: 21, fontWeight: 500 }}
                 >
                   {item.name}
                 </div>
