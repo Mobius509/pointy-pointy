@@ -21,11 +21,9 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 
 export function KidSettingsPanel({
   slug,
-  kidName,
   initialAvatar,
 }: {
   slug: string;
-  kidName: string;
   initialAvatar: string;
 }) {
   // ---- Avatar selection ----------------------------------------------------
@@ -135,7 +133,7 @@ export function KidSettingsPanel({
   };
 
   return (
-    <section className="bg-white rounded-[32px] p-6 sm:p-8 shadow-sm">
+    <section className="bg-white rounded-[32px] p-6 sm:p-8 shadow-lg">
       {/* Avatar */}
       <h2
         className="text-[#733405] leading-tight"
@@ -143,7 +141,6 @@ export function KidSettingsPanel({
       >
         Select avatar
       </h2>
-      <p className="mt-1 text-[#C3A38A] text-[12px]">Hi {kidName}!</p>
 
       <div className="mt-4">
         <AvatarPicker defaultValue={initialAvatar} onChange={onAvatarChange} />

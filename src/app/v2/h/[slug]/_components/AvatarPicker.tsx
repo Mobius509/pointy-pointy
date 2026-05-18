@@ -30,8 +30,12 @@ export function AvatarPicker({
   return (
     <>
       <input type="hidden" name={name} value={selected} />
-      <div className="overflow-x-auto -mx-2 px-2">
-        <div className="flex gap-3 sm:gap-4 pb-1">
+      {/* Negative right margin lets the row of avatars scroll past the
+          card's right padding — partial tiles bleed off the edge instead
+          of getting visually clipped. Left edge still aligns with the
+          section title. */}
+      <div className="overflow-x-auto -mr-6 sm:-mr-8">
+        <div className="flex gap-3 sm:gap-4 pb-1 pr-6 sm:pr-8">
           {AVATAR_IDS.map((id) => {
             const isSelected = id === selected;
             return (
