@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { isParentUnlocked, isPinSet } from "@/lib/auth/pin";
-import { PushToggle } from "@/app/_components/PushToggle";
 import { lockAction } from "./_actions/auth";
 import { PinSetup, PinUnlock } from "./_components/PinGate";
 
@@ -32,9 +31,6 @@ export default async function ParentLayout({
           </button>
         </form>
       </nav>
-      <div className="flex justify-end">
-        <PushToggle role="parent" label="Tell me when a kid submits" />
-      </div>
       {children}
     </div>
   );

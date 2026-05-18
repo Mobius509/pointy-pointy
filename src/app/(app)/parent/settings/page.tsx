@@ -1,4 +1,5 @@
 import { getSettings } from "@/lib/data";
+import { PushToggle } from "@/app/_components/PushToggle";
 import {
   updateKidNameAction,
   updateTimezoneAction,
@@ -26,6 +27,14 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-4">
+      <section className="card">
+        <h2 className="text-lg font-bold text-slate-800">Notifications</h2>
+        <p className="text-sm text-slate-600 mt-1 mb-3">
+          Get a push when your kid submits a task or suggests a bonus.
+        </p>
+        <PushToggle role="parent" label="Tell me when a kid submits" />
+      </section>
+
       <section className="card">
         <h2 className="text-lg font-bold text-slate-800">Change PIN</h2>
         <p className="text-sm text-slate-600 mt-1 mb-3">
