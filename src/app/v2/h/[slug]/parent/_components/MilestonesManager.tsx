@@ -4,11 +4,12 @@ import {
   deleteMilestoneAction,
   updateMilestoneAction,
 } from "../_actions/milestones";
-import { SectionPill } from "./ui";
 
-// Milestone editor shown under an active goal. Parents add "small unlocks"
-// (e.g. ice cream at 500 pts on a 5000-pt dog goal); the kid sees them on
-// their progress bar as named dots that light up as they pass.
+// Milestone editor rendered nested inside an active goal's card. Parents
+// add "small unlocks" (e.g. ice cream at 500 pts on a 5000-pt dog goal);
+// the kid sees them on their progress bar as named dots that light up as
+// they pass. No outer section wrapper — the parent goal card already
+// provides the card chrome.
 export function MilestonesManager({
   slug,
   goal,
@@ -21,11 +22,16 @@ export function MilestonesManager({
   milestones: V2GoalMilestone[];
 }) {
   return (
-    <section className="card-warm">
-      <SectionPill>Milestones</SectionPill>
-      <p className="text-[#C3A38A] mt-2">
+    <div>
+      <h3
+        className="text-[#D45B00]"
+        style={{ fontSize: 14, fontWeight: 600 }}
+      >
+        Milestones
+      </h3>
+      <p className="text-[#C3A38A] mt-1 text-[12px]">
         Add small rewards along the way to {goal.name.toLowerCase()}. They
-        show as dots on the progress bar — light up when reached.
+        show as dots on the progress bar — they light up when reached.
       </p>
 
       {milestones.length > 0 ? (
@@ -137,6 +143,6 @@ export function MilestonesManager({
           Add milestone
         </button>
       </form>
-    </section>
+    </div>
   );
 }

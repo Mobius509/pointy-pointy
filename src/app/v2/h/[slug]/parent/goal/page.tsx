@@ -118,7 +118,19 @@ export default async function ParentGoalPage({
               {active.target_points.toLocaleString()}
             </span>
           </div>
-          <form action={redeemGoalAction} className="mt-4">
+
+          {/* Milestones are nested INSIDE the goal so they read as part of
+              the goal definition, not a separate sibling section. */}
+          <div className="mt-6 pt-6 border-t border-[#F1D1BD]/70">
+            <MilestonesManager
+              slug={slug}
+              goal={active}
+              progress={progress}
+              milestones={milestones}
+            />
+          </div>
+
+          <form action={redeemGoalAction} className="mt-6">
             <input type="hidden" name="slug" value={slug} />
             <input type="hidden" name="id" value={active.id} />
             <button type="submit" className="btn-warm-danger">
@@ -127,15 +139,6 @@ export default async function ParentGoalPage({
           </form>
         </section>
       ) : null}
-
-      {active && (
-        <MilestonesManager
-          slug={slug}
-          goal={active}
-          progress={progress}
-          milestones={milestones}
-        />
-      )}
 
       {!active && (
         <section className="card-warm">

@@ -1,5 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
-import type { KidProfile, V2Completion, V2Goal, V2Task } from "@/lib/v2/data";
+import type {
+  KidProfile,
+  V2Completion,
+  V2Goal,
+  V2GoalMilestone,
+  V2Task,
+} from "@/lib/v2/data";
 import { frequencyLabel, humanizeDate, type Frequency } from "@/lib/time";
 import { avatarSrc } from "@/lib/avatar";
 import {
@@ -18,6 +24,7 @@ type Props = {
   recentApproved: V2Completion[];
   goal: V2Goal | null;
   progress: number;
+  milestones: V2GoalMilestone[];
 };
 
 // Always shown in the Outstanding section (even when empty). Bi-weekly and
@@ -30,15 +37,6 @@ const FREQUENCY_ORDER: Frequency[] = [
   "monthly",
   "yearly",
 ];
-
-function buildMilestones(target: number): number[] {
-  if (target <= 0) return [];
-  return [0.2, 0.4, 0.6, 0.8].map((frac) => {
-    const raw = target * frac;
-    const step = target >= 1000 ? 100 : target >= 100 ? 10 : 1;
-    return Math.round(raw / step) * step;
-  });
-}
 
 // Crisp downward chevron used in the Outstanding accordion summaries.
 function ChevronIcon() {
@@ -69,6 +67,7 @@ export function KidOverviewCard({
   recentApproved,
   goal,
   progress,
+  milestones,
 }: Props) {
   const goalPct = goal
     ? Math.min(
@@ -76,7 +75,6 @@ export function KidOverviewCard({
         Math.round((progress / Math.max(1, goal.target_points)) * 100),
       )
     : 0;
-  const milestones = goal ? buildMilestones(goal.target_points) : [];
 
   // Pick the frequency groups to render: always-show set, plus any
   // additional frequencies that actually have outstanding tasks.
@@ -290,19 +288,23 @@ export function KidOverviewCard({
                 {milestones.map((m) => {
                   const left = Math.min(
                     100,
-                    Math.max(0, (m / goal.target_points) * 100),
+                    Math.max(0, (m.points / goal.target_points) * 100),
                   );
+                  const unlocked = progress >= m.points;
                   return (
                     <span
-                      key={m}
-                      className="absolute -translate-x-1/2 text-[#D45B00] tabular-nums"
+                      key={m.id}
+                      className={`absolute -translate-x-1/2 whitespace-nowrap ${
+                        unlocked ? "text-[#D45B00]" : "text-[#C3A38A]"
+                      }`}
                       style={{
                         left: `${left}%`,
-                        fontSize: 12,
-                        fontWeight: 500,
+                        fontSize: 11,
+                        fontWeight: unlocked ? 600 : 500,
                       }}
+                      title={`${m.name} · ${m.points.toLocaleString()} pts`}
                     >
-                      {m.toLocaleString()}
+                      {m.name}
                     </span>
                   );
                 })}
@@ -315,13 +317,18 @@ export function KidOverviewCard({
                 {milestones.map((m) => {
                   const left = Math.min(
                     100,
-                    (m / goal.target_points) * 100,
+                    (m.points / goal.target_points) * 100,
                   );
+                  const unlocked = progress >= m.points;
                   return (
                     <span
-                      key={m}
+                      key={m.id}
                       aria-hidden
-                      className="absolute size-1.5 rounded-full bg-[#D45B00] -translate-x-1/2 -translate-y-1/2"
+                      className={`absolute rounded-full -translate-x-1/2 -translate-y-1/2 ${
+                        unlocked
+                          ? "size-2.5 bg-white ring-2 ring-[#D45B00]"
+                          : "size-1.5 bg-[#D45B00]"
+                      }`}
                       style={{ left: `${left}%`, top: "50%" }}
                     />
                   );

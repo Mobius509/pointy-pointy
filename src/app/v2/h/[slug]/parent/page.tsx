@@ -8,6 +8,7 @@ import {
   getKidGoalProgress,
   getKidProfiles,
   getKidRecentCompletions,
+  getMilestonesForGoal,
 } from "@/lib/v2/data";
 import { computePeriodKey, type Frequency } from "@/lib/time";
 import { FamilyStatsCard } from "./_components/FamilyStatsCard";
@@ -53,6 +54,9 @@ export default async function ParentOverviewPage({
       const progress = goal
         ? await getKidGoalProgress(household.id, kid.id, goal)
         : 0;
+      const milestones = goal
+        ? await getMilestonesForGoal(household.id, goal.id)
+        : [];
       const pending = pendingAll.filter((c) => c.kid_profile_id === kid.id);
 
       const periodCompletions = await getKidCompletionsForPeriods(
@@ -89,6 +93,7 @@ export default async function ParentOverviewPage({
         kid,
         goal,
         progress,
+        milestones,
         pending,
         outstandingByFreq,
         recentApproved,
@@ -119,6 +124,7 @@ export default async function ParentOverviewPage({
             kid,
             goal,
             progress,
+            milestones,
             pending,
             outstandingByFreq,
             recentApproved,
@@ -133,6 +139,7 @@ export default async function ParentOverviewPage({
               recentApproved={recentApproved}
               goal={goal}
               progress={progress}
+              milestones={milestones}
             />
           ),
         )
