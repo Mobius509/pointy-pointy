@@ -135,6 +135,10 @@ export async function getActiveGoalForKid(
 
 // Milestones for a goal, sorted by their point threshold so the bar renders
 // them in left-to-right order regardless of how parents typed them in.
+//
+// If the goal_milestones table hasn't been created yet (migration v2_0004
+// not applied), swallow the "missing relation" error and return [] so the
+// page still renders. Any other error bubbles up as usual.
 export async function getMilestonesForGoal(
   householdId: string,
   goalId: string,
@@ -145,7 +149,17 @@ export async function getMilestonesForGoal(
     .eq("household_id", householdId)
     .eq("goal_id", goalId)
     .order("points", { ascending: true });
-  if (error) throw error;
+  if (error) {
+    // Postgres error code 42P01 = "undefined_table". Supabase surfaces it
+    // as `error.code === "42P01"` on the PostgREST response.
+    if (error.code === "42P01" || error.code === "PGRST205") {
+      console.warn(
+        "[v2.goal_milestones] table not found — apply migration v2_0004",
+      );
+      return [];
+    }
+    throw error;
+  }
   return (data as V2GoalMilestone[]) ?? [];
 }
 
