@@ -6,6 +6,7 @@ import {
   getAllGoalsForKid,
   getKidGoalProgress,
   getKidProfiles,
+  getMilestonesForGoal,
 } from "@/lib/v2/data";
 import { avatarSrc } from "@/lib/avatar";
 import {
@@ -13,6 +14,7 @@ import {
   startNewGoalAction,
   updateGoalAction,
 } from "../_actions/goal";
+import { MilestonesManager } from "../_components/MilestonesManager";
 import { PageTitle, SectionPill, SectionTitle } from "../_components/ui";
 
 export const dynamic = "force-dynamic";
@@ -49,6 +51,9 @@ export default async function ParentGoalPage({
   const progress = active
     ? await getKidGoalProgress(household.id, selectedKid.id, active)
     : 0;
+  const milestones = active
+    ? await getMilestonesForGoal(household.id, active.id)
+    : [];
 
   return (
     <div className="space-y-6 text-[14px]">
@@ -121,7 +126,18 @@ export default async function ParentGoalPage({
             </button>
           </form>
         </section>
-      ) : (
+      ) : null}
+
+      {active && (
+        <MilestonesManager
+          slug={slug}
+          goal={active}
+          progress={progress}
+          milestones={milestones}
+        />
+      )}
+
+      {!active && (
         <section className="card-warm">
           <SectionTitle>No active goal</SectionTitle>
           <p className="text-[#C3A38A] mt-2">

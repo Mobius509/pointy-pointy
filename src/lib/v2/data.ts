@@ -50,6 +50,15 @@ export type V2Goal = {
   redeemed_at: string | null;
 };
 
+export type V2GoalMilestone = {
+  id: string;
+  household_id: string;
+  goal_id: string;
+  name: string;
+  points: number;
+  sort_order: number;
+};
+
 // ============================================================================
 // Household + kids
 // ============================================================================
@@ -122,6 +131,22 @@ export async function getActiveGoalForKid(
     .maybeSingle();
   if (error) throw error;
   return (data as V2Goal) ?? null;
+}
+
+// Milestones for a goal, sorted by their point threshold so the bar renders
+// them in left-to-right order regardless of how parents typed them in.
+export async function getMilestonesForGoal(
+  householdId: string,
+  goalId: string,
+): Promise<V2GoalMilestone[]> {
+  const { data, error } = await supabaseV2Admin
+    .from("goal_milestones")
+    .select("id, household_id, goal_id, name, points, sort_order")
+    .eq("household_id", householdId)
+    .eq("goal_id", goalId)
+    .order("points", { ascending: true });
+  if (error) throw error;
+  return (data as V2GoalMilestone[]) ?? [];
 }
 
 export async function getAllGoalsForKid(

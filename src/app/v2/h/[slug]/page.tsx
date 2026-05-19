@@ -11,6 +11,7 @@ import {
   getKidProfile,
   getKidProfiles,
   getKidTodayCompletions,
+  getMilestonesForGoal,
 } from "@/lib/v2/data";
 import { computePeriodKey } from "@/lib/time";
 import { avatarSrc } from "@/lib/avatar";
@@ -21,14 +22,6 @@ import { kidSignOutAction } from "./_actions/kid-session";
 
 export const dynamic = "force-dynamic";
 
-function buildMilestones(target: number): number[] {
-  if (target <= 0) return [];
-  return [0.2, 0.4, 0.8].map((frac) => {
-    const raw = target * frac;
-    const step = target >= 1000 ? 100 : target >= 100 ? 10 : 1;
-    return Math.round(raw / step) * step;
-  });
-}
 
 export default async function KidViewPage({
   params,
@@ -92,6 +85,9 @@ export default async function KidViewPage({
   const progress = goal
     ? await getKidGoalProgress(household.id as string, kid.id, goal)
     : 0;
+  const milestones = goal
+    ? await getMilestonesForGoal(household.id as string, goal.id)
+    : [];
 
   const tz = household.timezone as string;
   const taskPeriodKey = new Map<string, string>(
@@ -134,7 +130,6 @@ export default async function KidViewPage({
   const goalPct = goal
     ? Math.min(100, Math.round((progress / Math.max(1, goal.target_points)) * 100))
     : 0;
-  const milestones = goal ? buildMilestones(goal.target_points) : [];
 
   return (
     <Shell slug={slug}>
@@ -207,19 +202,23 @@ export default async function KidViewPage({
                   {milestones.map((m) => {
                     const left = Math.min(
                       100,
-                      Math.max(0, (m / goal.target_points) * 100),
+                      Math.max(0, (m.points / goal.target_points) * 100),
                     );
+                    const unlocked = progress >= m.points;
                     return (
                       <span
-                        key={m}
-                        className="absolute -translate-x-1/2 text-[#C3A38A] tabular-nums"
+                        key={m.id}
+                        className={`absolute -translate-x-1/2 whitespace-nowrap ${
+                          unlocked ? "text-[#D45B00]" : "text-[#C3A38A]"
+                        }`}
                         style={{
                           left: `${left}%`,
                           fontSize: 12,
-                          fontWeight: 500,
+                          fontWeight: unlocked ? 600 : 500,
                         }}
+                        title={`${m.name} · ${m.points.toLocaleString()} pts`}
                       >
-                        {m.toLocaleString()}
+                        {m.name}
                       </span>
                     );
                   })}
@@ -239,13 +238,18 @@ export default async function KidViewPage({
                     {milestones.map((m) => {
                       const left = Math.min(
                         100,
-                        (m / goal.target_points) * 100,
+                        (m.points / goal.target_points) * 100,
                       );
+                      const unlocked = progress >= m.points;
                       return (
                         <span
-                          key={m}
+                          key={m.id}
                           aria-hidden
-                          className="absolute size-1.5 rounded-full bg-[#D45B00]/40 -translate-x-1/2 -translate-y-1/2"
+                          className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full ${
+                            unlocked
+                              ? "size-2.5 bg-white ring-2 ring-[#D45B00]"
+                              : "size-1.5 bg-[#D45B00]/40"
+                          }`}
                           style={{ left: `${left}%`, top: "50%" }}
                         />
                       );
