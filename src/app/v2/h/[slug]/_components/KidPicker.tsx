@@ -8,6 +8,10 @@ import { kidSignInAction } from "../_actions/kid-session";
 
 // Two-step kid sign-in. Step 1: pick avatar/name. Step 2: enter PIN.
 // Keeping this client-side so we can show the picker without a server round-trip.
+//
+// When the household has exactly one kid, step 1 is skipped — we auto-pick
+// them and go straight to the PIN. The "Not me" link in step 2 is also
+// suppressed in that case since there's no one else to switch to.
 export function KidPicker({
   slug,
   kids,
@@ -15,7 +19,8 @@ export function KidPicker({
   slug: string;
   kids: KidProfile[];
 }) {
-  const [picked, setPicked] = useState<KidProfile | null>(null);
+  const soleKid = kids.length === 1 ? kids[0] : null;
+  const [picked, setPicked] = useState<KidProfile | null>(soleKid);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -68,13 +73,15 @@ export function KidPicker({
         />
         <div>
           <div className="font-bold text-xl text-slate-800">{picked.name}</div>
-          <button
-            type="button"
-            onClick={() => setPicked(null)}
-            className="text-xs text-slate-500 hover:underline"
-          >
-            Not me — pick someone else
-          </button>
+          {kids.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setPicked(null)}
+              className="text-xs text-slate-500 hover:underline"
+            >
+              Not me — pick someone else
+            </button>
+          )}
         </div>
       </div>
 

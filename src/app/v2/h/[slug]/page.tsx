@@ -57,9 +57,11 @@ export default async function KidViewPage({
             </div>
           ) : (
             <>
-              <h1 className="text-[32px] font-medium text-[#D45B00] text-center mb-4">
-                Who&apos;s here?
-              </h1>
+              {kids.length > 1 && (
+                <h1 className="text-[32px] font-medium text-[#D45B00] text-center mb-4">
+                  Who&apos;s here?
+                </h1>
+              )}
               <KidPicker slug={household.slug as string} kids={kids} />
             </>
           )}
