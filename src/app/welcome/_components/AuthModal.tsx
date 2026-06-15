@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { signInAction } from "@/app/v2/sign-in/_actions";
-import { signUpAction } from "@/app/v2/sign-up/_actions";
+import { signInAction } from "@/app/sign-in/_actions";
+import { signUpAction } from "@/app/sign-up/_actions";
 
 type Mode = "signin" | "signup" | null;
 
@@ -282,7 +282,7 @@ function SignUpBody() {
       {/* Fallback for users who'd rather have a full-page form. */}
       <p className="text-xs text-slate-500 text-center">
         <Link
-          href="/v2/sign-up"
+          href="/sign-up"
           className="hover:underline"
         >
           Open full sign-up page

@@ -14,7 +14,7 @@ export const metadata = {
 export default async function WelcomePage() {
   const household = await getFirstHouseholdForCurrentUser();
   if (household) {
-    redirect(`/v2/h/${household.slug}/parent`);
+    redirect(`/h/${household.slug}/parent`);
   }
 
   return (
