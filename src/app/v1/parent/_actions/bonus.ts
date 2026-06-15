@@ -29,8 +29,8 @@ export async function awardCustomBonusAction(formData: FormData) {
   });
   if (error) throw error;
 
-  revalidatePath("/parent");
-  revalidatePath("/parent/activity");
-  revalidatePath("/parent/bonus");
-  revalidatePath("/");
+  revalidatePath("/v1/parent");
+  revalidatePath("/v1/parent/activity");
+  revalidatePath("/v1/parent/bonus");
+  revalidatePath("/v1");
 }

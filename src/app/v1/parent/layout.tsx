@@ -19,12 +19,12 @@ export default async function ParentLayout({
   return (
     <div className="space-y-4 pt-2">
       <nav className="flex flex-wrap gap-2 text-sm">
-        <NavLink href="/parent">Overview</NavLink>
-        <NavLink href="/parent/tasks">Tasks</NavLink>
-        <NavLink href="/parent/bonus">Award bonus</NavLink>
-        <NavLink href="/parent/activity">Activity</NavLink>
-        <NavLink href="/parent/goal">Goal</NavLink>
-        <NavLink href="/parent/settings">Settings</NavLink>
+        <NavLink href="/v1/parent">Overview</NavLink>
+        <NavLink href="/v1/parent/tasks">Tasks</NavLink>
+        <NavLink href="/v1/parent/bonus">Award bonus</NavLink>
+        <NavLink href="/v1/parent/activity">Activity</NavLink>
+        <NavLink href="/v1/parent/goal">Goal</NavLink>
+        <NavLink href="/v1/parent/settings">Settings</NavLink>
         <form action={lockAction} className="ml-auto">
           <button className="btn-secondary" type="submit">
             🔒 Lock

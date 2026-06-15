@@ -20,7 +20,7 @@ export async function setupPinAction(formData: FormData): Promise<
   try {
     await setPin(pin);
     await verifyPinAndSetCookie(pin);
-    revalidatePath("/parent");
+    revalidatePath("/v1/parent");
     return { ok: true };
   } catch (e) {
     return { ok: false, error: (e as Error).message };
@@ -33,11 +33,11 @@ export async function unlockAction(formData: FormData): Promise<
   const pin = String(formData.get("pin") ?? "");
   const ok = await verifyPinAndSetCookie(pin);
   if (!ok) return { ok: false, error: "Wrong PIN." };
-  revalidatePath("/parent");
+  revalidatePath("/v1/parent");
   return { ok: true };
 }
 
 export async function lockAction(): Promise<void> {
   await lockParent();
-  revalidatePath("/parent");
+  revalidatePath("/v1/parent");
 }

@@ -14,7 +14,7 @@ export async function deleteCompletionAction(formData: FormData) {
     .eq("id", id);
   if (error) throw error;
 
-  revalidatePath("/parent");
-  revalidatePath("/parent/activity");
-  revalidatePath("/");
+  revalidatePath("/v1/parent");
+  revalidatePath("/v1/parent/activity");
+  revalidatePath("/v1");
 }

@@ -8,7 +8,7 @@ export default function AppShellLayout({
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-amber-50 via-orange-50 to-rose-50 text-slate-900 antialiased">
       <header className="px-4 sm:px-6 pt-5 sm:pt-6 pb-3 sm:pb-4 max-w-6xl mx-auto w-full">
-        <Link href="/" className="inline-block group">
+        <Link href="/v1" className="inline-block group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logos/Logo_Full.svg"

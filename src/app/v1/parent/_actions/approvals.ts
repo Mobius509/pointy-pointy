@@ -34,13 +34,13 @@ export async function approveCompletionAction(formData: FormData) {
   await sendPushToRole("kid", {
     title: "🎉 Approved!",
     body: `${data.task_name_snapshot} · +${data.points_snapshot} points`,
-    url: "/",
+    url: "/v1",
     tag: `approve-${id}`,
   });
 
-  revalidatePath("/parent");
-  revalidatePath("/parent/activity");
-  revalidatePath("/");
+  revalidatePath("/v1/parent");
+  revalidatePath("/v1/parent/activity");
+  revalidatePath("/v1");
 }
 
 export async function denyCompletionAction(formData: FormData) {
@@ -64,12 +64,12 @@ export async function denyCompletionAction(formData: FormData) {
     await sendPushToRole("kid", {
       title: "Pointy Points",
       body: `"${row.task_name_snapshot}" wasn't approved this time.`,
-      url: "/",
+      url: "/v1",
       tag: `deny-${id}`,
     });
   }
 
-  revalidatePath("/parent");
-  revalidatePath("/parent/activity");
-  revalidatePath("/");
+  revalidatePath("/v1/parent");
+  revalidatePath("/v1/parent/activity");
+  revalidatePath("/v1");
 }

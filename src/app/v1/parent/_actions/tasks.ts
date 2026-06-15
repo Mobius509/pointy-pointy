@@ -40,8 +40,8 @@ export async function createTaskAction(formData: FormData) {
   });
   if (error) throw error;
 
-  revalidatePath("/parent/tasks");
-  revalidatePath("/");
+  revalidatePath("/v1/parent/tasks");
+  revalidatePath("/v1");
 }
 
 export async function updateTaskAction(formData: FormData) {
@@ -61,8 +61,8 @@ export async function updateTaskAction(formData: FormData) {
     .eq("id", id);
   if (error) throw error;
 
-  revalidatePath("/parent/tasks");
-  revalidatePath("/");
+  revalidatePath("/v1/parent/tasks");
+  revalidatePath("/v1");
 }
 
 async function swapSortOrders(idA: string, idB: string) {
@@ -109,8 +109,8 @@ export async function moveTaskUpAction(formData: FormData) {
   if (!prev) return; // already at top
 
   await swapSortOrders(cur.id, prev.id);
-  revalidatePath("/parent/tasks");
-  revalidatePath("/");
+  revalidatePath("/v1/parent/tasks");
+  revalidatePath("/v1");
 }
 
 export async function moveTaskDownAction(formData: FormData) {
@@ -135,8 +135,8 @@ export async function moveTaskDownAction(formData: FormData) {
   if (!next) return; // already at bottom
 
   await swapSortOrders(cur.id, next.id);
-  revalidatePath("/parent/tasks");
-  revalidatePath("/");
+  revalidatePath("/v1/parent/tasks");
+  revalidatePath("/v1");
 }
 
 export async function deleteTaskAction(formData: FormData) {
@@ -149,6 +149,6 @@ export async function deleteTaskAction(formData: FormData) {
   const { error } = await supabaseAdmin.from("tasks").delete().eq("id", id);
   if (error) throw error;
 
-  revalidatePath("/parent/tasks");
-  revalidatePath("/");
+  revalidatePath("/v1/parent/tasks");
+  revalidatePath("/v1");
 }

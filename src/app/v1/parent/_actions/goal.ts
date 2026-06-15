@@ -21,9 +21,9 @@ export async function updateGoalAction(formData: FormData) {
     .eq("id", id);
   if (error) throw error;
 
-  revalidatePath("/parent");
-  revalidatePath("/parent/goal");
-  revalidatePath("/");
+  revalidatePath("/v1/parent");
+  revalidatePath("/v1/parent/goal");
+  revalidatePath("/v1");
 }
 
 export async function redeemGoalAction(formData: FormData) {
@@ -37,9 +37,9 @@ export async function redeemGoalAction(formData: FormData) {
     .eq("id", id);
   if (error) throw error;
 
-  revalidatePath("/parent");
-  revalidatePath("/parent/goal");
-  revalidatePath("/");
+  revalidatePath("/v1/parent");
+  revalidatePath("/v1/parent/goal");
+  revalidatePath("/v1");
 }
 
 export async function startNewGoalAction(formData: FormData) {
@@ -64,7 +64,7 @@ export async function startNewGoalAction(formData: FormData) {
   });
   if (error) throw error;
 
-  revalidatePath("/parent");
-  revalidatePath("/parent/goal");
-  revalidatePath("/");
+  revalidatePath("/v1/parent");
+  revalidatePath("/v1/parent/goal");
+  revalidatePath("/v1");
 }

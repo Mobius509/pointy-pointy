@@ -28,7 +28,7 @@ export async function changePinAction(formData: FormData): Promise<
 
   try {
     await setPin(next);
-    revalidatePath("/parent/settings");
+    revalidatePath("/v1/parent/settings");
     return { ok: true };
   } catch (e) {
     return { ok: false, error: (e as Error).message };
@@ -52,8 +52,8 @@ export async function updateTimezoneAction(formData: FormData) {
     .eq("id", 1);
   if (error) throw error;
 
-  revalidatePath("/parent/settings");
-  revalidatePath("/");
+  revalidatePath("/v1/parent/settings");
+  revalidatePath("/v1");
 }
 
 export async function updateKidNameAction(formData: FormData) {
@@ -68,5 +68,5 @@ export async function updateKidNameAction(formData: FormData) {
     .eq("id", 1);
   if (error) throw error;
 
-  revalidatePath("/parent/settings");
+  revalidatePath("/v1/parent/settings");
 }

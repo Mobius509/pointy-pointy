@@ -43,11 +43,11 @@ export async function completeTaskForToday(taskId: string): Promise<
   await sendPushToRole("parent", {
     title: "Pointy Points",
     body: `${kidName} submitted "${task.name}" (+${task.points})`,
-    url: "/parent",
+    url: "/v1/parent",
     tag: `submit-${task.id}`,
   });
 
-  revalidatePath("/");
+  revalidatePath("/v1");
   return { ok: true };
 }
 
@@ -67,7 +67,7 @@ export async function cancelPendingTaskForToday(taskId: string): Promise<
     .eq("status", "pending");
   if (error) return { ok: false, error: error.message };
 
-  revalidatePath("/");
+  revalidatePath("/v1");
   return { ok: true };
 }
 
@@ -100,11 +100,11 @@ export async function submitKidProposal(name: string): Promise<
   await sendPushToRole("parent", {
     title: "Pointy Points · suggestion",
     body: `${proposalKidName} suggested "${trimmed}"`,
-    url: "/parent",
+    url: "/v1/parent",
     tag: "kid-proposal",
   });
 
-  revalidatePath("/");
+  revalidatePath("/v1");
   return { ok: true };
 }
 
@@ -120,6 +120,6 @@ export async function cancelKidProposal(id: string): Promise<
     .eq("is_bonus", true);
   if (error) return { ok: false, error: error.message };
 
-  revalidatePath("/");
+  revalidatePath("/v1");
   return { ok: true };
 }
