@@ -4,34 +4,7 @@ import { redirect } from "next/navigation";
 import { createV2ServerClient } from "@/lib/supabase/v2-server";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { findValidInvite, markInviteAccepted } from "@/lib/v2/invites";
-
-// Slug-ify a household name. Must be unique across all households; if the
-// preferred slug is taken we append a random suffix.
-function baseSlug(name: string): string {
-  return (
-    name
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 40) || "household"
-  );
-}
-
-async function uniqueSlug(name: string): Promise<string> {
-  const base = baseSlug(name);
-  for (let i = 0; i < 5; i++) {
-    const candidate = i === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`;
-    const { data } = await supabaseV2Admin
-      .from("households")
-      .select("id")
-      .eq("slug", candidate)
-      .maybeSingle();
-    if (!data) return candidate;
-  }
-  return `${base}-${Date.now().toString(36)}`;
-}
+import { generateUniqueHouseholdSlug } from "@/lib/v2/household-id";
 
 export async function signUpAction(formData: FormData): Promise<
   { ok: true; slug: string } | { ok: false; error: string }
@@ -97,7 +70,10 @@ export async function signUpAction(formData: FormData): Promise<
     householdSlug = invite.household_slug;
     await markInviteAccepted(invite.id, user.id);
   } else {
-    const slug = await uniqueSlug(householdName);
+    // Opaque random slug — name-based slugs are guessable and let anyone
+    // browse to /v2/h/{their-family-name} and see kid names + start
+    // brute-forcing PINs.
+    const slug = await generateUniqueHouseholdSlug();
     const { data: household, error: householdErr } = await supabaseV2Admin
       .from("households")
       .insert({ name: householdName, slug })
