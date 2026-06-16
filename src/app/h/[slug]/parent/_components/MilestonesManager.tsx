@@ -24,7 +24,7 @@ export function MilestonesManager({
   return (
     <div>
       <h3
-        className="text-[#D45B00]"
+        className="text-[#F2662A]"
         style={{ fontSize: 14, fontWeight: 600 }}
       >
         Milestones
@@ -79,7 +79,7 @@ export function MilestonesManager({
                     className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[12px] font-semibold ${
                       unlocked
                         ? "bg-[#D1FAE5] text-[#065F46]"
-                        : "bg-[#FBE3CF] text-[#D45B00]"
+                        : "bg-[#FBE3CF] text-[#F2662A]"
                     }`}
                   >
                     {unlocked ? "Unlocked" : "Locked"}

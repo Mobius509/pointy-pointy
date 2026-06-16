@@ -30,12 +30,12 @@ export default async function KidSettingsPage({
   if (!session || session.householdId !== household.id) {
     return (
       <ModalShell slug={slug}>
-        <p className="text-[#733405]">
+        <p className="text-[#F2662A]">
           You need to sign in before you can change settings.
         </p>
         <Link
           href={`/h/${slug}`}
-          className="inline-block mt-4 rounded-full bg-[#FBE3CF] text-[#D45B00] font-semibold px-5 py-2 text-sm"
+          className="inline-block mt-4 rounded-full bg-[#FBE3CF] text-[#F2662A] font-semibold px-5 py-2 text-sm"
         >
           Go sign in
         </Link>
@@ -76,7 +76,7 @@ function ModalShell({
         <Link
           href={`/h/${slug}`}
           aria-label="Close settings"
-          className="absolute top-5 right-5 z-10 inline-flex items-center justify-center size-9 rounded-full text-[#733405] hover:bg-[#FAF4F0] transition"
+          className="absolute top-5 right-5 z-10 inline-flex items-center justify-center size-9 rounded-full text-[#F2662A] hover:bg-[#FAF4F0] transition"
         >
           <svg
             aria-hidden

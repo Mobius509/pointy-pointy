@@ -58,16 +58,16 @@ body {
     @apply bg-white rounded-[32px] p-5 sm:p-8 shadow-sm;
   }
   .btn-warm-primary {
-    @apply inline-flex items-center justify-center rounded-full bg-[#FBE3CF] text-[#D45B00] font-semibold px-5 py-2 text-sm transition hover:bg-[#F7D2B3] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-full bg-[#FBE3CF] text-[#F2662A] font-semibold px-5 py-2 text-sm transition hover:bg-[#F7D2B3] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-warm-secondary {
-    @apply inline-flex items-center justify-center rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-5 py-2 text-sm transition hover:bg-[#FFF7EE] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-full bg-white border border-[#F1D1BD] text-[#F2662A] font-semibold px-5 py-2 text-sm transition hover:bg-[#FFF7EE] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-warm-danger {
     @apply inline-flex items-center justify-center rounded-full bg-white border border-rose-200 text-rose-600 font-semibold px-5 py-2 text-sm transition hover:bg-rose-50 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none;
   }
   .input-warm {
-    @apply w-full rounded-xl border-[#F1D1BD] bg-white px-3 py-2 text-[14px] ring-1 ring-[#F1D1BD] focus:outline-none focus:ring-2 focus:ring-[#D45B00];
+    @apply w-full rounded-xl border-[#F1D1BD] bg-white px-3 py-2 text-[14px] ring-1 ring-[#F1D1BD] focus:outline-none focus:ring-2 focus:ring-[#F2662A];
   }
   .label-warm {
     @apply block text-[12px] font-semibold text-[#C3A38A] uppercase tracking-wide mb-1;

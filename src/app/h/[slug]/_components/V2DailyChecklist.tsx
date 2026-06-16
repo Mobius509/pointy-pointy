@@ -95,7 +95,7 @@ export function V2DailyChecklist({
             >
               {/* Left: frequency + points pills */}
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="inline-flex items-center justify-center rounded-full bg-[#FBE3CF] text-[#D45B00] text-[12px] font-semibold px-3 py-1">
+                <span className="inline-flex items-center justify-center rounded-full bg-[#FBE3CF] text-[#F2662A] text-[12px] font-semibold px-3 py-1">
                   {frequencyLabel(item.frequency)}
                 </span>
                 <span className="inline-flex items-center justify-center rounded-full bg-[#E0F2FE] text-[#0369A1] text-[12px] font-semibold px-3 py-1 tabular-nums">
@@ -106,13 +106,13 @@ export function V2DailyChecklist({
               {/* Middle: task name + description */}
               <div className="flex-1 min-w-0">
                 <div
-                  className="text-[#733405] leading-tight"
+                  className="text-[#F2662A] leading-tight"
                   style={{ fontSize: 21, fontWeight: 500 }}
                 >
                   {item.name}
                 </div>
                 {item.description && (
-                  <div className="text-[#D45B00] text-[12px] mt-0.5 leading-tight">
+                  <div className="text-[#F2662A] text-[12px] mt-0.5 leading-tight">
                     {item.description}
                   </div>
                 )}
@@ -124,7 +124,7 @@ export function V2DailyChecklist({
                   <button
                     type="button"
                     onClick={() => submit(item)}
-                    className="rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-6 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99]"
+                    className="rounded-full bg-white border border-[#F1D1BD] text-[#F2662A] font-semibold px-6 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99]"
                   >
                     Done
                   </button>
@@ -156,7 +156,7 @@ export function V2DailyChecklist({
                     <button
                       type="button"
                       onClick={() => recall(item)}
-                      className="rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-5 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99]"
+                      className="rounded-full bg-white border border-[#F1D1BD] text-[#F2662A] font-semibold px-5 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99]"
                     >
                       Recall
                     </button>

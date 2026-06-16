@@ -113,7 +113,7 @@ export default async function ParentGoalPage({
           </form>
           <div className="mt-4 text-[#C3A38A]">
             Progress so far:{" "}
-            <span className="font-semibold text-[#D45B00] tabular-nums">
+            <span className="font-semibold text-[#F2662A] tabular-nums">
               {progress.toLocaleString()} /{" "}
               {active.target_points.toLocaleString()}
             </span>
@@ -207,7 +207,7 @@ export default async function ParentGoalPage({
                       ` · Redeemed ${new Date(g.redeemed_at).toLocaleDateString()}`}
                   </span>
                 </span>
-                <span className="font-semibold text-[#D45B00] tabular-nums">
+                <span className="font-semibold text-[#F2662A] tabular-nums">
                   {g.target_points.toLocaleString()} pts
                   {!g.redeemed_at && (
                     <span className="ml-2 rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs">
@@ -246,7 +246,7 @@ function KidPicker({
             href={`/h/${slug}${basePath}?kid=${k.id}`}
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 ring-1 transition ${
               k.id === selectedId
-                ? "bg-[#FBE3CF] text-[#D45B00] ring-[#F1D1BD] font-semibold"
+                ? "bg-[#FBE3CF] text-[#F2662A] ring-[#F1D1BD] font-semibold"
                 : "bg-white text-[#C3A38A] ring-[#F1D1BD] hover:bg-[#FFF7EE]"
             }`}
           >

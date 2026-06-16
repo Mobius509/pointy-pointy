@@ -53,7 +53,7 @@ export function KidUrlCard({ slug }: { slug: string }) {
           readOnly
           value={url}
           onFocus={(e) => e.currentTarget.select()}
-          className="input-warm flex-1 min-w-[200px] font-mono text-[12px] text-[#733405]"
+          className="input-warm flex-1 min-w-[200px] font-mono text-[12px] text-[#F2662A]"
           aria-label="Kid sign-in URL"
         />
         <button

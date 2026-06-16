@@ -82,9 +82,9 @@ export function AvatarPicker({
                 onClick={() => pick(id)}
                 aria-pressed={isSelected}
                 aria-label={`Choose ${id} avatar`}
-                className={`relative flex-shrink-0 rounded-[24px] bg-[#FEEFE3] transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#D45B00] ${
+                className={`relative flex-shrink-0 rounded-[24px] bg-[#FEEFE3] transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#F2662A] ${
                   isSelected
-                    ? "ring-2 ring-[#D45B00]"
+                    ? "ring-2 ring-[#F2662A]"
                     : "ring-1 ring-[#F1D1BD] hover:ring-[#E6BA9D]"
                 }`}
                 style={{ width: 160, height: 160 }}
@@ -99,7 +99,7 @@ export function AvatarPicker({
                   aria-hidden
                   className={`absolute top-2.5 right-2.5 inline-flex items-center justify-center size-7 rounded-full ${
                     isSelected
-                      ? "bg-[#D45B00] text-white"
+                      ? "bg-[#F2662A] text-white"
                       : "bg-white ring-1 ring-[#F1D1BD]"
                   }`}
                 >

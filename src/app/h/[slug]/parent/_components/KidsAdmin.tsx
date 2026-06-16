@@ -71,7 +71,7 @@ export function KidsAdmin({
                 </form>
 
                 <details className="mt-3">
-                  <summary className="text-[#D45B00] font-semibold cursor-pointer">
+                  <summary className="text-[#F2662A] font-semibold cursor-pointer">
                     Reset PIN
                   </summary>
                   <form
@@ -136,7 +136,7 @@ export function KidsAdmin({
               aria-hidden
               viewBox="0 0 16 16"
               fill="none"
-              className="size-4 text-[#733405] transition-transform group-open:rotate-180 flex-shrink-0"
+              className="size-4 text-[#F2662A] transition-transform group-open:rotate-180 flex-shrink-0"
             >
               <path
                 d="M4 6L8 10L12 6"

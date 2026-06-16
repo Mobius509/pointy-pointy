@@ -53,7 +53,7 @@ export function CoParentManager({
 
   return (
     <section className="card-warm">
-      <span className="inline-block rounded-full bg-[#F9EBE3] text-[#D45B00] px-4 py-1 text-[14px] font-semibold">
+      <span className="inline-block rounded-full bg-[#F9EBE3] text-[#F2662A] px-4 py-1 text-[14px] font-semibold">
         Co-parents
       </span>
       <p className="text-[#C3A38A] mt-2">
@@ -102,7 +102,7 @@ export function CoParentManager({
 
       {generatedUrl && (
         <div className="mt-3 rounded-2xl bg-[#F9EBE3] ring-1 ring-[#F1D1BD] p-3">
-          <p className="text-sm font-semibold text-[#D45B00]">
+          <p className="text-sm font-semibold text-[#F2662A]">
             New invite link
           </p>
           <p className="text-xs text-[#C3A38A] mt-1">
@@ -146,7 +146,7 @@ export function CoParentManager({
                   <button
                     type="button"
                     onClick={() => copyToClipboard(url)}
-                    className="text-xs font-semibold text-[#D45B00] hover:underline"
+                    className="text-xs font-semibold text-[#F2662A] hover:underline"
                   >
                     {copied === url ? "Copied!" : "Copy"}
                   </button>

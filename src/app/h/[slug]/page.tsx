@@ -50,7 +50,7 @@ export default async function KidViewPage({
         <div className="max-w-2xl mx-auto pt-6">
           {kids.length === 0 ? (
             <div className="bg-white rounded-[32px] p-6 text-center">
-              <p className="text-[#733405]">
+              <p className="text-[#F2662A]">
                 A parent hasn&apos;t set up any kids yet. Ask them to log in
                 and add you!
               </p>
@@ -58,7 +58,7 @@ export default async function KidViewPage({
           ) : (
             <>
               {kids.length > 1 && (
-                <h1 className="text-[32px] font-medium text-[#D45B00] text-center mb-4">
+                <h1 className="text-[32px] font-medium text-[#F2662A] text-center mb-4">
                   Who&apos;s here?
                 </h1>
               )}
@@ -151,7 +151,7 @@ export default async function KidViewPage({
               className="block w-40 h-40 -mt-20 object-contain"
             />
             <h1
-              className="mt-1 text-[#D45B00] leading-tight"
+              className="mt-1 text-[#F2662A] leading-tight"
               style={{ fontSize: 26, fontWeight: 700 }}
             >
               {fullName}
@@ -161,7 +161,7 @@ export default async function KidViewPage({
           {/* Right column: 'Current Points'. */}
           <div className="text-right pt-4 sm:pt-6">
             <div
-              className="text-[#D45B00] tabular-nums leading-none"
+              className="text-[#F2662A] tabular-nums leading-none"
               style={{ fontSize: 40, fontWeight: 500 }}
             >
               {progress.toLocaleString()}
@@ -184,7 +184,7 @@ export default async function KidViewPage({
                 🐶
               </span>
               <span
-                className="flex-shrink-0 text-[#733405]"
+                className="flex-shrink-0 text-[#F2662A]"
                 style={{ fontSize: 16, fontWeight: 500 }}
               >
                 {goal.name}
@@ -211,7 +211,7 @@ export default async function KidViewPage({
                       <span
                         key={m.id}
                         className={`absolute -translate-x-1/2 whitespace-nowrap ${
-                          unlocked ? "text-[#D45B00]" : "text-[#C3A38A]"
+                          unlocked ? "text-[#F2662A]" : "text-[#C3A38A]"
                         }`}
                         style={{
                           left: `${left}%`,
@@ -229,7 +229,7 @@ export default async function KidViewPage({
                 <div className="rounded-full bg-[#F1D1BD] px-1 flex items-center h-full">
                   <div className="relative h-6 w-full">
                     <div
-                      className="absolute inset-y-0 left-0 bg-[#D45B00] rounded-full flex items-center justify-center text-white tabular-nums font-semibold transition-[width] duration-500 ease-out"
+                      className="absolute inset-y-0 left-0 bg-[#F2662A] rounded-full flex items-center justify-center text-white tabular-nums font-semibold transition-[width] duration-500 ease-out"
                       style={{
                         width: `max(${goalPct}%, 3rem)`,
                         fontSize: 12,
@@ -249,8 +249,8 @@ export default async function KidViewPage({
                           aria-hidden
                           className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full ${
                             unlocked
-                              ? "size-2.5 bg-white ring-2 ring-[#D45B00]"
-                              : "size-1.5 bg-[#D45B00]/40"
+                              ? "size-2.5 bg-white ring-2 ring-[#F2662A]"
+                              : "size-1.5 bg-[#F2662A]/40"
                           }`}
                           style={{ left: `${left}%`, top: "50%" }}
                         />
@@ -264,7 +264,7 @@ export default async function KidViewPage({
                   style={{ top: "calc(100% + 8px)" }}
                 >
                   <span
-                    className="absolute -translate-x-1/2 text-[#D45B00] tabular-nums"
+                    className="absolute -translate-x-1/2 text-[#F2662A] tabular-nums"
                     style={{
                       left: `max(${goalPct}%, 3rem)`,
                       fontSize: 12,
@@ -274,7 +274,7 @@ export default async function KidViewPage({
                     {goalPct}% There
                   </span>
                   <span
-                    className="absolute right-0 text-[#D45B00] tabular-nums"
+                    className="absolute right-0 text-[#F2662A] tabular-nums"
                     style={{ fontSize: 12, fontWeight: 600 }}
                   >
                     {remaining.toLocaleString()} points to go
@@ -283,7 +283,7 @@ export default async function KidViewPage({
               </div>
 
               <span
-                className="flex-shrink-0 text-[#733405] tabular-nums"
+                className="flex-shrink-0 text-[#F2662A] tabular-nums"
                 style={{ fontSize: 16, fontWeight: 500 }}
               >
                 {goal.target_points.toLocaleString()}
@@ -333,7 +333,7 @@ function Shell({
         <div className="justify-self-end flex items-center gap-5 text-sm">
           <Link
             href={`/h/${slug}/settings`}
-            className="inline-flex items-center gap-1.5 font-semibold text-[#D45B00] hover:opacity-80"
+            className="inline-flex items-center gap-1.5 font-semibold text-[#F2662A] hover:opacity-80"
           >
             <span className="underline underline-offset-4">Settings</span>
             <img
@@ -349,7 +349,7 @@ function Shell({
             <input type="hidden" name="slug" value={slug} />
             <button
               type="submit"
-              className="font-semibold text-[#D45B00] underline underline-offset-4 hover:opacity-80"
+              className="font-semibold text-[#F2662A] underline underline-offset-4 hover:opacity-80"
             >
               Sign Out
             </button>

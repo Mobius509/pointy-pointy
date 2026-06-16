@@ -48,12 +48,12 @@ export function V2KidProposal({
       <div className="grid gap-6 md:grid-cols-[1fr_2fr] items-start">
         <div>
           <h3
-            className="text-[#733405] leading-tight"
+            className="text-[#F2662A] leading-tight"
             style={{ fontSize: 18, fontWeight: 700 }}
           >
             Did something extra?
           </h3>
-          <p className="mt-2 text-[#D45B00] text-[12px] font-semibold leading-snug">
+          <p className="mt-2 text-[#F2662A] text-[12px] font-semibold leading-snug">
             Tell a parent what you did — they&apos;ll decide how many points
             it deserves.
           </p>
@@ -69,12 +69,12 @@ export function V2KidProposal({
             maxLength={120}
             placeholder="What was it?"
             disabled={pending}
-            className="w-full min-h-[80px] bg-transparent border-0 resize-none focus:outline-none text-[14px] text-[#733405] placeholder:text-[#C3A38A] pr-32"
+            className="w-full min-h-[80px] bg-transparent border-0 resize-none focus:outline-none text-[14px] text-[#F2662A] placeholder:text-[#C3A38A] pr-32"
           />
           <button
             type="submit"
             disabled={pending || !name.trim()}
-            className="absolute bottom-3 right-3 rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-4 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
+            className="absolute bottom-3 right-3 rounded-full bg-white border border-[#F1D1BD] text-[#F2662A] font-semibold px-4 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
           >
             {pending ? "Sending…" : "Send to Parents"}
           </button>

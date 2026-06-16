@@ -136,7 +136,7 @@ export function KidSettingsPanel({
     <section className="bg-white rounded-[32px] p-6 sm:p-8 shadow-lg">
       {/* Avatar */}
       <h2
-        className="text-[#733405] leading-tight"
+        className="text-[#F2662A] leading-tight"
         style={{ fontSize: 21, fontWeight: 500 }}
       >
         Select avatar
@@ -163,12 +163,12 @@ export function KidSettingsPanel({
 
       {/* Notifications */}
       <h2
-        className="text-[#733405] leading-tight"
+        className="text-[#F2662A] leading-tight"
         style={{ fontSize: 21, fontWeight: 500 }}
       >
         Turn On Notifications
       </h2>
-      <p className="mt-2 text-[#D45B00] text-[12px] font-medium leading-snug">
+      <p className="mt-2 text-[#F2662A] text-[12px] font-medium leading-snug">
         To turn on notifications you need to add Pointy Points to your home
         screen as an app.
       </p>
@@ -196,7 +196,7 @@ export function KidSettingsPanel({
               className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[14px] font-semibold transition ${
                 notifState === "on"
                   ? "bg-[#D1FAE5] text-[#065F46]"
-                  : "text-[#733405] hover:bg-white"
+                  : "text-[#F2662A] hover:bg-white"
               }`}
             >
               {notifState === "on" && (
@@ -223,8 +223,8 @@ export function KidSettingsPanel({
               disabled={notifPending || notifState === "off"}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[14px] font-semibold transition ${
                 notifState === "off"
-                  ? "bg-white text-[#733405] ring-1 ring-[#F1D1BD]"
-                  : "text-[#733405] hover:bg-white"
+                  ? "bg-white text-[#F2662A] ring-1 ring-[#F1D1BD]"
+                  : "text-[#F2662A] hover:bg-white"
               }`}
             >
               Off

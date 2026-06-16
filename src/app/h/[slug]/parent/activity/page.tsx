@@ -52,8 +52,8 @@ export default async function ParentActivityPage({
               return (
                 <div key={day}>
                   <div className="flex items-baseline justify-between mb-2">
-                    <h3 className="font-semibold text-[#D45B00]">{day}</h3>
-                    <span className="font-semibold text-[#D45B00] tabular-nums">
+                    <h3 className="font-semibold text-[#F2662A]">{day}</h3>
+                    <span className="font-semibold text-[#F2662A] tabular-nums">
                       +{dayTotal}
                     </span>
                   </div>
@@ -102,7 +102,7 @@ export default async function ParentActivityPage({
                           <span className="flex items-center gap-2">
                             <span
                               className={`font-semibold tabular-nums ${
-                                pending ? "text-amber-700" : "text-[#D45B00]"
+                                pending ? "text-amber-700" : "text-[#F2662A]"
                               }`}
                             >
                               +{c.points_snapshot}
@@ -118,7 +118,7 @@ export default async function ParentActivityPage({
                                   <input type="hidden" name="id" value={c.id} />
                                   <button
                                     type="submit"
-                                    className="rounded-full bg-[#FBE3CF] text-[#D45B00] font-semibold px-3 py-1 text-xs"
+                                    className="rounded-full bg-[#FBE3CF] text-[#F2662A] font-semibold px-3 py-1 text-xs"
                                   >
                                     Approve
                                   </button>
@@ -132,7 +132,7 @@ export default async function ParentActivityPage({
                                   <input type="hidden" name="id" value={c.id} />
                                   <button
                                     type="submit"
-                                    className="rounded-full bg-white border border-[#F1D1BD] text-[#D45B00] font-semibold px-3 py-1 text-xs"
+                                    className="rounded-full bg-white border border-[#F1D1BD] text-[#F2662A] font-semibold px-3 py-1 text-xs"
                                   >
                                     Deny
                                   </button>

@@ -133,7 +133,7 @@ export default async function ParentTasksPage({
                           type="submit"
                           disabled={isFirst}
                           aria-label="Move up"
-                          className="grid place-items-center size-7 rounded-lg ring-1 ring-[#F1D1BD] bg-white text-[#D45B00] hover:bg-[#FFF7EE] disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="grid place-items-center size-7 rounded-lg ring-1 ring-[#F1D1BD] bg-white text-[#F2662A] hover:bg-[#FFF7EE] disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           ▲
                         </button>
@@ -145,7 +145,7 @@ export default async function ParentTasksPage({
                           type="submit"
                           disabled={isLast}
                           aria-label="Move down"
-                          className="grid place-items-center size-7 rounded-lg ring-1 ring-[#F1D1BD] bg-white text-[#D45B00] hover:bg-[#FFF7EE] disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="grid place-items-center size-7 rounded-lg ring-1 ring-[#F1D1BD] bg-white text-[#F2662A] hover:bg-[#FFF7EE] disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           ▼
                         </button>
@@ -198,12 +198,12 @@ export default async function ParentTasksPage({
                           ))}
                         </select>
                       </div>
-                      <label className="flex items-center gap-2 text-[#D45B00] font-semibold">
+                      <label className="flex items-center gap-2 text-[#F2662A] font-semibold">
                         <input
                           type="checkbox"
                           name="active"
                           defaultChecked={t.active}
-                          className="accent-[#D45B00]"
+                          className="accent-[#F2662A]"
                         />
                         Active
                       </label>
