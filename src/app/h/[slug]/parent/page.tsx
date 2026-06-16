@@ -1,5 +1,4 @@
 import { requireHouseholdAccess } from "@/lib/v2/auth";
-import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import {
   getActiveGoalForKid,
   getActiveRecurringTasks,
@@ -11,7 +10,6 @@ import {
   getMilestonesForGoal,
 } from "@/lib/v2/data";
 import { computePeriodKey, type Frequency } from "@/lib/time";
-import { FamilyStatsCard } from "./_components/FamilyStatsCard";
 import { KidOverviewCard } from "./_components/KidOverviewCard";
 import { PageTitle } from "./_components/ui";
 
@@ -25,17 +23,11 @@ export default async function ParentOverviewPage({
   const { slug } = await params;
   const household = await requireHouseholdAccess(slug);
 
-  const [kids, tasks, pendingAll, activeGoalsResult] = await Promise.all([
+  const [kids, tasks, pendingAll] = await Promise.all([
     getKidProfiles(household.id),
     getActiveRecurringTasks(household.id),
     getHouseholdPendingCompletions(household.id),
-    supabaseV2Admin
-      .from("goals")
-      .select("id", { count: "exact", head: true })
-      .eq("household_id", household.id)
-      .is("redeemed_at", null),
   ]);
-  const goalCount = activeGoalsResult.count ?? 0;
   const taskById = new Map(tasks.map((t) => [t.id, t]));
 
   // Pre-compute period keys per task — same value for tasks of the same
@@ -103,14 +95,7 @@ export default async function ParentOverviewPage({
 
   return (
     <div className="space-y-6">
-      <PageTitle>Overview</PageTitle>
-
-      <FamilyStatsCard
-        householdName={household.name}
-        kids={kids}
-        taskCount={tasks.length}
-        goalCount={goalCount}
-      />
+      <PageTitle>Review</PageTitle>
 
       {kids.length === 0 ? (
         <section className="rounded-2xl bg-white p-6 text-center shadow-sm">

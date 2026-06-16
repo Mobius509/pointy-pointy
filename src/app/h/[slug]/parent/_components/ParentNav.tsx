@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 const TABS = [
-  { label: "Overview", path: "" },
+  { label: "Review", path: "" },
   { label: "Tasks", path: "/tasks" },
   { label: "Activity", path: "/activity" },
   { label: "Goal", path: "/goal" },
