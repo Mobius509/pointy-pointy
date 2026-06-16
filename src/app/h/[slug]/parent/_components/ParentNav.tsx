@@ -138,7 +138,7 @@ function MobileHamburger({
       {open && (
         <nav
           role="menu"
-          className="absolute left-0 mt-2 min-w-[200px] rounded-2xl bg-white shadow-lg ring-1 ring-[#F1D1BD] p-1 z-50"
+          className="absolute right-0 mt-2 min-w-[200px] rounded-2xl bg-white shadow-lg ring-1 ring-[#F1D1BD] p-1 z-50"
         >
           {TABS.map((t) => {
             const href = `${base}${t.path}`;
