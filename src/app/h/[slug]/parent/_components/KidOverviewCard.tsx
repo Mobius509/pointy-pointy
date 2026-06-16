@@ -266,23 +266,30 @@ export function KidOverviewCard({
 
       {/* Goal strip — attached directly under the white card (no top
           margin), indented by 16px from each side. Both the white card
-          above and this strip have rounded corners. */}
+          above and this strip have rounded corners.
+          Mobile (< sm) stacks vertically: icon+name row 1, bar row 2,
+          numbers row 3 (current left, target right). Desktop keeps the
+          single-row layout. */}
       {goal && (
         <div className="mx-4 bg-[#F0DCCF] rounded-[24px] px-6 sm:px-8 py-4 sm:py-5">
-          <div className="flex items-center gap-3 sm:gap-5">
-            <span className="text-3xl sm:text-4xl flex-shrink-0" aria-hidden>
-              🐶
-            </span>
-            <span
-              className="flex-shrink-0 text-[#733405]"
-              style={{ fontSize: 16, fontWeight: 500 }}
-            >
-              {goal.name}
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-3xl sm:text-4xl flex-shrink-0" aria-hidden>
+                🐶
+              </span>
+              <span
+                className="flex-shrink-0 text-[#733405]"
+                style={{ fontSize: 16, fontWeight: 500 }}
+              >
+                {goal.name}
+              </span>
+            </div>
 
-            <div className="relative flex-1 min-w-[120px]">
+            <div className="relative flex-1 min-w-0">
+              {/* Milestone name labels — above the bar on desktop only.
+                  Hidden on mobile where they'd cramp the vertical layout. */}
               <div
-                className="absolute inset-x-0 pointer-events-none h-4"
+                className="hidden sm:block absolute inset-x-0 pointer-events-none h-4"
                 style={{ bottom: "calc(100% + 2px)" }}
               >
                 {milestones.map((m) => {
@@ -334,10 +341,22 @@ export function KidOverviewCard({
                   );
                 })}
               </div>
+              {/* Mobile-only footer under the bar — current points left,
+                  target right. Matches the kid view's number treatment. */}
+              <div
+                className="flex sm:hidden items-center justify-between mt-1.5 text-[#733405] tabular-nums"
+                style={{ fontSize: 12, fontWeight: 600 }}
+              >
+                <span className="text-[#D45B00]">
+                  {progress.toLocaleString()}
+                </span>
+                <span>{goal.target_points.toLocaleString()}</span>
+              </div>
             </div>
 
+            {/* Desktop-only target on the right of the bar. */}
             <span
-              className="flex-shrink-0 text-[#733405] tabular-nums"
+              className="hidden sm:inline flex-shrink-0 text-[#733405] tabular-nums"
               style={{ fontSize: 16, fontWeight: 500 }}
             >
               {goal.target_points.toLocaleString()}
