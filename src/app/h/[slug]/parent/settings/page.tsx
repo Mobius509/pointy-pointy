@@ -4,6 +4,7 @@ import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
 import { updateHouseholdSettingsAction } from "../_actions/settings";
 import { CoParentManager } from "../_components/CoParentManager";
 import { KidsAdmin } from "../_components/KidsAdmin";
+import { KidUrlCard } from "../_components/KidUrlCard";
 import { PageTitle, SectionPill } from "../_components/ui";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +37,8 @@ export default async function ParentSettingsPage({
   return (
     <div className="space-y-6 text-[14px]">
       <PageTitle>Settings</PageTitle>
+
+      <KidUrlCard slug={slug} />
 
       <KidsAdmin slug={slug} kids={kids} />
 
