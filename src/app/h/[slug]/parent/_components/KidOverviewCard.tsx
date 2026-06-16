@@ -89,9 +89,12 @@ export function KidOverviewCard({
           Fully rounded; the goal strip attaches directly underneath. */}
       <div className="bg-white rounded-[32px] p-5 sm:p-8 shadow-sm">
         <div className="grid gap-6 md:grid-cols-[130px_1fr] text-[14px]">
-          {/* Left column: avatar card + points card (with Award Bonus). */}
-          <div className="space-y-6">
-            <div className="bg-[#F9EBE3] rounded-[22px] w-[130px] px-3 pt-5 pb-4 text-center">
+          {/* Left column: avatar card + points card (with Award Bonus).
+              On mobile the two cards sit side-by-side at 50/50 so they
+              fill the whole white-card width; on md+ they stack inside
+              the 130px-wide left grid column. */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-6">
+            <div className="bg-[#F9EBE3] rounded-[22px] w-full px-3 pt-5 pb-4 text-center">
               <img
                 src={avatarSrc(kid.avatar_emoji)}
                 alt=""
@@ -106,7 +109,7 @@ export function KidOverviewCard({
               </h3>
             </div>
 
-            <div className="relative bg-[#F9EBE3] rounded-[22px] w-[130px] px-3 pt-5 pb-7 text-center mb-5">
+            <div className="relative bg-[#F9EBE3] rounded-[22px] w-full px-3 pt-5 pb-7 text-center mb-5">
               <div
                 className="text-[#D45B00] tabular-nums leading-none"
                 style={{ fontSize: 40, fontWeight: 500 }}
