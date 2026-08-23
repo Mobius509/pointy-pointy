@@ -11,7 +11,7 @@ export function PageTitle({ children }: { children: React.ReactNode }) {
 
 export function SectionPill({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-block rounded-full bg-[#F9EBE3] text-[#F2662A] px-4 py-1 text-[14px] font-semibold">
+    <span className="inline-block rounded-full bg-[#F9EBE3] text-[#B64B11] px-4 py-1 text-[14px] font-semibold">
       {children}
     </span>
   );
@@ -19,6 +19,6 @@ export function SectionPill({ children }: { children: React.ReactNode }) {
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-[18px] font-medium text-[#F2662A]">{children}</h2>
+    <h2 className="text-[18px] font-medium text-[#B64B11]">{children}</h2>
   );
 }

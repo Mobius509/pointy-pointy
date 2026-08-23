@@ -24,7 +24,7 @@ export function MilestonesManager({
   return (
     <div>
       <h3
-        className="text-[#F2662A]"
+        className="text-[#B64B11]"
         style={{ fontSize: 14, fontWeight: 600 }}
       >
         Milestones

@@ -69,7 +69,7 @@ function ModalShell({
     <div
       className="relative min-h-screen flex items-start justify-center px-4 py-10 sm:py-16"
       style={{
-        background: "linear-gradient(180deg, #E6BA9D 0%, #FFF2E9 100%)",
+        background: "#FFF2E9",
       }}
     >
       <div className="relative w-full max-w-2xl">

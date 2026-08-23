@@ -52,7 +52,7 @@ export default async function ParentActivityPage({
               return (
                 <div key={day}>
                   <div className="flex items-baseline justify-between mb-2">
-                    <h3 className="font-semibold text-[#F2662A]">{day}</h3>
+                    <h3 className="font-semibold text-[#B64B11]">{day}</h3>
                     <span className="font-semibold text-[#F2662A] tabular-nums">
                       +{dayTotal}
                     </span>

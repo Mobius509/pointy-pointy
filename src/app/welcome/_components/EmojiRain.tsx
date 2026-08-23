@@ -20,15 +20,18 @@ const SOURCES = [
   "/emojis/vacation.png",
 ];
 
-// Pick count + size based on viewport so the rain doesn't feel crowded
-// on phones. Tuned by hand: phone ~6 small drops, tablet ~12 medium,
-// desktop full 18 at 150px.
-function pickCountAndSize(w: number): { count: number; size: number } {
-  if (w >= 1280) return { count: 18, size: 150 };
-  if (w >= 1024) return { count: 14, size: 140 };
-  if (w >= 768) return { count: 11, size: 120 };
-  if (w >= 480) return { count: 8, size: 100 };
-  return { count: 6, size: 90 };
+// Pick a count + size RANGE based on viewport. Each particle then picks
+// a random size within the range so the rain has visible scale variety
+// rather than uniform discs. Mobile caps at 180px; desktop tops out at
+// 250px per the latest spec.
+function pickCountAndSizeRange(
+  w: number,
+): { count: number; sizeMin: number; sizeMax: number } {
+  if (w >= 1280) return { count: 14, sizeMin: 160, sizeMax: 250 };
+  if (w >= 1024) return { count: 12, sizeMin: 150, sizeMax: 220 };
+  if (w >= 768) return { count: 10, sizeMin: 140, sizeMax: 200 };
+  if (w >= 480) return { count: 8, sizeMin: 120, sizeMax: 180 };
+  return { count: 6, sizeMin: 100, sizeMax: 180 };
 }
 
 const GRAVITY = 0.009;
@@ -42,6 +45,10 @@ type Sample = { x: number; y: number; t: number };
 
 type Particle = {
   el: HTMLImageElement;
+  // Pixel size of this particle (square) and its collision radius. Both
+  // are per-particle now so the rain has visible scale variety.
+  size: number;
+  radius: number;
   x: number;
   y: number;
   vx: number;
@@ -66,25 +73,40 @@ function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
-export function EmojiRain() {
-  const containerRef = useRef<HTMLDivElement>(null);
+// Renders two overlapping layers so particles can sit in front of OR
+// behind whatever the page composes (e.g. a translucent white card).
+// Place page content as `children` — it lands in the DOM between the
+// two layers and just needs its own z-index between back (z-0) and
+// front (z-20) for the depth illusion to read.
+//
+// Particles are randomly assigned to one of the two layers on creation
+// so the scatter feels organic. Collisions still happen within each
+// layer's set; we don't cross-layer collide (and it doesn't read as a
+// problem visually).
+export function EmojiRain({ children }: { children?: React.ReactNode }) {
+  const backRef = useRef<HTMLDivElement>(null);
+  const frontRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const back = backRef.current;
+    const front = frontRef.current;
+    if (!back || !front) return;
 
     const W = () => window.innerWidth;
     const H = () => window.innerHeight;
 
-    const { count, size } = pickCountAndSize(W());
-    // Treat each emoji as a circle a bit smaller than its bbox so transparent
-    // padding around the artwork doesn't make collisions feel off.
-    const radius = (size / 2) * 0.78;
+    const { count, sizeMin, sizeMax } = pickCountAndSizeRange(W());
 
     const particles: Particle[] = [];
 
     // Create img elements directly (avoids React re-renders per frame).
     for (let i = 0; i < count; i++) {
+      const size = Math.round(rand(sizeMin, sizeMax));
+      // Treat each emoji as a circle a bit smaller than its bbox so
+      // transparent padding around the artwork doesn't make collisions
+      // feel off.
+      const radius = (size / 2) * 0.78;
+
       const el = document.createElement("img");
       el.src = SOURCES[i % SOURCES.length];
       el.alt = "";
@@ -102,10 +124,15 @@ export function EmojiRain() {
       // they're grabbable.
       el.style.pointerEvents = "auto";
       el.style.cursor = "grab";
-      container.appendChild(el);
+      // 40% of particles land behind the page content, 60% in front, so
+      // the white card looks sandwiched in the depth stack.
+      const target = Math.random() < 0.4 ? back : front;
+      target.appendChild(el);
 
       const p: Particle = {
         el,
+        size,
+        radius,
         // Spread initial particles across (and above) the viewport so the
         // page doesn't start empty.
         x: rand(0, Math.max(0, W() - size)),
@@ -227,8 +254,8 @@ export function EmojiRain() {
           p.x = 0;
           p.vx = Math.abs(p.vx) * WALL_DAMP;
         }
-        if (p.x > w - size) {
-          p.x = w - size;
+        if (p.x > w - p.size) {
+          p.x = w - p.size;
           p.vx = -Math.abs(p.vx) * WALL_DAMP;
         }
       }
@@ -237,19 +264,20 @@ export function EmojiRain() {
       // exchange velocity along the contact normal (subtle elastic). A
       // dragged particle still participates so users can shove others
       // around with it; we just don't give the dragged one a velocity kick.
-      const minDist = radius * 2;
-      const minDistSq = minDist * minDist;
+      // minDist is now per-pair since each particle has its own radius.
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const a = particles[i];
           const b = particles[j];
-          const ax = a.x + size / 2;
-          const ay = a.y + size / 2;
-          const bx = b.x + size / 2;
-          const by = b.y + size / 2;
+          const ax = a.x + a.size / 2;
+          const ay = a.y + a.size / 2;
+          const bx = b.x + b.size / 2;
+          const by = b.y + b.size / 2;
           const dx = bx - ax;
           const dy = by - ay;
           const dSq = dx * dx + dy * dy;
+          const minDist = a.radius + b.radius;
+          const minDistSq = minDist * minDist;
           if (dSq < minDistSq && dSq > 0.001) {
             const dist = Math.sqrt(dSq);
             const nx = dx / dist;
@@ -296,11 +324,13 @@ export function EmojiRain() {
 
       // Respawn at the top once a particle falls past the bottom. Re-roll
       // gravity multiplier so the speed mix keeps shuffling over time.
+      // Size + radius are kept stable per particle for the life of the
+      // session so the visual cast doesn't morph.
       for (const p of particles) {
         if (p.dragging) continue;
-        if (p.y > h + size) {
-          p.y = -size - rand(0, 200);
-          p.x = rand(0, Math.max(0, W() - size));
+        if (p.y > h + p.size) {
+          p.y = -p.size - rand(0, 200);
+          p.x = rand(0, Math.max(0, W() - p.size));
           p.vx = rand(-0.3, 0.3);
           p.vy = rand(0.05, 0.8);
           p.rotSpeed = rand(-1.2, 1.2);
@@ -326,10 +356,18 @@ export function EmojiRain() {
   }, []);
 
   return (
-    <div
-      aria-hidden
-      ref={containerRef}
-      className="pointer-events-none absolute inset-0 overflow-hidden z-[25]"
-    />
+    <>
+      <div
+        aria-hidden
+        ref={backRef}
+        className="pointer-events-none absolute inset-0 overflow-hidden z-0"
+      />
+      {children}
+      <div
+        aria-hidden
+        ref={frontRef}
+        className="pointer-events-none absolute inset-0 overflow-hidden z-20"
+      />
+    </>
   );
 }

@@ -125,7 +125,9 @@ export default async function KidViewPage({
     (c) => c.is_bonus && c.task_id === null && c.status === "pending",
   );
 
-  const fullName = `${kid.name} ${household.name as string}`;
+  // First name only on every screen — last name (= family name) takes up
+  // too much room in the centered header and isn't needed by the kid.
+  const displayName = kid.name;
   const remaining = goal
     ? Math.max(0, goal.target_points - progress)
     : 0;
@@ -136,69 +138,54 @@ export default async function KidViewPage({
   return (
     <Shell slug={slug}>
       {/* Outer translucent panel — same shell treatment as the parent admin.
-          The avatar sits half above / half inside the panel; the name
-          appears directly beneath it, and 'Current Points' sits in the
-          top-right of the panel. */}
-      <div className="relative bg-white/60 backdrop-blur-md rounded-[32px] px-6 sm:px-10 pt-0 pb-6 sm:pb-10 mt-24 sm:mt-28">
-        <div className="grid grid-cols-[auto_1fr] gap-x-4 sm:gap-x-6 items-start">
-          {/* Left column: avatar (negative top margin pushes it half above
-              the panel) + the kid's full name directly beneath. */}
-          <div className="flex flex-col items-start">
-            <img
-              src={avatarSrc(kid.avatar_emoji)}
-              alt=""
-              aria-hidden
-              className="block w-40 h-40 -mt-20 object-contain"
-            />
-            <h1
-              className="mt-1 text-[#F2662A] leading-tight"
-              style={{ fontSize: 26, fontWeight: 700 }}
-            >
-              {fullName}
-            </h1>
-          </div>
-
-          {/* Right column: 'Current Points'. */}
-          <div className="text-right pt-4 sm:pt-6">
-            <div
-              className="text-[#F2662A] tabular-nums leading-none"
-              style={{ fontSize: 40, fontWeight: 500 }}
-            >
-              {progress.toLocaleString()}
-            </div>
-            <div
-              className="mt-2 text-[#C3A38A]"
-              style={{ fontSize: 12, fontWeight: 500 }}
-            >
-              Current Points
-            </div>
-          </div>
+          Avatar centered above (half above / half inside), kid name
+          centered directly underneath. Current points is shown inside
+          the progress-bar fill, so we don't need a separate big counter. */}
+      <div className="relative bg-white/60 backdrop-blur-md rounded-[32px] px-3 sm:px-8 pt-0 pb-3 sm:pb-8 mt-24 sm:mt-28">
+        <div className="flex flex-col items-center">
+          <img
+            src={avatarSrc(kid.avatar_emoji)}
+            alt=""
+            aria-hidden
+            className="block w-40 h-40 -mt-20 object-contain"
+          />
+          <h1
+            className="mt-1 text-[#F2662A] leading-tight text-center"
+            style={{ fontSize: 26, fontWeight: 700 }}
+          >
+            {displayName}
+          </h1>
         </div>
 
         <div className="mt-6 space-y-6">
           {/* Progress card */}
         {goal && (
-          <section className="bg-white rounded-[32px] px-5 sm:px-8 py-[50px] shadow-sm">
-            <div className="flex items-center gap-3 sm:gap-5">
-              <span className="text-3xl sm:text-4xl flex-shrink-0" aria-hidden>
-                🐶
-              </span>
-              <span
-                className="flex-shrink-0 text-[#F2662A]"
-                style={{ fontSize: 16, fontWeight: 500 }}
-              >
-                {goal.name}
-              </span>
+          <section className="bg-white rounded-[32px] px-4 sm:px-6 py-6 sm:py-10 shadow-sm">
+            {/* Mobile: vertical stack — icon+name, then bar, then footer.
+                Desktop: original single-row layout with absolutely
+                positioned milestone labels and footer. */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
+              {/* Icon + goal name. */}
+              <div className="flex items-center gap-3 sm:gap-5 min-w-0">
+                <span className="text-3xl sm:text-4xl flex-shrink-0" aria-hidden>
+                  🐶
+                </span>
+                <span
+                  className="flex-shrink-0 text-[#B64B11]"
+                  style={{ fontSize: 16, fontWeight: 500 }}
+                >
+                  {goal.name}
+                </span>
+              </div>
 
-              {/* Bar wrapper height === bar height so flex items-center on the
-                  parent aligns the emoji/label/target with the bar's
-                  centerline. Milestone labels (above) and the footer (below)
-                  are absolutely positioned so they don't change the wrapper
-                  height. */}
-              <div className="relative flex-1 min-w-[160px] h-8">
-                {/* Milestone labels — 8px above the bar */}
+              {/* Bar + its labels/footer. On desktop the labels above
+                  and the footer below are absolutely positioned. On
+                  mobile they flow naturally as block rows. */}
+              <div className="relative flex-1 sm:min-w-[160px] sm:h-8">
+                {/* Milestone name labels — desktop only (above the bar).
+                    Hidden on mobile to avoid clipping/overlap. */}
                 <div
-                  className="absolute inset-x-0 pointer-events-none h-4"
+                  className="hidden sm:block absolute inset-x-0 pointer-events-none h-4"
                   style={{ bottom: "calc(100% + 8px)" }}
                 >
                   {milestones.map((m) => {
@@ -226,7 +213,7 @@ export default async function KidViewPage({
                   })}
                 </div>
                 {/* Bar */}
-                <div className="rounded-full bg-[#F1D1BD] px-1 flex items-center h-full">
+                <div className="rounded-full bg-[#F1D1BD] px-1 flex items-center h-8 sm:h-full">
                   <div className="relative h-6 w-full">
                     <div
                       className="absolute inset-y-0 left-0 bg-[#F2662A] rounded-full flex items-center justify-center text-white tabular-nums font-semibold transition-[width] duration-500 ease-out"
@@ -258,9 +245,22 @@ export default async function KidViewPage({
                     })}
                   </div>
                 </div>
-                {/* Footer — 8px below the bar */}
+                {/* Mobile footer — flows below the bar as a flex row.
+                    On desktop the absolute-positioned footer below
+                    handles this with the % indicator anchored to the
+                    progress edge. */}
                 <div
-                  className="absolute inset-x-0 h-4"
+                  className="flex sm:hidden items-center justify-between mt-2 text-[#F2662A] tabular-nums"
+                  style={{ fontSize: 12, fontWeight: 600 }}
+                >
+                  <span>{goalPct}% There</span>
+                  <span>
+                    {remaining.toLocaleString()} points to go
+                  </span>
+                </div>
+                {/* Desktop footer — absolutely positioned 8px below. */}
+                <div
+                  className="hidden sm:block absolute inset-x-0 h-4"
                   style={{ top: "calc(100% + 8px)" }}
                 >
                   <span
@@ -282,8 +282,10 @@ export default async function KidViewPage({
                 </div>
               </div>
 
+              {/* Target — desktop only. On mobile the "points to go"
+                  footer already conveys the gap. */}
               <span
-                className="flex-shrink-0 text-[#F2662A] tabular-nums"
+                className="hidden sm:inline flex-shrink-0 text-[#F2662A] tabular-nums"
                 style={{ fontSize: 16, fontWeight: 500 }}
               >
                 {goal.target_points.toLocaleString()}
@@ -293,7 +295,7 @@ export default async function KidViewPage({
         )}
 
         {/* Tasks list */}
-        <section className="bg-white rounded-[32px] p-5 sm:p-8 shadow-sm">
+        <section className="bg-white rounded-[32px] p-4 sm:p-6 shadow-sm">
           <V2DailyChecklist slug={slug} items={items} />
         </section>
 
@@ -316,7 +318,7 @@ function Shell({
     <div
       className="relative min-h-screen flex flex-col"
       style={{
-        background: "linear-gradient(180deg, #E6BA9D 0%, #FFF2E9 100%)",
+        background: "#FFF2E9",
       }}
     >
       <header className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-6 sm:px-8 py-5">

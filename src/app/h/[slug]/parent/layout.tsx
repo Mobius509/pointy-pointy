@@ -20,7 +20,7 @@ export default async function ParentAdminLayout({
     <div
       className="relative min-h-screen flex flex-col"
       style={{
-        background: "linear-gradient(180deg, #E6BA9D 0%, #FFF2E9 100%)",
+        background: "#FFF2E9",
       }}
     >
       {/* Mobile (<sm): logo left, hamburger right (menu contains Sign Out).
@@ -60,7 +60,7 @@ export default async function ParentAdminLayout({
 
       <main className="flex-1 px-4 sm:px-6 pb-10">
         <div
-          className="mx-auto w-full max-w-5xl bg-white/60 backdrop-blur-md p-6 sm:p-10"
+          className="mx-auto w-full max-w-5xl bg-white/60 backdrop-blur-md p-3 sm:p-8"
           style={{ borderRadius: 32 }}
         >
           {children}

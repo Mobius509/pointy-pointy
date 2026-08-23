@@ -5,12 +5,20 @@ import { EmojiRain } from "@/app/welcome/_components/EmojiRain";
 import { getFirstHouseholdForCurrentUser } from "@/lib/v2/auth";
 
 export const metadata = {
-  title: "Pointy Points — A new way to reward kids",
+  title: "Pointy Points — Reward system for kids",
 };
 
-// If the user is already signed in, send them straight to their household.
-// Otherwise show the marketing landing with sign-in / sign-up CTAs.
-export default async function V2LandingPage() {
+const PURPLE = "#4730D9"; // primary indigo for buttons + text accents
+const BLUE = "#3BAAF7"; // bright blue, right side of title gradient
+const TITLE_GRADIENT = `linear-gradient(90deg, ${PURPLE} 0%, ${BLUE} 100%)`;
+const BG_GRADIENT = "linear-gradient(180deg, #DCD9FB 0%, #F1F0FE 100%)";
+
+// Marketing landing. Already-signed-in parents skip straight to their
+// household admin; everyone else sees the title, the role-specific
+// sign-in CTAs, and the floating emoji rain. EmojiRain wraps the page
+// content so its back layer (z-0) and front layer (z-20) sandwich the
+// white card (z-10) for depth — some emojis in front, some behind.
+export default async function HomeLandingPage() {
   const household = await getFirstHouseholdForCurrentUser();
   if (household) {
     redirect(`/h/${household.slug}/parent`);
@@ -19,82 +27,133 @@ export default async function V2LandingPage() {
   return (
     <div
       className="relative min-h-screen flex flex-col overflow-hidden"
-      style={{
-        background: "linear-gradient(180deg, #E6BA9D 0%, #FFF2E9 100%)",
-      }}
+      style={{ background: BG_GRADIENT }}
     >
-      <EmojiRain />
-
-      <header className="relative z-20 w-full flex items-center justify-between px-[36px] py-5 text-sm">
-        <Link href="/" className="flex items-center gap-3 group">
-          <img
-            src="/logos/logo_badge.svg"
-            alt="Pointy Points"
-            width={21}
-            height={32}
-            className="w-[21px] h-[32px]"
-          />
-          <span className="hidden sm:inline text-orange-800 font-semibold underline underline-offset-4 hover:text-orange-900">
+      <EmojiRain>
+        {/* Desktop-only header — logo top-left, 'What is Pointy Points'
+            top-right. On mobile the logo lives inside the card and there's
+            no external header. z-30 keeps it above the front emoji layer. */}
+        <header className="relative z-30 hidden sm:flex items-center justify-between px-6 sm:px-9 py-5 text-sm">
+          <Link href="/" aria-label="Pointy Points home" className="group">
+            <img
+              src="/logos/logo_badge.svg"
+              alt="Pointy Points"
+              width={36}
+              height={54}
+              className="w-9 h-[54px] group-hover:animate-wiggle"
+            />
+          </Link>
+          <Link
+            href="#about"
+            className="font-semibold underline underline-offset-4"
+            style={{ color: PURPLE }}
+          >
             What is Pointy Points
-          </span>
-        </Link>
-        <nav className="flex items-center gap-5 text-orange-800 font-semibold">
-          <Link
-            href="/sign-in"
-            className="underline underline-offset-4 hover:text-orange-900"
-          >
-            Sign In
           </Link>
-          <Link
-            href="/sign-up"
-            className="underline underline-offset-4 hover:text-orange-900"
-          >
-            Sign Up
-          </Link>
-        </nav>
-      </header>
+        </header>
 
-      <main className="relative z-20 flex-1 flex flex-col items-center justify-center px-6 pb-[300px] text-center">
-        <img
-          src="/logos/logo_badge.svg"
-          alt=""
-          aria-hidden
-          width={45}
-          height={68}
-          className="w-[45px] h-[68px]"
-        />
-        <img
-          src="/logos/Logo_Type.svg"
-          alt="Pointy Points"
-          className="mt-4 w-[200px] sm:w-[260px]"
-        />
-        <p className="mt-5 text-base sm:text-lg text-orange-900/80 font-medium">
-          A new way to reward kids
-        </p>
-      </main>
+        <main className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4 sm:gap-0 px-4 sm:px-6 py-6 sm:py-12">
+          <div className="w-full max-w-md min-h-[80vh] bg-white/55 backdrop-blur-md rounded-[32px] p-6 sm:p-10 text-center shadow-sm flex flex-col">
+            {/* Top content — logo + title + subtitle. */}
+            <div>
+              <img
+                src="/logos/logo_badge.svg"
+                alt=""
+                aria-hidden
+                width={48}
+                height={72}
+                className="mx-auto w-12 h-[72px]"
+              />
 
-      <div
-        id="signin"
-        className="fixed bottom-0 inset-x-0 z-30 flex justify-center"
-      >
-        <div
-          className="w-full max-w-2xl bg-white/60 backdrop-blur-md pt-20 pb-[60px] px-6 sm:px-[100px]"
-          style={{ borderTopLeftRadius: 58, borderTopRightRadius: 58 }}
-        >
-          <Link
-            href="/sign-in"
-            className="block mx-auto w-[280px] rounded-full bg-cyan-200 hover:bg-cyan-300 active:scale-[0.99] transition text-cyan-950 font-bold py-3 text-base text-center"
-          >
-            Sign In
-          </Link>
-          <Link
-            href="/sign-up"
-            className="mt-3 block mx-auto w-[280px] rounded-full bg-cyan-200 hover:bg-cyan-300 active:scale-[0.99] transition text-cyan-950 font-bold py-3 text-base text-center"
-          >
-            Sign Up
-          </Link>
-        </div>
-      </div>
+              {/* Title width is tuned to 276px (mobile) / 314px (desktop)
+                  per the spec — font-size and fit-content hold the
+                  wordmark to that footprint regardless of viewport. */}
+              <h1
+                className="mt-6 mx-auto font-black tracking-tight leading-[0.92] text-[76px] sm:text-[88px]"
+                style={{
+                  backgroundImage: TITLE_GRADIENT,
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                  width: "fit-content",
+                }}
+              >
+                POINTY
+                <br />
+                POINTS
+              </h1>
+
+              <p
+                className="mt-4 font-semibold text-base sm:text-lg"
+                style={{ color: PURPLE }}
+              >
+                Reward system for kids
+              </p>
+            </div>
+
+            {/* Buttons pinned to the bottom of the card on desktop, at
+                the spec'd 324×64. mt-auto pushes them to the bottom of
+                the 80vh card. Hidden on mobile (rendered outside). */}
+            <div className="hidden sm:flex flex-col items-center gap-3 mt-auto">
+              <Link
+                href="/sign-in"
+                className="inline-flex items-center justify-center rounded-2xl text-white font-semibold text-base transition hover:opacity-90 active:scale-[0.99]"
+                style={{ width: 324, height: 64, background: PURPLE }}
+              >
+                Sign In (Parents)
+              </Link>
+              <Link
+                href="/sign-in"
+                className="inline-flex items-center justify-center rounded-2xl text-white font-semibold text-base transition hover:opacity-90 active:scale-[0.99]"
+                style={{ width: 324, height: 64, background: PURPLE }}
+              >
+                Sign In (Kids)
+              </Link>
+              <Link
+                href="/sign-up"
+                className="mt-1 font-semibold text-slate-900 underline-offset-4 hover:underline"
+              >
+                Sign Up
+              </Link>
+            </div>
+          </div>
+
+          {/* Buttons outside the card on mobile, at the spec'd 381×78.
+              Capped to viewport width so they never overflow. */}
+          <div className="flex sm:hidden flex-col items-center gap-3 w-full">
+            <Link
+              href="/sign-in"
+              className="inline-flex items-center justify-center rounded-2xl text-white font-semibold text-base transition hover:opacity-90 active:scale-[0.99]"
+              style={{
+                width: 381,
+                maxWidth: "100%",
+                height: 78,
+                background: PURPLE,
+              }}
+            >
+              Sign In (Parents)
+            </Link>
+            <Link
+              href="/sign-in"
+              className="inline-flex items-center justify-center rounded-2xl text-white font-semibold text-base transition hover:opacity-90 active:scale-[0.99]"
+              style={{
+                width: 381,
+                maxWidth: "100%",
+                height: 78,
+                background: PURPLE,
+              }}
+            >
+              Sign In (Kids)
+            </Link>
+            <Link
+              href="/sign-up"
+              className="mt-1 font-semibold text-slate-900 underline-offset-4 hover:underline"
+            >
+              Sign Up
+            </Link>
+          </div>
+        </main>
+      </EmojiRain>
     </div>
   );
 }

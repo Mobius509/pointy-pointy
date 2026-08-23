@@ -53,7 +53,7 @@ export function CoParentManager({
 
   return (
     <section className="card-warm">
-      <span className="inline-block rounded-full bg-[#F9EBE3] text-[#F2662A] px-4 py-1 text-[14px] font-semibold">
+      <span className="inline-block rounded-full bg-[#F9EBE3] text-[#B64B11] px-4 py-1 text-[14px] font-semibold">
         Co-parents
       </span>
       <p className="text-[#C3A38A] mt-2">

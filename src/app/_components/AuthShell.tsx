@@ -16,7 +16,7 @@ export function AuthShell({
     <div
       className="relative min-h-screen flex flex-col"
       style={{
-        background: "linear-gradient(180deg, #E6BA9D 0%, #FFF2E9 100%)",
+        background: "#FFF2E9",
       }}
     >
       <header className="w-full flex items-center justify-between px-[36px] py-5 text-sm">

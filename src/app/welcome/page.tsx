@@ -21,7 +21,7 @@ export default async function WelcomePage() {
     <div
       className="relative min-h-screen flex flex-col overflow-hidden"
       style={{
-        background: "linear-gradient(180deg, #E6BA9D 0%, #FFF2E9 100%)",
+        background: "#FFF2E9",
       }}
     >
       <EmojiRain />

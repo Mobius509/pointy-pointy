@@ -55,7 +55,7 @@ body {
    * White rounded panel + matching button/input/label classes used across
    * the parent admin tabs. Keeps the v1 .card / .btn-* classes untouched. */
   .card-warm {
-    @apply bg-white rounded-[32px] p-5 sm:p-8 shadow-sm;
+    @apply bg-white rounded-[32px] p-4 sm:p-6 shadow-sm;
   }
   .btn-warm-primary {
     @apply inline-flex items-center justify-center rounded-full bg-[#FBE3CF] text-[#F2662A] font-semibold px-5 py-2 text-sm transition hover:bg-[#F7D2B3] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none;

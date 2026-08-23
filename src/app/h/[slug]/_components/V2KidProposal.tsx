@@ -44,11 +44,11 @@ export function V2KidProposal({
   };
 
   return (
-    <section className="bg-white rounded-[32px] p-5 sm:p-8 shadow-sm">
+    <section className="bg-white rounded-[32px] p-4 sm:p-6 shadow-sm">
       <div className="grid gap-6 md:grid-cols-[1fr_2fr] items-start">
         <div>
           <h3
-            className="text-[#F2662A] leading-tight"
+            className="text-[#B64B11] leading-tight"
             style={{ fontSize: 18, fontWeight: 700 }}
           >
             Did something extra?

@@ -30,7 +30,7 @@ export async function getCurrentUser() {
 export async function requireHouseholdAccess(slug: string): Promise<Household> {
   const user = await getCurrentUser();
   if (!user) {
-    redirect(`/v2/sign-in?next=${encodeURIComponent(`/v2/h/${slug}/parent`)}`);
+    redirect(`/sign-in?next=${encodeURIComponent(`/h/${slug}/parent`)}`);
   }
 
   const { data: household, error } = await supabaseV2Admin
@@ -39,7 +39,7 @@ export async function requireHouseholdAccess(slug: string): Promise<Household> {
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw error;
-  if (!household) redirect("/v2");
+  if (!household) redirect("/");
 
   const { data: member } = await supabaseV2Admin
     .from("household_members")
@@ -47,7 +47,7 @@ export async function requireHouseholdAccess(slug: string): Promise<Household> {
     .eq("user_id", user.id)
     .eq("household_id", household.id)
     .maybeSingle();
-  if (!member) redirect("/v2");
+  if (!member) redirect("/");
 
   return household as Household;
 }

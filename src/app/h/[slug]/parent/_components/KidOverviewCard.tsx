@@ -87,7 +87,7 @@ export function KidOverviewCard({
     <section>
       {/* White card with the kid's profile + To Approve + Outstanding.
           Fully rounded; the goal strip attaches directly underneath. */}
-      <div className="bg-white rounded-[32px] p-5 sm:p-8 shadow-sm">
+      <div className="bg-white rounded-[32px] p-4 sm:p-6 shadow-sm">
         <div className="grid gap-6 md:grid-cols-[130px_1fr] text-[14px]">
           {/* Left column: avatar card + points card (with Award Bonus).
               On mobile the two cards sit side-by-side at 50/50 so they
@@ -102,7 +102,7 @@ export function KidOverviewCard({
                 className="mx-auto w-24 h-24 object-contain"
               />
               <h3
-                className="mt-2 text-[#F2662A]"
+                className="mt-2 text-[#B64B11]"
                 style={{ fontSize: 22, fontWeight: 500, lineHeight: 1.1 }}
               >
                 {kid.name}
@@ -133,7 +133,7 @@ export function KidOverviewCard({
             {/* To Approve */}
             <div>
               <h4
-                className="text-[#F2662A]"
+                className="text-[#B64B11]"
                 style={{ fontSize: 14, fontWeight: 600 }}
               >
                 To Approve
@@ -209,7 +209,7 @@ export function KidOverviewCard({
             {/* Outstanding — always shows Daily / Weekly / Monthly. */}
             <div>
               <h4
-                className="text-[#F2662A]"
+                className="text-[#B64B11]"
                 style={{ fontSize: 14, fontWeight: 600 }}
               >
                 Outstanding
@@ -281,7 +281,7 @@ export function KidOverviewCard({
                 🐶
               </span>
               <span
-                className="flex-shrink-0 text-[#F2662A]"
+                className="flex-shrink-0 text-[#B64B11]"
                 style={{ fontSize: 16, fontWeight: 500 }}
               >
                 {goal.name}
@@ -370,9 +370,9 @@ export function KidOverviewCard({
 
       {/* Previously Approved — separate card below, spaced. */}
       {recentApproved.length > 0 && (
-        <div className="mt-6 bg-white rounded-[32px] p-5 sm:p-8 shadow-sm text-[14px]">
+        <div className="mt-6 bg-white rounded-[32px] p-4 sm:p-6 shadow-sm text-[14px]">
           <h4
-            className="text-[#F2662A]"
+            className="text-[#B64B11]"
             style={{ fontSize: 14, fontWeight: 600 }}
           >
             Previously Approved
