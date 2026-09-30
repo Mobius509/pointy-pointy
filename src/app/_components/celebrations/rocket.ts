@@ -30,45 +30,93 @@ function spline(points: Pt[], u: number): Pt {
 }
 
 const easeIn = (t: number) => t * t * t;
+const rand = (min: number, max: number) => min + Math.random() * (max - min);
+
+// Points for the middle stretch of the flight: enters from one side, does
+// a trick, exits the other. Picked at random so replays look different.
+function randomFlightPath(W: number, H: number, size: number): Pt[] {
+  const fromLeft = Math.random() < 0.5;
+  const x = (f: number) => (fromLeft ? W * f : W * (1 - f)); // mirror for right→left
+  const edgeIn = fromLeft ? -size : W + size;
+  const edgeOut = fromLeft ? W + size : -size;
+  const cy = H * rand(0.25, 0.55);
+  const R = Math.min(W, H) * rand(0.14, 0.24);
+  const cx = W / 2 + rand(-0.1, 0.1) * W;
+  const dir = fromLeft ? 1 : -1; // loop direction follows travel
+
+  const trick = Math.floor(Math.random() * 3);
+  if (trick === 0) {
+    // Loop-de-loop.
+    return [
+      { x: edgeIn, y: cy + R * 0.6 },
+      { x: x(0.25), y: cy + R },
+      { x: cx, y: cy + R },
+      { x: cx + R * dir, y: cy },
+      { x: cx, y: cy - R },
+      { x: cx - R * dir, y: cy },
+      { x: cx, y: cy + R },
+      { x: x(0.75), y: cy + R },
+      { x: edgeOut, y: cy + R * 0.3 },
+    ];
+  }
+  if (trick === 1) {
+    // Figure-eight across the screen.
+    const r = R * 0.8;
+    const l = cx - r * 1.1 * dir;
+    const rr = cx + r * 1.1 * dir;
+    return [
+      { x: edgeIn, y: cy },
+      { x: l, y: cy - r },
+      { x: cx, y: cy },
+      { x: rr, y: cy + r },
+      { x: rr + r * dir, y: cy },
+      { x: rr, y: cy - r },
+      { x: cx, y: cy },
+      { x: l, y: cy + r },
+      { x: l - r * dir, y: cy },
+      { x: l, y: cy - r },
+      { x: edgeOut, y: cy - r * 1.5 },
+    ];
+  }
+  // Zig-zag.
+  const amp = R * 1.1;
+  const zigs = 4 + Math.floor(Math.random() * 3);
+  const pts: Pt[] = [{ x: edgeIn, y: cy }];
+  for (let i = 1; i <= zigs; i++) pts.push({ x: x(i / (zigs + 1)), y: cy + (i % 2 ? -amp : amp) });
+  pts.push({ x: edgeOut, y: cy });
+  return pts;
+}
 const easeOutBack = (t: number) => 1 + 2.4 * Math.pow(t - 1, 3) + 1.4 * Math.pow(t - 1, 2);
 
-// The avatar rumbles, blasts off the top, swoops back in from the left for
-// a loop-de-loop, exits right, then drops from the sky and crash-lands back
-// on its spot — boom, confetti, cheer.
+// The avatar rumbles, blasts off the top, swoops back in from one side for
+// a random trick (loop-de-loop, figure-eight, zig-zag), exits the other,
+// then drops from the sky and crash-lands back on its spot — boom,
+// confetti, cheer.
 export async function playRocket(opts: CelebrationOptions): Promise<void> {
   const layer = makeLayer();
   const W = window.innerWidth;
   const H = window.innerHeight;
 
-  const home = opts.origin?.getBoundingClientRect() ?? {
-    left: W / 2 - 70,
-    top: H / 2 - 70,
-    width: 140,
-    height: 140,
-  };
+  // Launch pad: the avatar, a tapped point (replay game), or the center.
+  const padSize = 120;
+  const home =
+    (!opts.at && opts.origin?.getBoundingClientRect()) || {
+      left: (opts.at?.x ?? W / 2) - padSize / 2,
+      top: (opts.at?.y ?? H / 2) - padSize / 2,
+      width: padSize,
+      height: padSize,
+    };
   const size = home.width;
   const start: Pt = { x: home.left + size / 2, y: home.top + size / 2 };
 
-  if (opts.origin) opts.origin.style.visibility = "hidden";
+  const hideOrigin = !opts.at && opts.origin;
+  if (hideOrigin) opts.origin!.style.visibility = "hidden";
   const ship = imageEl(opts.avatarSrc);
   Object.assign(ship.style, { width: `${size}px`, height: `${size}px`, left: "0", top: "0" });
   layer.appendChild(ship);
 
-  // Loop-de-loop through the middle of the screen.
-  const R = Math.min(W, H) * 0.2;
-  const cx = W / 2;
-  const cy = H * 0.38;
-  const loop: Pt[] = [
-    { x: -size, y: cy + R * 0.6 },
-    { x: W * 0.25, y: cy + R },
-    { x: cx, y: cy + R },
-    { x: cx + R, y: cy },
-    { x: cx, y: cy - R },
-    { x: cx - R, y: cy },
-    { x: cx, y: cy + R },
-    { x: W * 0.75, y: cy + R },
-    { x: W + size, y: cy + R * 0.3 },
-  ];
+  // A different flight every time.
+  const loop = randomFlightPath(W, H, size);
 
   // Timeline (ms): rumble → launch → loop → drop → land.
   const RUMBLE = 650;
@@ -162,7 +210,7 @@ export async function playRocket(opts: CelebrationOptions): Promise<void> {
     { duration: 600, easing: "ease-out", fill: "forwards" },
   ).finished;
 
-  if (opts.origin) opts.origin.style.visibility = "";
+  if (hideOrigin) opts.origin!.style.visibility = "";
   ship.remove();
   setTimeout(() => layer.remove(), 1500);
 }

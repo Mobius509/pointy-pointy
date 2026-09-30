@@ -10,8 +10,11 @@ export async function playParade(opts: CelebrationOptions): Promise<void> {
   const size = Math.min(W * 0.2, 84);
   const count = W < 480 ? 6 : 8;
   const points = opts.points ?? 0;
-  const signs = [`+${points}`, "Yay!", "Woo!", "🎉", `+${points}`, "Go!", "⭐", "Wow!"];
-  const baseline = H * 0.66;
+  const cheers = ["Yay!", "Woo!", "🎉", "Go!", "⭐", "Wow!"];
+  // No points in the replay game — just cheers then.
+  const signs = points ? [`+${points}`, ...cheers.slice(0, 3), `+${points}`, ...cheers.slice(3)] : cheers;
+  // March along the tapped height in the replay game.
+  const baseline = Math.min(H - 20, Math.max(size * 2, opts.at?.y ?? H * 0.66));
   const DURATION = 4200;
   const STAGGER = 260;
 

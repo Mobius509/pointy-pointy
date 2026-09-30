@@ -1,8 +1,9 @@
 import confetti from "canvas-confetti";
-import { EMOJI_SOURCES, startEmojiPhysics } from "../emojiPhysics";
+import { EMOJI_SOURCES, startEmojiPhysics, type EmojiPhysics } from "../emojiPhysics";
 import {
   confettiStyle,
   explodeImage,
+  flyToCounter,
   hintBubble,
   imageEl,
   makeLayer,
@@ -11,6 +12,7 @@ import {
   slamWord,
   wait,
   type CelebrationOptions,
+  type GameOptions,
 } from "./shared";
 import { playSound } from "./sounds";
 
@@ -21,12 +23,14 @@ const BAT_ASPECT = 932 / 697;
 const HITS_TO_BREAK = 3;
 const HIT_WORDS = ["BONK!", "WHACK!", "POW!"];
 
-// The llama piñata drops in on a string and swings. Each tap swings the bat
-// (BONK!); three hits and it bursts into pieces, spilling candy — emojis
-// plus the kid's avatar — that piles up at the bottom and can be thrown
-// around. If nobody taps, the bat swings on its own.
-export async function playPinata(opts: CelebrationOptions): Promise<void> {
-  const layer = makeLayer();
+// Hangs one piñata: it drops in on a string and swings; each tap swings the
+// bat (BONK!) and the third hit bursts it into pieces. Resolves with where
+// it was when it burst. With `autoHit`, the bat swings on its own if nobody
+// taps (the one-off celebration); the endless game waits for the kid.
+async function hangPinata(
+  layer: HTMLElement,
+  { autoHit, hint }: { autoHit: boolean; hint: boolean },
+): Promise<DOMRect> {
   const W = window.innerWidth;
   const H = window.innerHeight;
   const pw = Math.min(W * 0.5, 240);
@@ -54,7 +58,7 @@ export async function playPinata(opts: CelebrationOptions): Promise<void> {
   rig.append(string, pinata);
   layer.appendChild(rig);
 
-  const hint = hintBubble(layer, "Tap to whack it!", stringLen + ph + 12);
+  const hintEl = hint ? hintBubble(layer, "Tap to whack it!", stringLen + ph + 12) : null;
 
   const bat = imageEl(BAT_SRC, "absolute select-none opacity-0");
   const bw = pw * 0.9;
@@ -68,7 +72,7 @@ export async function playPinata(opts: CelebrationOptions): Promise<void> {
   });
   layer.appendChild(bat);
 
-  // Drop in, then swing forever (until it breaks).
+  // Drop in, then swing (until it breaks).
   await rig.animate(
     [{ transform: `translateY(${-(stringLen + ph)}px)` }, { transform: "translateY(12px)", offset: 0.8 }, { transform: "translateY(0)" }],
     { duration: 650, easing: "ease-out" },
@@ -82,9 +86,10 @@ export async function playPinata(opts: CelebrationOptions): Promise<void> {
   let busy = false;
   let broken!: () => void;
   const done = new Promise<void>((r) => (broken = r));
-  let idle: ReturnType<typeof setTimeout>;
+  let idle: ReturnType<typeof setTimeout> | undefined;
   onStop(() => clearTimeout(idle));
   const armAutoHit = (ms: number) => {
+    if (!autoHit) return;
     clearTimeout(idle);
     idle = setTimeout(() => void hit(), ms);
   };
@@ -93,7 +98,7 @@ export async function playPinata(opts: CelebrationOptions): Promise<void> {
     if (busy || hits >= HITS_TO_BREAK) return;
     busy = true;
     hits++;
-    hint.remove();
+    hintEl?.remove();
 
     // Wind up and swing through the piñata.
     const swingBat = bat.animate(
@@ -142,40 +147,111 @@ export async function playPinata(opts: CelebrationOptions): Promise<void> {
   armAutoHit(3500);
   await done;
 
-  // BREAK! Burst the piñata, reveal the points, and spill candy.
+  // BREAK!
   swing.pause();
-  opts.onReveal?.();
   const r = pinata.getBoundingClientRect();
   rig.remove();
-  void playSound("boom");
-  setTimeout(() => void playSound("cheer"), 250);
+  bat.remove();
   shake(layer, 12);
-  const pieces = explodeImage(layer, PINATA_SRC, r, 5);
-  const cx = r.left + r.width / 2;
-  const cy = r.top + r.height / 2;
-  confetti({ ...confettiStyle(), particleCount: 120, spread: 360, startVelocity: 40, ticks: 160, origin: { x: cx / W, y: cy / H } });
-  slamWord(layer, "CANDY!", cx, Math.max(60, r.top - 10), { duration: 1400 });
+  void explodeImage(layer, PINATA_SRC, r, 5);
+  confetti({
+    ...confettiStyle(),
+    particleCount: 120,
+    spread: 360,
+    startVelocity: 40,
+    ticks: 160,
+    origin: { x: (r.left + r.width / 2) / W, y: (r.top + r.height / 2) / H },
+  });
+  return r;
+}
 
+function candySources(avatarSrc: string): string[] {
   const candy = [...EMOJI_SOURCES].sort(() => Math.random() - 0.5).slice(0, 10);
+  return [avatarSrc, ...candy, avatarSrc];
+}
+
+function candyEngine(layer: HTMLElement, avatarSrc: string, extra: Partial<Parameters<typeof startEmojiPhysics>[0]> = {}): EmojiPhysics {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
   const size = Math.min(W * 0.2, 96);
   const engine = startEmojiPhysics({
     back: layer,
     front: layer,
-    sources: [opts.avatarSrc, ...candy, opts.avatarSrc],
-    count: 12,
+    sources: candySources(avatarSrc),
+    count: 0,
     sizeMin: size * 0.75,
     sizeMax: size,
     backRatio: 0,
-    // Pile up above the screen's OK button so it stays tappable.
-    mode: { kind: "burst", x: cx, y: cy, floor: H - 120 },
+    // Pile up above the screen's bottom button so it stays tappable.
+    mode: { kind: "burst", x: W / 2, y: H / 2, floor: H - 120 },
+    ...extra,
   });
-  const unregisterCandy = onStop(() => engine.stop());
+  onStop(() => engine.stop());
+  return engine;
+}
 
-  await pieces;
+// The celebration: one piñata, three whacks (or auto-whacks), then it
+// bursts — the points are revealed and throwable candy piles up.
+export async function playPinata(opts: CelebrationOptions): Promise<void> {
+  const layer = makeLayer();
+  const r = await hangPinata(layer, { autoHit: true, hint: true });
+  opts.onReveal?.();
+  void playSound("boom");
+  setTimeout(() => void playSound("cheer"), 250);
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  slamWord(layer, "CANDY!", cx, Math.max(60, r.top - 10), { duration: 1400 });
+
+  const engine = candyEngine(layer, opts.avatarSrc);
+  engine.burst(cx, cy, 12);
+
   // Let them play with the pile, then fade it away.
-  await wait(7000);
+  await wait(8500);
   await layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 600, fill: "forwards" }).finished;
-  unregisterCandy();
   engine.stop();
   layer.remove();
+}
+
+// "Keep playing": piñata after piñata, no timer. Each holds a random amount
+// of candy; tapping a piece collects it into the counter (dragging still
+// throws it). Returns a stop function.
+export function playPinataGame(opts: GameOptions): () => void {
+  const layer = makeLayer();
+  let stopped = false;
+  let collected = 0;
+
+  const engine = candyEngine(layer, opts.avatarSrc, {
+    maxParticles: 40,
+    onTap: (el) => {
+      void playSound("pop");
+      opts.onScore(++collected);
+      void flyToCounter(el, opts.counter);
+    },
+  });
+
+  void (async () => {
+    let first = true;
+    while (!stopped) {
+      const r = await hangPinata(layer, { autoHit: false, hint: first });
+      if (stopped) return;
+      first = false;
+      void playSound("cheer");
+      // Some piñatas are stingy, some are loaded.
+      const amount = 3 + Math.floor(Math.random() * 14);
+      slamWord(layer, amount >= 12 ? "JACKPOT!" : amount <= 5 ? "Aww…" : `${amount} CANDY!`, r.left + r.width / 2, Math.max(60, r.top - 10), {
+        size: "clamp(30px, 8vw, 48px)",
+        duration: 1100,
+      });
+      engine.burst(r.left + r.width / 2, r.top + r.height / 2, amount);
+      await wait(900); // next piñata
+    }
+  })();
+
+  const stop = () => {
+    stopped = true;
+    engine.stop();
+    layer.remove();
+  };
+  onStop(stop);
+  return stop;
 }

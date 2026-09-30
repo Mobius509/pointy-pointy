@@ -2,16 +2,24 @@ import { playAvatarExplosion } from "./avatarExplosion";
 import { playConfetti } from "./confetti";
 import { playFireworks } from "./fireworks";
 import { playHighFive } from "./highFive";
-import { playBalloons } from "./balloons";
+import { playBalloonGame, playBalloons } from "./balloons";
 import { playJackpot } from "./jackpot";
 import { playParade } from "./parade";
-import { playPinata } from "./pinata";
+import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
 import { playScratchCard } from "./scratchCard";
-import { prefersReducedMotion, stopAllCelebrations, type CelebrationOptions } from "./shared";
+import {
+  hintBubble,
+  makeLayer,
+  onStop,
+  prefersReducedMotion,
+  stopAllCelebrations,
+  type CelebrationOptions,
+  type GameOptions,
+} from "./shared";
 import { playWebglBurst } from "./webglBurst";
 
-export type { CelebrationOptions } from "./shared";
+export type { CelebrationOptions, GameOptions } from "./shared";
 export { isMuted, setMuted, unlockAudio } from "./sounds";
 export { stopAllCelebrations } from "./shared";
 
@@ -25,6 +33,11 @@ export type Celebration = {
   // Also hide the avatar + points circle until the reveal, for effects
   // that take over the middle of the screen (piñata, slot machine).
   hidesStage?: boolean;
+  // "Keep playing" after the celebration: a score game with its own
+  // counter, or tap-anywhere-to-replay.
+  game?:
+    | { kind: "score"; icon: string; label: string; start: (opts: GameOptions) => () => void }
+    | { kind: "replay" };
   play: (opts: CelebrationOptions) => Promise<void>;
 };
 
@@ -51,8 +64,9 @@ export const CELEBRATIONS: Celebration[] = [
   },
   {
     id: "high-five",
+    game: { kind: "replay" },
     name: "High five",
-    description: "Two hands swing in and SMACK — burst, confetti, bounce.",
+    description: "Two hands swing in and SMACK — burst, confetti, bounce. Keep playing: tap anywhere.",
     play: playHighFive,
   },
   {
@@ -63,29 +77,33 @@ export const CELEBRATIONS: Celebration[] = [
   },
   {
     id: "pinata",
+    game: { kind: "score", icon: "🍬", label: "candy", start: playPinataGame },
     revealsPoints: true,
     hidesStage: true,
     name: "Piñata",
-    description: "Tap to whack the llama three times — candy everywhere (throwable!).",
+    description: "Whack the llama three times — candy everywhere. Keep playing: endless piñatas, collect the candy.",
     play: playPinata,
   },
   {
     id: "balloons",
+    game: { kind: "score", icon: "🎈", label: "popped", start: playBalloonGame },
     revealsPoints: true,
     name: "Balloon pop",
-    description: "Balloons float up; tap to jab them with the needle.",
+    description: "Balloons float up; tap to jab them with the needle. Keep playing: endless balloons.",
     play: playBalloons,
   },
   {
     id: "rocket",
+    game: { kind: "replay" },
     name: "Avatar rocket",
-    description: "Blast off, loop-de-loop, crash landing.",
+    description: "Blast off, a random trick, crash landing. Keep playing: tap to launch more.",
     play: playRocket,
   },
   {
     id: "parade",
+    game: { kind: "replay" },
     name: "Avatar parade",
-    description: "A conga line of mini avatars holding up signs.",
+    description: "A conga line of mini avatars holding up signs. Keep playing: tap to send more.",
     play: playParade,
   },
   {
@@ -128,4 +146,36 @@ export async function playCelebration(
   }
   stopAllCelebrations(); // one at a time
   await pickCelebration(id).play(opts);
+}
+
+const MAX_REPLAYS_AT_ONCE = 4;
+
+// Starts a celebration's "Keep playing" game. Score games get the kid's
+// score via onScore; replay games play the effect again wherever the kid
+// taps (taps on buttons — like Done — are ignored). Returns a stop function.
+export function startGame(celebration: Celebration, opts: GameOptions): () => void {
+  stopAllCelebrations(); // clear the celebration's leftovers first
+  const game = celebration.game;
+  if (!game) return () => {};
+  if (game.kind === "score") return game.start(opts);
+
+  const hintLayer = makeLayer();
+  const hint = hintBubble(hintLayer, "Tap anywhere!", window.innerHeight * 0.4);
+  let running = 0;
+  const onTap = (e: PointerEvent) => {
+    if ((e.target as Element | null)?.closest("button")) return;
+    if (running >= MAX_REPLAYS_AT_ONCE) return;
+    hint.remove();
+    running++;
+    void celebration
+      .play({ avatarSrc: opts.avatarSrc, at: { x: e.clientX, y: e.clientY }, points: 0 })
+      .finally(() => running--);
+  };
+  window.addEventListener("pointerdown", onTap);
+  const stop = () => {
+    window.removeEventListener("pointerdown", onTap);
+    hintLayer.remove();
+  };
+  onStop(stop);
+  return stop;
 }

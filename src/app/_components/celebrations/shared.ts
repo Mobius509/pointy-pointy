@@ -15,6 +15,16 @@ export type CelebrationOptions = {
   // "Reveal" effects (piñata, jackpot, balloons, scratch card) call this at
   // their payoff moment; the screen keeps the points hidden until then.
   onReveal?: () => void;
+  // Play from this point instead of the avatar (tap-to-replay games).
+  at?: { x: number; y: number };
+};
+
+// "Keep playing" mini games.
+export type GameOptions = {
+  avatarSrc: string;
+  // Where the score counter sits, for collected things to fly into.
+  counter?: { x: number; y: number };
+  onScore: (score: number) => void;
 };
 
 export const PARTY = ["party-pink", "party-yellow", "party-cyan", "party-red"];
@@ -36,7 +46,11 @@ export function tokenHex(names: string[]): string[] {
   );
 }
 
-export function originPoint(el?: HTMLElement | null): { x: number; y: number } {
+export function originPoint(
+  el?: HTMLElement | null,
+  at?: { x: number; y: number },
+): { x: number; y: number } {
+  if (at) return at;
   if (!el) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
   const r = el.getBoundingClientRect();
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
@@ -235,4 +249,25 @@ export function hintBubble(layer: HTMLElement, text: string, top: number): HTMLE
   outer.appendChild(inner);
   layer.appendChild(outer);
   return outer;
+}
+
+// Shrinks an on-screen element into the score counter, then removes it.
+export async function flyToCounter(el: HTMLElement, counter?: { x: number; y: number }) {
+  const target = counter ?? { x: window.innerWidth / 2, y: 40 };
+  const r = el.getBoundingClientRect();
+  const dx = target.x - (r.left + r.width / 2);
+  const dy = target.y - (r.top + r.height / 2);
+  const from = getComputedStyle(el).transform;
+  const base = from === "none" ? "" : from;
+  el.style.pointerEvents = "none";
+  await el
+    .animate(
+      [
+        { transform: `translate(0, 0) ${base}`, opacity: 1 },
+        { transform: `translate(${dx}px, ${dy}px) ${base} scale(0.25)`, opacity: 0.6 },
+      ],
+      { duration: 450, easing: "cubic-bezier(.5,0,.8,.4)", fill: "forwards" },
+    )
+    .finished.catch(() => {});
+  el.remove();
 }

@@ -9,6 +9,7 @@ import {
   playCelebration,
   prefersReducedMotion,
   setMuted,
+  startGame,
   stopAllCelebrations,
   unlockAudio,
 } from "./celebrations";
@@ -87,6 +88,28 @@ export function CelebrationScreen({
   const avatarRef = useRef<HTMLImageElement>(null);
   const circleRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const counterRef = useRef<HTMLDivElement>(null);
+
+  // "Keep playing" mini game (piñata, balloons, and tap-to-replay ones).
+  const [playing, setPlaying] = useState(false);
+  const [score, setScore] = useState(0);
+  const stopGame = useRef<() => void>(() => {});
+  const keepPlaying = () => {
+    unlockAudio();
+    setScore(0);
+    setPlaying(true);
+  };
+  // Start once the counter is on screen, so collected candy knows where to fly.
+  useEffect(() => {
+    if (!playing) return;
+    const r = counterRef.current?.getBoundingClientRect();
+    stopGame.current = startGame(effect, {
+      avatarSrc,
+      counter: r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : undefined,
+      onScore: setScore,
+    });
+    return () => stopGame.current();
+  }, [playing, effect, avatarSrc]);
 
   // Lock page scroll, close on Escape. Browsers (iPhone especially) block
   // sound until the first tap, so any tap on the screen unlocks it —
@@ -156,9 +179,9 @@ export function CelebrationScreen({
   ];
   // Hidden (but still taking up space, so the circle doesn't move under
   // the effect) until the points are revealed.
-  const reveal = revealed ? "animate-celebrate-pop-in" : "invisible";
+  const reveal = playing ? "invisible" : revealed ? "animate-celebrate-pop-in" : "invisible";
   // Some effects (the piñata) need the middle of the screen to themselves.
-  const stage = effect.hidesStage ? reveal : "";
+  const stage = effect.hidesStage || playing ? reveal : "";
 
   // Portal to <body>: the kid/parent panels use backdrop-blur, which would
   // otherwise trap this "fixed" screen inside the panel.
@@ -233,14 +256,48 @@ export function CelebrationScreen({
         )}
       </div>
 
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={onClose}
-        className={`btn-primary btn-lg w-full max-w-xl rounded-2xl h-16 ${reveal}`}
-      >
-        {button}
-      </button>
+      {playing && effect.game?.kind === "score" && (
+        <div
+          ref={counterRef}
+          aria-live="polite"
+          className="absolute left-4 top-4 rounded-full bg-white px-5 py-2 text-2xl font-black text-pp-primary shadow-sm tabular-nums"
+        >
+          <span aria-hidden>{effect.game.icon}</span> {score}
+          <span className="sr-only"> {effect.game.label}</span>
+        </div>
+      )}
+
+      <div className="flex w-full max-w-xl flex-col items-center gap-3">
+        {playing ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn-primary btn-lg w-full rounded-2xl h-16"
+          >
+            Done
+          </button>
+        ) : (
+          <>
+            <button
+              ref={buttonRef}
+              type="button"
+              onClick={onClose}
+              className={`btn-primary btn-lg w-full rounded-2xl h-16 ${reveal}`}
+            >
+              {button}
+            </button>
+            {effect.game && (
+              <button
+                type="button"
+                onClick={keepPlaying}
+                className={`font-semibold text-pp-primary underline underline-offset-4 ${reveal}`}
+              >
+                Keep playing
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </div>,
     document.body,
   );

@@ -7,6 +7,7 @@ import {
   onStop,
   wait,
   type CelebrationOptions,
+  type GameOptions,
 } from "./shared";
 import { playSound } from "./sounds";
 
@@ -20,64 +21,60 @@ const TINTS = ["none", "hue-rotate(320deg)", "hue-rotate(45deg) saturate(1.4)", 
 const FIRST_AUTO_POP_MS = 3800; // nobody playing yet
 const IDLE_AUTO_POP_MS = 2500; // they stopped partway
 const AUTO_POP_GAP_MS = 450;
+const GAME_SPAWN_MS = 700; // endless game: a new balloon this often
 
-// Balloons float up from the bottom. Tapping one jabs it with the needle —
-// POP, confetti. The last pop reveals the points. If the kid doesn't play
-// (or stops partway), the rest pop on their own so it always finishes.
-export async function playBalloons(opts: CelebrationOptions): Promise<void> {
-  const layer = makeLayer();
+type Balloon = { pop: (x?: number, y?: number) => void; popped: () => boolean };
+
+// Releases one balloon from below the screen. "bob" rises into the upper
+// part of the screen and waits there; "away" floats up and off the top
+// (endless game). Tapping it jabs the needle — POP, confetti, onPop().
+function releaseBalloon(
+  layer: HTMLElement,
+  {
+    x,
+    index,
+    behavior,
+    delay = 0,
+    onPop,
+    onGone,
+  }: {
+    x: number;
+    index: number;
+    behavior: "bob" | "away";
+    delay?: number;
+    onPop: (byTap: boolean) => void;
+    onGone?: () => void; // floated off the top without being popped
+  },
+): Balloon {
   const W = window.innerWidth;
   const H = window.innerHeight;
   const bw = Math.min(W * 0.24, 120);
   const bh = bw * BALLOON_ASPECT;
-  const COUNT = W < 480 ? 5 : 7;
 
-  const hint = hintBubble(layer, "Pop the balloons!", 64);
-  let remaining = COUNT;
-  let allPopped!: () => void;
-  const finished = new Promise<void>((r) => (allPopped = r));
-  const pops: ((x?: number, y?: number) => void)[] = [];
-  const poppedFlags: boolean[] = [];
+  // The wrapper floats; the balloon inside it pops (separate transforms).
+  const wrap = document.createElement("div");
+  wrap.className = "absolute";
+  Object.assign(wrap.style, { left: `${x - bw / 2}px`, top: `${H}px`, width: `${bw}px`, height: `${bh}px` });
+  const balloon = imageEl(BALLOON_SRC, "h-full w-full select-none cursor-pointer");
+  Object.assign(balloon.style, {
+    filter: TINTS[index % TINTS.length],
+    pointerEvents: "auto",
+    touchAction: "manipulation",
+  });
+  wrap.appendChild(balloon);
+  layer.appendChild(wrap);
 
-  let idle: ReturnType<typeof setTimeout> | undefined;
-  onStop(() => clearTimeout(idle));
-  // After a pause, pop the next balloon, then keep going until none are left.
-  const armIdle = (ms: number) => {
-    clearTimeout(idle);
-    idle = setTimeout(() => {
-      pops.find((_, i) => !poppedFlags[i])?.();
-      if (remaining > 1) armIdle(AUTO_POP_GAP_MS);
-    }, ms);
-  };
-
-  for (let i = 0; i < COUNT; i++) {
-    // The wrapper floats; the balloon inside it pops (separate transforms).
-    const wrap = document.createElement("div");
-    wrap.className = "absolute";
-    // Spread across the width with a little jitter.
-    const x = ((i + 0.5) / COUNT) * W - bw / 2 + (Math.random() - 0.5) * bw * 0.4;
-    Object.assign(wrap.style, { left: `${x}px`, top: `${H}px`, width: `${bw}px`, height: `${bh}px` });
-    const balloon = imageEl(BALLOON_SRC, "h-full w-full select-none cursor-pointer");
-    Object.assign(balloon.style, {
-      filter: TINTS[i % TINTS.length],
-      pointerEvents: "auto",
-      touchAction: "manipulation",
-    });
-    wrap.appendChild(balloon);
-    layer.appendChild(wrap);
-
-    // Rise into the upper part of the screen with a gentle sway, then bob
-    // there — they wait to be popped rather than drifting off.
-    const top = H * (0.18 + Math.random() * 0.35);
-    const rise = H - top;
-    const sway = 20 + Math.random() * 25;
-    const flight = wrap.animate(
+  const sway = 20 + Math.random() * 25;
+  let flight: Animation;
+  if (behavior === "bob") {
+    const rise = H - H * (0.18 + Math.random() * 0.35);
+    flight = wrap.animate(
       [
         { transform: "translate(0, 0) rotate(-4deg)" },
         { transform: `translate(${sway}px, ${-rise * 0.5}px) rotate(5deg)` },
         { transform: `translate(0, ${-rise}px) rotate(-3deg)` },
       ],
-      { duration: 2200 + Math.random() * 900, delay: i * 250, easing: "ease-out", fill: "forwards" },
+      { duration: 2200 + Math.random() * 900, delay, easing: "ease-out", fill: "forwards" },
     );
     flight.finished.then(
       () =>
@@ -87,65 +84,130 @@ export async function playBalloons(opts: CelebrationOptions): Promise<void> {
         ),
       () => {},
     );
+  } else {
+    const rise = H + bh * 1.3;
+    flight = wrap.animate(
+      [
+        { transform: "translate(0, 0) rotate(-4deg)" },
+        { transform: `translate(${sway}px, ${-rise * 0.33}px) rotate(5deg)` },
+        { transform: `translate(${-sway}px, ${-rise * 0.66}px) rotate(-5deg)` },
+        { transform: `translate(0, ${-rise}px) rotate(3deg)` },
+      ],
+      { duration: 4500 + Math.random() * 2500, delay, easing: "linear", fill: "forwards" },
+    );
+    flight.finished.then(
+      () => {
+        if (!popped) {
+          wrap.remove();
+          onGone?.();
+        }
+      },
+      () => {},
+    );
+  }
 
-    poppedFlags[i] = false;
-    const pop = (px?: number, py?: number) => {
-      if (poppedFlags[i]) return;
-      poppedFlags[i] = true;
-      const r = balloon.getBoundingClientRect();
-      const tx = px ?? r.left + r.width / 2;
-      const ty = py ?? r.top + r.height * 0.4;
-      flight.pause();
+  let popped = false;
+  const pop = (px?: number, py?: number, byTap = false) => {
+    if (popped) return;
+    popped = true;
+    const r = balloon.getBoundingClientRect();
+    const tx = px ?? r.left + r.width / 2;
+    const ty = py ?? r.top + r.height * 0.4;
+    flight.pause();
 
-      // Needle jab from the upper right. Its tip is at the bottom-left of
-      // the artwork (~19%, 81%).
-      const needle = imageEl(NEEDLE_SRC);
-      const nw = bw * 0.7;
-      Object.assign(needle.style, {
-        width: `${nw}px`,
-        height: `${nw * NEEDLE_ASPECT}px`,
-        left: `${tx - nw * 0.19}px`,
-        top: `${ty - nw * NEEDLE_ASPECT * 0.81}px`,
-      });
-      layer.appendChild(needle);
-      needle
-        .animate(
-          [
-            { transform: "translate(40px, -40px)", opacity: 0 },
-            { transform: "translate(0, 0)", opacity: 1, offset: 0.6 },
-            { transform: "translate(10px, -10px)", opacity: 0 },
-          ],
-          { duration: 260, easing: "ease-out", fill: "forwards" },
-        )
-        .finished.then(() => needle.remove());
-
-      setTimeout(() => {
-        void playSound("pop");
-        confetti({
-          ...confettiStyle(),
-          particleCount: 30,
-          spread: 360,
-          startVelocity: 18,
-          ticks: 90,
-          origin: { x: tx / W, y: ty / H },
-        });
-        balloon
-          .animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(1.35)", opacity: 0 }], {
-            duration: 110,
-            fill: "forwards",
-          })
-          .finished.then(() => wrap.remove());
-        if (--remaining === 0) allPopped();
-      }, 140);
-    };
-    pops.push(pop);
-
-    balloon.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      hint.remove();
-      pop(e.clientX, e.clientY);
-      if (remaining > 1) armIdle(IDLE_AUTO_POP_MS);
+    // Needle jab from the upper right. Its tip is at the bottom-left of the
+    // artwork (~19%, 81%).
+    const needle = imageEl(NEEDLE_SRC);
+    const nw = bw * 0.7;
+    Object.assign(needle.style, {
+      width: `${nw}px`,
+      height: `${nw * NEEDLE_ASPECT}px`,
+      left: `${tx - nw * 0.19}px`,
+      top: `${ty - nw * NEEDLE_ASPECT * 0.81}px`,
     });
+    layer.appendChild(needle);
+    needle
+      .animate(
+        [
+          { transform: "translate(40px, -40px)", opacity: 0 },
+          { transform: "translate(0, 0)", opacity: 1, offset: 0.6 },
+          { transform: "translate(10px, -10px)", opacity: 0 },
+        ],
+        { duration: 260, easing: "ease-out", fill: "forwards" },
+      )
+      .finished.then(() => needle.remove());
+
+    setTimeout(() => {
+      void playSound("pop");
+      confetti({
+        ...confettiStyle(),
+        particleCount: 30,
+        spread: 360,
+        startVelocity: 18,
+        ticks: 90,
+        origin: { x: tx / W, y: ty / H },
+      });
+      balloon
+        .animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(1.35)", opacity: 0 }], {
+          duration: 110,
+          fill: "forwards",
+        })
+        .finished.then(() => wrap.remove());
+      onPop(byTap);
+    }, 140);
+  };
+
+  balloon.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    pop(e.clientX, e.clientY, true);
+  });
+
+  return { pop: (x, y) => pop(x, y), popped: () => popped };
+}
+
+// The celebration: a handful of balloons rise and bob. The last pop reveals
+// the points. If the kid doesn't play (or stops partway), the rest pop on
+// their own so it always finishes.
+export async function playBalloons(opts: CelebrationOptions): Promise<void> {
+  const layer = makeLayer();
+  const W = window.innerWidth;
+  const COUNT = W < 480 ? 5 : 7;
+  const hint = hintBubble(layer, "Pop the balloons!", 64);
+
+  let remaining = COUNT;
+  let allPopped!: () => void;
+  const finished = new Promise<void>((r) => (allPopped = r));
+  const balloons: Balloon[] = [];
+
+  let idle: ReturnType<typeof setTimeout> | undefined;
+  onStop(() => clearTimeout(idle));
+  // After a pause, pop the next balloon, then keep going until none are left.
+  const armIdle = (ms: number) => {
+    clearTimeout(idle);
+    idle = setTimeout(() => {
+      balloons.find((b) => !b.popped())?.pop();
+      if (remaining > 1) armIdle(AUTO_POP_GAP_MS);
+    }, ms);
+  };
+
+  for (let i = 0; i < COUNT; i++) {
+    // Spread across the width with a little jitter.
+    const x = ((i + 0.5) / COUNT) * W + (Math.random() - 0.5) * 30;
+    balloons.push(
+      releaseBalloon(layer, {
+        x,
+        index: i,
+        behavior: "bob",
+        delay: i * 250,
+        onPop: (byTap) => {
+          if (byTap) {
+            hint.remove();
+            if (remaining > 1) armIdle(IDLE_AUTO_POP_MS);
+          }
+          if (--remaining === 0) allPopped();
+        },
+      }),
+    );
   }
 
   armIdle(FIRST_AUTO_POP_MS);
@@ -159,4 +221,35 @@ export async function playBalloons(opts: CelebrationOptions): Promise<void> {
   confetti({ ...confettiStyle(), particleCount: 100, spread: 360, startVelocity: 35, origin: { x: 0.5, y: 0.35 } });
   await wait(900);
   layer.remove();
+}
+
+// "Keep playing": balloons keep floating up forever; every pop counts.
+// No timer, no auto-pops. Returns a stop function.
+export function playBalloonGame(opts: GameOptions): () => void {
+  const layer = makeLayer();
+  const W = window.innerWidth;
+  let popped = 0;
+  let index = 0;
+  const hint = hintBubble(layer, "Pop as many as you can!", 96);
+
+  const spawn = () =>
+    releaseBalloon(layer, {
+      x: 40 + Math.random() * (W - 80),
+      index: index++,
+      behavior: "away",
+      onPop: () => {
+        hint.remove();
+        opts.onScore(++popped);
+      },
+    });
+
+  for (let i = 0; i < 3; i++) setTimeout(spawn, i * 300);
+  const timer = setInterval(spawn, GAME_SPAWN_MS);
+
+  const stop = () => {
+    clearInterval(timer);
+    layer.remove();
+  };
+  onStop(stop);
+  return stop;
 }

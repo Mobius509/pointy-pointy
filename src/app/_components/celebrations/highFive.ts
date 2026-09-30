@@ -36,7 +36,7 @@ export async function playHighFive(opts: CelebrationOptions): Promise<void> {
   probe.src = HAND_SRC;
   await probe.decode().catch(() => {});
 
-  const { x: cx, y: cy } = originPoint(opts.origin);
+  const { x: cx, y: cy } = originPoint(opts.origin, opts.at);
   const W = window.innerWidth;
   const handW = Math.min(W * 0.42, 230);
   const handH = handW * HAND_ASPECT;
@@ -167,7 +167,7 @@ function impact(layer: HTMLElement, cx: number, cy: number, opts: CelebrationOpt
   );
 
   // The avatar gets knocked into a happy bounce.
-  if (opts.origin) {
+  if (opts.origin && !opts.at) {
     opts.origin.animate(
       [
         { transform: "scale(1) rotate(0deg)" },
