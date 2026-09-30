@@ -41,3 +41,15 @@ export const EFFECT_Z = 70;
 export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
+
+// The one confetti look used by every effect (the "You earned" mockup):
+// party colors only, square pieces. Spread into any confetti() call.
+export function confettiStyle() {
+  return {
+    colors: tokenHex(PARTY),
+    shapes: ["square"] as ["square"],
+    scalar: 1.2,
+    zIndex: EFFECT_Z,
+    disableForReducedMotion: true,
+  };
+}

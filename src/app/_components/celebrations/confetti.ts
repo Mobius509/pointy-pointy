@@ -1,12 +1,11 @@
 import confetti from "canvas-confetti";
-import { BRAND, EFFECT_Z, PARTY, tokenHex, wait, type CelebrationOptions } from "./shared";
+import { confettiStyle, wait, type CelebrationOptions } from "./shared";
 import { playSound } from "./sounds";
 
 // Full-screen confetti: a pop from both sides, then a steady fall from the
 // top of the screen for a few seconds (the "You earned" mockup look).
 export async function playConfetti(_opts: CelebrationOptions): Promise<void> {
-  const colors = tokenHex([...PARTY, ...BRAND]);
-  const base = { colors, zIndex: EFFECT_Z, disableForReducedMotion: true };
+  const base = confettiStyle();
   void playSound("pop");
   setTimeout(() => void playSound("cheer"), 200);
 
@@ -22,7 +21,6 @@ export async function playConfetti(_opts: CelebrationOptions): Promise<void> {
         startVelocity: 0,
         gravity: 0.6,
         ticks: 400,
-        scalar: 1.2,
         drift: Math.random() - 0.5,
         origin: { x: Math.random(), y: -0.05 },
       });

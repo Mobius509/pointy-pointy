@@ -1,7 +1,6 @@
 import { playFireworks } from "./fireworks";
 import { playSound } from "./sounds";
 import {
-  BRAND,
   EFFECT_Z,
   PARTY,
   originPoint,
@@ -93,7 +92,7 @@ export async function playWebglBurst(opts: CelebrationOptions): Promise<void> {
     gl.useProgram(prog);
 
     // Per-particle data: angle, speed, size, delay, swirl, r, g, b.
-    const palette = [...PARTY, ...BRAND].map((n) => tokenRgb(n).map((c) => c / 255));
+    const palette = PARTY.map((n) => tokenRgb(n).map((c) => c / 255));
     const STRIDE = 8;
     const data = new Float32Array(COUNT * STRIDE);
     for (let i = 0; i < COUNT; i++) {

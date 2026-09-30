@@ -1,10 +1,8 @@
 import confetti from "canvas-confetti";
 import {
-  BRAND,
   EFFECT_Z,
-  PARTY,
+  confettiStyle,
   originPoint,
-  tokenHex,
   wait,
   type CelebrationOptions,
 } from "./shared";
@@ -20,7 +18,6 @@ const BURST_CLASSES = [
   "bg-pp-party-pink",
   "bg-pp-party-cyan",
   "bg-pp-party-red",
-  "bg-pp-primary",
 ];
 
 // Two hands swing in from the sides, wind up, and SMACK together over the
@@ -139,14 +136,11 @@ function impact(layer: HTMLElement, cx: number, cy: number, opts: CelebrationOpt
 
   // Confetti pop from the smack.
   confetti({
-    colors: tokenHex([...PARTY, ...BRAND]),
-    zIndex: EFFECT_Z,
-    disableForReducedMotion: true,
+    ...confettiStyle(),
     particleCount: 90,
     spread: 360,
     startVelocity: 38,
     ticks: 120,
-    scalar: 1.1,
     origin: { x: cx / window.innerWidth, y: cy / window.innerHeight },
   });
 
