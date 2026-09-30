@@ -8,7 +8,7 @@ import {
 } from "./shared";
 import { playSound } from "./sounds";
 
-const HAND_SRC = "/anims/highfivehand.png";
+const HAND_SRC = "/anims/highfivehand.webp";
 const HAND_ASPECT = 1114 / 834; // height / width of the artwork
 
 // Burst line colors — Tailwind classes backed by the --pp-party-* tokens.

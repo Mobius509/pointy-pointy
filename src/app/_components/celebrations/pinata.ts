@@ -14,8 +14,8 @@ import {
 } from "./shared";
 import { playSound } from "./sounds";
 
-const PINATA_SRC = "/anims/pinata.png";
-const BAT_SRC = "/anims/bat.png";
+const PINATA_SRC = "/anims/pinata.webp";
+const BAT_SRC = "/anims/bat.webp";
 const PINATA_ASPECT = 932 / 697;
 const BAT_ASPECT = 932 / 697;
 const HITS_TO_BREAK = 3;

@@ -9,8 +9,8 @@ import {
 } from "./shared";
 import { playSound } from "./sounds";
 
-const BALLOON_SRC = "/anims/balloon.png";
-const NEEDLE_SRC = "/anims/needle.png";
+const BALLOON_SRC = "/anims/balloon.webp";
+const NEEDLE_SRC = "/anims/needle.webp";
 const BALLOON_ASPECT = 897 / 671;
 const NEEDLE_ASPECT = 893 / 668;
 // Tints of the red balloon artwork toward the party colors.

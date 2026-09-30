@@ -167,7 +167,7 @@ export function CelebrationScreen({
           className="flex-1 flex flex-col items-center justify-center w-full max-w-xl focus:outline-none"
         >
           <img
-            src="/anims/gift.png"
+            src="/anims/gift.webp"
             alt=""
             aria-hidden
             draggable={false}
