@@ -14,6 +14,8 @@ export async function playFireworks(_opts: CelebrationOptions): Promise<void> {
     const left = Date.now() < end - duration / 2;
     confetti({
       ...confettiStyle(),
+      shapes: ["circle"], // firework sparks
+      scalar: 0.9,
       particleCount: 70,
       spread: 360,
       startVelocity: 32,

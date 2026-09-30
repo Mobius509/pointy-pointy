@@ -22,6 +22,9 @@ export type Celebration = {
   // The kid has to do something (whack, pop, spin, scratch) before the
   // points show; the effect calls opts.onReveal() at the payoff.
   revealsPoints?: boolean;
+  // Also hide the avatar + points circle until the reveal, for effects
+  // that take over the middle of the screen (piñata, slot machine).
+  hidesStage?: boolean;
   play: (opts: CelebrationOptions) => Promise<void>;
 };
 
@@ -61,6 +64,7 @@ export const CELEBRATIONS: Celebration[] = [
   {
     id: "pinata",
     revealsPoints: true,
+    hidesStage: true,
     name: "Piñata",
     description: "Tap to whack the llama three times — candy everywhere (throwable!).",
     play: playPinata,
@@ -87,6 +91,7 @@ export const CELEBRATIONS: Celebration[] = [
   {
     id: "jackpot",
     revealsPoints: true,
+    hidesStage: true,
     name: "Jackpot",
     description: "Tap to spin — the reels land on three avatars.",
     play: playJackpot,

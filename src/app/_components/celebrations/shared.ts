@@ -51,13 +51,12 @@ export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-// The one confetti look used by every effect (the "You earned" mockup):
-// party colors only, square pieces. Spread into any confetti() call.
+// The confetti look — the confetti shower's side cannons: party + brand
+// colors in the library's default mix of squares and circles. The top
+// rain and every other effect's confetti use it too, so it all matches.
 export function confettiStyle() {
   return {
-    colors: tokenHex(PARTY),
-    shapes: ["square"] as ["square"],
-    scalar: 1.2,
+    colors: tokenHex([...PARTY, ...BRAND]),
     zIndex: EFFECT_Z,
     disableForReducedMotion: true,
   };

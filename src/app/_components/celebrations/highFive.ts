@@ -18,6 +18,7 @@ const BURST_CLASSES = [
   "bg-pp-party-pink",
   "bg-pp-party-cyan",
   "bg-pp-party-red",
+  "bg-pp-primary",
 ];
 
 // Two hands swing in from the sides, wind up, and SMACK together over the
@@ -137,6 +138,7 @@ function impact(layer: HTMLElement, cx: number, cy: number, opts: CelebrationOpt
   // Confetti pop from the smack.
   confetti({
     ...confettiStyle(),
+    scalar: 1.1,
     particleCount: 90,
     spread: 360,
     startVelocity: 38,

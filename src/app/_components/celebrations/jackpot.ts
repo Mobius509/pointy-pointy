@@ -66,6 +66,10 @@ export async function playJackpot(opts: CelebrationOptions): Promise<void> {
     spins.push({ strip, duration: 1300 + r * 550 });
   }
 
+  // Centered on screen — the avatar and points circle are hidden while it
+  // plays, so the machine has the stage to itself.
+  machine.style.top = `${Math.max(24, H / 2 - machine.offsetHeight / 2 - 40)}px`;
+
   // Pop the machine in, then wait for a tap to spin (or spin on its own).
   await machine.animate(
     [{ transform: "scale(0.5)", opacity: 0 }, { transform: "scale(1.05)", opacity: 1, offset: 0.7 }, { transform: "scale(1)" }],

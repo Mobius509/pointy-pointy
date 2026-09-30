@@ -157,6 +157,8 @@ export function CelebrationScreen({
   // Hidden (but still taking up space, so the circle doesn't move under
   // the effect) until the points are revealed.
   const reveal = revealed ? "animate-celebrate-pop-in" : "invisible";
+  // Some effects (the piñata) need the middle of the screen to themselves.
+  const stage = effect.hidesStage ? reveal : "";
 
   // Portal to <body>: the kid/parent panels use backdrop-blur, which would
   // otherwise trap this "fixed" screen inside the panel.
@@ -179,7 +181,7 @@ export function CelebrationScreen({
 
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xl">
         {/* Avatar peeking over the points circle. */}
-        <div className="relative mt-20">
+        <div className={`relative mt-20 ${stage}`}>
           <div className="absolute left-1/2 -top-20 -translate-x-1/2">
             <img
               ref={avatarRef}
