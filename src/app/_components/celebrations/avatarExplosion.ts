@@ -1,16 +1,16 @@
-import { EFFECT_Z, wait, type CelebrationOptions } from "./shared";
+import {
+  explodeImage,
+  makeLayer,
+  slamWord,
+  wait,
+  type CelebrationOptions,
+} from "./shared";
 import { playSound } from "./sounds";
-
-const GRID = 6;
 
 // The avatar winds up (wobble + puff), bursts into a 6×6 grid of tiles
 // that fly off spinning, "POP!" flashes, then the avatar pops back in.
 export async function playAvatarExplosion(opts: CelebrationOptions): Promise<void> {
-  const layer = document.createElement("div");
-  layer.setAttribute("aria-hidden", "true");
-  layer.className = "pointer-events-none fixed inset-0 overflow-hidden";
-  layer.style.zIndex = String(EFFECT_Z);
-  document.body.appendChild(layer);
+  const layer = makeLayer();
 
   // Where the avatar lives on screen (or a big one in the middle).
   const size = opts.origin ? opts.origin.getBoundingClientRect().width : 180;
@@ -40,68 +40,20 @@ export async function playAvatarExplosion(opts: CelebrationOptions): Promise<voi
   const scale = 1.45;
   const w = rect.width * scale;
   const h = rect.height * scale;
-  const x0 = rect.left - (w - rect.width) / 2;
-  const y0 = rect.top - (h - rect.height) / 2;
-  const tw = w / GRID;
-  const th = h / GRID;
   stand.remove();
   void playSound("pop");
   setTimeout(() => void playSound("cheer"), 250);
-
-  const flights: Promise<unknown>[] = [];
-  for (let row = 0; row < GRID; row++) {
-    for (let col = 0; col < GRID; col++) {
-      const tile = document.createElement("div");
-      tile.className = "absolute";
-      Object.assign(tile.style, {
-        left: `${x0 + col * tw}px`,
-        top: `${y0 + row * th}px`,
-        width: `${tw}px`,
-        height: `${th}px`,
-        backgroundImage: `url("${opts.avatarSrc}")`,
-        backgroundSize: `${w}px ${h}px`,
-        backgroundPosition: `${-col * tw}px ${-row * th}px`,
-      });
-      layer.appendChild(tile);
-
-      // Fly away from the avatar's center, a little randomized.
-      const dx = col - (GRID - 1) / 2 + (Math.random() - 0.5);
-      const dy = row - (GRID - 1) / 2 + (Math.random() - 0.5);
-      const len = Math.hypot(dx, dy) || 1;
-      const dist = 250 + Math.random() * 450;
-      const tx = (dx / len) * dist;
-      const ty = (dy / len) * dist + 120; // a bit of gravity
-      const spin = (Math.random() - 0.5) * 900;
-      flights.push(
-        tile.animate(
-          [
-            { transform: "translate(0,0) rotate(0deg)", opacity: 1 },
-            { opacity: 1, offset: 0.6 },
-            { transform: `translate(${tx}px, ${ty}px) rotate(${spin}deg)`, opacity: 0 },
-          ],
-          { duration: 1100 + Math.random() * 400, easing: "cubic-bezier(.15,.8,.3,1)", fill: "forwards" },
-        ).finished,
-      );
-    }
-  }
-
-  // "POP!"
-  const pop = document.createElement("div");
-  pop.textContent = "POP!";
-  pop.className = "absolute font-black text-pp-primary animate-celebrate-pop-in";
-  Object.assign(pop.style, {
-    left: `${rect.left + rect.width / 2}px`,
-    top: `${rect.top + rect.height / 2}px`,
-    translate: "-50% -50%",
-    fontSize: "64px",
+  const flights = explodeImage(layer, opts.avatarSrc, {
+    left: rect.left - (w - rect.width) / 2,
+    top: rect.top - (h - rect.height) / 2,
+    width: w,
+    height: h,
   });
-  layer.appendChild(pop);
-  pop.animate([{ opacity: 1 }, { opacity: 1, offset: 0.6 }, { opacity: 0 }], {
+  slamWord(layer, "POP!", rect.left + rect.width / 2, rect.top + rect.height / 2, {
     duration: 1100,
-    fill: "forwards",
+    tilt: 0,
   });
-
-  await Promise.all(flights);
+  await flights;
 
   // Bring the real avatar back with a bounce.
   if (opts.origin) {

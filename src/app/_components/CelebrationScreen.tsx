@@ -3,7 +3,13 @@
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { isMuted, playCelebration, setMuted, unlockAudio } from "./celebrations";
+import {
+  isMuted,
+  playCelebration,
+  setMuted,
+  stopAllCelebrations,
+  unlockAudio,
+} from "./celebrations";
 
 // Full-screen "points approved" moment: avatar peeking over a white circle
 // with the points, a random silly headline, and one of the celebration
@@ -68,6 +74,7 @@ export function CelebrationScreen({
   const [button] = useState(() => pick(BUTTONS));
   const [shown, setShown] = useState(0);
   const [opened, setOpened] = useState(!tapToOpen);
+  const [opening, setOpening] = useState(false);
   const [muted, setMutedState] = useState(false);
   useEffect(() => setMutedState(isMuted()), []);
 
@@ -77,6 +84,7 @@ export function CelebrationScreen({
     setMutedState(!muted);
   };
   const avatarRef = useRef<HTMLImageElement>(null);
+  const circleRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -108,13 +116,19 @@ export function CelebrationScreen({
     raf = requestAnimationFrame(tick);
 
     const timer = setTimeout(() => {
-      void playCelebration({ avatarSrc, origin: avatarRef.current }, effectId);
+      void playCelebration(
+        { avatarSrc, origin: avatarRef.current, target: circleRef.current, points: total },
+        effectId,
+      );
     }, 350);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(timer);
     };
   }, [avatarSrc, effectId, total, opened]);
+
+  // Closing the screen clears any effect still running (piñata, candy…).
+  useEffect(() => () => stopAllCelebrations(), []);
 
   const extra = items.length - 4;
 
@@ -138,33 +152,37 @@ export function CelebrationScreen({
       </button>
 
       {!opened ? (
-        <>
-          <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xl">
-            <img
-              src={avatarSrc}
-              alt=""
-              aria-hidden
-              className="size-40 object-contain animate-celebrate-pop-in"
-            />
-            <p className="mt-6 text-4xl sm:text-5xl font-semibold text-pp-primary text-center leading-tight">
-              You&apos;ve got points!
-            </p>
-            <p className="mt-6 text-7xl animate-bounce" aria-hidden>
-              🎁
-            </p>
-          </div>
-          <button
-            ref={buttonRef}
-            type="button"
-            onClick={() => {
-              unlockAudio();
-              setOpened(true);
-            }}
-            className="btn-primary btn-lg w-full max-w-xl rounded-2xl h-16"
+        // The gift is the whole screen's one tap target.
+        <button
+          ref={buttonRef}
+          type="button"
+          aria-label="Tap to open your points"
+          disabled={opening}
+          onClick={() => {
+            unlockAudio();
+            setOpening(true);
+            // Let the gift pop open before the celebration takes over.
+            setTimeout(() => setOpened(true), 320);
+          }}
+          className="flex-1 flex flex-col items-center justify-center w-full max-w-xl focus:outline-none"
+        >
+          <img
+            src="/anims/gift.png"
+            alt=""
+            aria-hidden
+            draggable={false}
+            className={`w-56 sm:w-64 select-none ${
+              opening ? "animate-celebrate-gift-open" : "animate-celebrate-gift-wiggle"
+            }`}
+          />
+          <span
+            className={`mt-4 text-3xl sm:text-4xl font-semibold text-pp-primary transition-opacity ${
+              opening ? "opacity-0" : ""
+            }`}
           >
             Tap to open!
-          </button>
-        </>
+          </span>
+        </button>
       ) : (
         <>
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xl">
@@ -179,7 +197,10 @@ export function CelebrationScreen({
               className="size-32 object-contain animate-celebrate-pop-in"
             />
           </div>
-          <div className="size-48 sm:size-52 rounded-full bg-white flex flex-col items-center justify-center shadow-sm">
+          <div
+            ref={circleRef}
+            className="size-48 sm:size-52 rounded-full bg-white flex flex-col items-center justify-center shadow-sm"
+          >
             <span className="text-7xl font-black text-pp-primary tabular-nums leading-none">
               {shown}
             </span>

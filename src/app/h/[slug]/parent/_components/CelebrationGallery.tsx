@@ -14,6 +14,8 @@ const SAMPLE_ITEMS = [
   { id: "s3", name: "Helped with groceries", points: 15, isBonus: true },
 ];
 
+const SAMPLE_TOTAL = SAMPLE_ITEMS.reduce((sum, i) => sum + i.points, 0);
+
 // Parent Settings → Celebrations: preview every effect the kid view can
 // play when points are approved, plus the full "points approved" screen.
 export function CelebrationGallery({ kids }: { kids: Kid[] }) {
@@ -58,7 +60,7 @@ export function CelebrationGallery({ kids }: { kids: Kid[] }) {
                 className="btn-primary"
                 onClick={() => {
                   unlockAudio();
-                  void playCelebration({ avatarSrc: src }, c.id);
+                  void playCelebration({ avatarSrc: src, points: SAMPLE_TOTAL }, c.id);
                 }}
               >
                 Play
@@ -86,7 +88,7 @@ export function CelebrationGallery({ kids }: { kids: Kid[] }) {
       {preview !== null && (
         <CelebrationScreen
           avatarSrc={src}
-          total={SAMPLE_ITEMS.reduce((s, i) => s + i.points, 0)}
+          total={SAMPLE_TOTAL}
           items={SAMPLE_ITEMS}
           milestonesUnlocked={[{ name: "Ice Cream Trip" }]}
           nextUp={{ name: "Amazon $25", pointsToGo: 730 }}

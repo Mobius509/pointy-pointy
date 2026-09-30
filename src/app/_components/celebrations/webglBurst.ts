@@ -3,6 +3,7 @@ import { playSound } from "./sounds";
 import {
   EFFECT_Z,
   PARTY,
+  onStop,
   originPoint,
   tokenRgb,
   type CelebrationOptions,
@@ -82,6 +83,11 @@ export async function playWebglBurst(opts: CelebrationOptions): Promise<void> {
   const gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: true });
   if (!gl) return playFireworks(opts);
   document.body.appendChild(canvas);
+  let stopped = false;
+  const unregister = onStop(() => {
+    stopped = true;
+    canvas.remove();
+  });
 
   try {
     const prog = gl.createProgram()!;
@@ -145,7 +151,7 @@ export async function playWebglBurst(opts: CelebrationOptions): Promise<void> {
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.uniform1f(uTime, t);
         gl.drawArrays(gl.POINTS, 0, COUNT);
-        if (t < DURATION) requestAnimationFrame(frame);
+        if (t < DURATION && !stopped) requestAnimationFrame(frame);
         else resolve();
       };
       requestAnimationFrame(frame);
@@ -155,6 +161,7 @@ export async function playWebglBurst(opts: CelebrationOptions): Promise<void> {
     canvas.remove();
     return playFireworks(opts);
   } finally {
+    unregister();
     gl.getExtension("WEBGL_lose_context")?.loseContext();
     canvas.remove();
   }
