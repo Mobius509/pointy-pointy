@@ -37,21 +37,36 @@ export async function runDueReminders(now: Date = new Date()): Promise<{
       .select("id");
     if (!claimed?.length) continue;
 
-    const view = await getKidTodayView({
-      householdId: row.household_id as string,
-      kidProfileId: row.id as string,
-      timezone,
-    });
-    const open = view?.items.filter((i) => i.state === "open").length ?? 0;
-    if (open === 0) continue; // all caught up — no nagging
-
-    const delivered = await notifyKid(row.household_id as string, row.id as string, {
-      title: "Time to log your points! ⭐",
-      body: `You have ${open} ${open === 1 ? "task" : "tasks"} left today.`,
-      tag: "reminder",
-    });
-    if (delivered > 0) sent++;
+    const res = await sendReminder(
+      { householdId: row.household_id as string, kidProfileId: row.id as string, timezone },
+      { skipIfCaughtUp: true },
+    );
+    if (res.delivered > 0) sent++;
   }
 
   return { checked: data?.length ?? 0, sent };
+}
+
+// Sends one kid's reminder right now. The scheduled job skips kids with no
+// open tasks; the parent "send test" button sends regardless so there's
+// always something to see.
+export async function sendReminder(
+  ctx: { householdId: string; kidProfileId: string; timezone: string },
+  opts: { skipIfCaughtUp: boolean; test?: boolean },
+): Promise<{ open: number; delivered: number }> {
+  const view = await getKidTodayView(ctx);
+  const open = view?.items.filter((i) => i.state === "open").length ?? 0;
+  if (open === 0 && opts.skipIfCaughtUp) return { open, delivered: 0 };
+
+  const body =
+    open === 0
+      ? "You're all caught up today — nice work!"
+      : `You have ${open} ${open === 1 ? "task" : "tasks"} left today.`;
+
+  const delivered = await notifyKid(ctx.householdId, ctx.kidProfileId, {
+    title: opts.test ? "Test reminder ⭐" : "Time to log your points! ⭐",
+    body,
+    tag: "reminder",
+  });
+  return { open, delivered };
 }

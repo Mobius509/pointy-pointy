@@ -1,9 +1,11 @@
 import { PushToggle } from "@/app/_components/PushToggle";
+import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
 import { getKidProfiles } from "@/lib/v2/data";
 import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
 import { updateHouseholdSettingsAction } from "../_actions/settings";
 import { CoParentManager } from "../_components/CoParentManager";
+import { KidRemindersCard } from "../_components/KidRemindersCard";
 import { KidsAdmin } from "../_components/KidsAdmin";
 import { KidUrlCard } from "../_components/KidUrlCard";
 import { PageTitle, SectionPill } from "../_components/ui";
@@ -34,6 +36,16 @@ export default async function ParentSettingsPage({
   const members = await getHouseholdMembers(household.id);
   const invites = await getPendingInvites(household.id);
   const kids = await getKidProfiles(household.id);
+  const { data: reminderRows } = await supabaseV2Admin
+    .from("kid_profiles")
+    .select("id, reminder_time")
+    .eq("household_id", household.id);
+  const reminderByKid = new Map(
+    (reminderRows ?? []).map((r) => [
+      r.id as string,
+      r.reminder_time ? (r.reminder_time as string).slice(0, 5) : null,
+    ]),
+  );
 
   return (
     <div className="space-y-6 text-[14px]">
@@ -51,6 +63,16 @@ export default async function ParentSettingsPage({
           <PushToggle slug={slug} role="parent" label="Turn on notifications" />
         </div>
       </section>
+
+      <KidRemindersCard
+        slug={slug}
+        kids={kids.map((k) => ({
+          id: k.id,
+          name: k.name,
+          avatar_emoji: k.avatar_emoji,
+          reminderTime: reminderByKid.get(k.id) ?? null,
+        }))}
+      />
 
       <KidsAdmin slug={slug} kids={kids} />
 

@@ -5,6 +5,7 @@ import {
   registerWebPushAction,
   unregisterWebPushAction,
 } from "@/app/_actions/push";
+import { REMINDER_TIMES } from "@/lib/reminder-times";
 import { AvatarPicker } from "../../_components/AvatarPicker";
 import {
   updateKidAvatarAction,
@@ -12,17 +13,6 @@ import {
 } from "../../_actions/kid-settings";
 
 type NotifState = "loading" | "unsupported" | "blocked" | "off" | "on";
-
-// 15-minute steps from 7:00 AM to 9:45 PM — the reminder job runs every 15.
-const REMINDER_TIMES = Array.from({ length: 60 }, (_, i) => {
-  const minutes = 7 * 60 + i * 15;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return {
-    value: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
-    label: `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`,
-  };
-});
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
