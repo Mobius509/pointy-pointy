@@ -45,6 +45,7 @@ export function CelebrationScreen({
   total,
   items,
   milestonesUnlocked,
+  nextUp,
   effectId,
   onClose,
 }: {
@@ -52,6 +53,8 @@ export function CelebrationScreen({
   total: number;
   items: CelebrationItem[];
   milestonesUnlocked: { name: string }[];
+  // The next milestone (or the goal itself once past them all).
+  nextUp?: { name: string; pointsToGo: number } | null;
   // Force a specific effect (gallery); random when omitted.
   effectId?: string;
   onClose: () => void;
@@ -140,6 +143,16 @@ export function CelebrationScreen({
             🏆 Unlocked: {m.name}!
           </p>
         ))}
+
+        {nextUp && nextUp.pointsToGo > 0 && (
+          <p className="mt-4 text-center text-pp-primary-strong">
+            <span className="font-semibold">Next up: {nextUp.name}</span>
+            <span className="block text-sm text-pp-muted tabular-nums">
+              {nextUp.pointsToGo.toLocaleString()}{" "}
+              {nextUp.pointsToGo === 1 ? "point" : "points"} to go
+            </span>
+          </p>
+        )}
 
         <ul className="mt-5 space-y-1 text-center text-sm text-pp-muted">
           {items.slice(0, 4).map((i) => (

@@ -203,6 +203,7 @@ export default async function KidViewPage({
             approvals={recentApprovals}
             progress={progress}
             milestones={milestones.map((m) => ({ name: m.name, points: m.points }))}
+            goal={goal ? { name: goal.name, targetPoints: goal.target_points } : null}
           />
           <RefreshOnFocus />
 

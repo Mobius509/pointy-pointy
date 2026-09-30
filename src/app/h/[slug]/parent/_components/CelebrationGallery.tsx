@@ -80,6 +80,7 @@ export function CelebrationGallery({ kids }: { kids: Kid[] }) {
           total={SAMPLE_ITEMS.reduce((s, i) => s + i.points, 0)}
           items={SAMPLE_ITEMS}
           milestonesUnlocked={[{ name: "Ice Cream Trip" }]}
+          nextUp={{ name: "Amazon $25", pointsToGo: 730 }}
           effectId={preview || undefined}
           onClose={() => setPreview(null)}
         />

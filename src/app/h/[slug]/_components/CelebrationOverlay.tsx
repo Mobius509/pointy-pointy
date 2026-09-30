@@ -20,12 +20,14 @@ export function CelebrationOverlay({
   approvals,
   progress,
   milestones,
+  goal,
 }: {
   kidId: string;
   avatarSrc: string;
   approvals: CelebrationItem[];
   progress: number;
   milestones: { name: string; points: number }[];
+  goal: { name: string; targetPoints: number } | null;
 }) {
   const [fresh, setFresh] = useState<CelebrationItem[] | null>(null);
   const idsKey = approvals.map((a) => a.id).join(",");
@@ -59,6 +61,14 @@ export function CelebrationOverlay({
   const total = fresh.reduce((sum, i) => sum + i.points, 0);
   const from = progress - total;
   const unlocked = milestones.filter((m) => m.points > from && m.points <= progress);
+  const nextMilestone = milestones
+    .filter((m) => m.points > progress)
+    .sort((a, b) => a.points - b.points)[0];
+  const nextUp = nextMilestone
+    ? { name: nextMilestone.name, pointsToGo: nextMilestone.points - progress }
+    : goal
+      ? { name: goal.name, pointsToGo: goal.targetPoints - progress }
+      : null;
 
   return (
     <CelebrationScreen
@@ -66,6 +76,7 @@ export function CelebrationOverlay({
       total={total}
       items={fresh}
       milestonesUnlocked={unlocked}
+      nextUp={nextUp}
       onClose={close}
     />
   );
