@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getKidSession } from "@/lib/v2/auth";
+import { submitHighScore } from "@/lib/v2/high-scores";
 import {
   cancelKidProposal,
   cancelPendingTaskForToday,
@@ -88,4 +89,24 @@ export async function cancelKidProposalAction(
   id: string,
 ): Promise<OpResult> {
   return withKidSession(slug, (ctx) => cancelKidProposal(ctx, id));
+}
+
+// A kid finished a mini game round: keep it if it beats the family's best.
+export async function submitHighScoreAction(
+  slug: string,
+  game: string,
+  score: number,
+): Promise<
+  | { ok: true; best: { score: number; initials: string }; isNew: boolean }
+  | { ok: false; error: string }
+> {
+  let ctx;
+  try {
+    ctx = await requireKidSessionForSlug(slug);
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+  const res = await submitHighScore(ctx.householdId, ctx.kidProfileId, game, score);
+  if ("error" in res) return { ok: false, error: res.error };
+  return { ok: true, ...res };
 }

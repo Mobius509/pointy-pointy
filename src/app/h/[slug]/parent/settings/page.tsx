@@ -2,6 +2,7 @@ import { PushToggle } from "@/app/_components/PushToggle";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
 import { getKidProfiles } from "@/lib/v2/data";
+import { getHighScores } from "@/lib/v2/high-scores";
 import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
 import { updateHouseholdSettingsAction } from "../_actions/settings";
 import { CelebrationGallery } from "../_components/CelebrationGallery";
@@ -77,6 +78,7 @@ export default async function ParentSettingsPage({
 
       <CelebrationGallery
         kids={kids.map((k) => ({ id: k.id, name: k.name, avatar_emoji: k.avatar_emoji }))}
+        highScores={await getHighScores(household.id)}
       />
 
       <KidsAdmin slug={slug} kids={kids} />

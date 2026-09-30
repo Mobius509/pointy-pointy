@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import {
   CelebrationScreen,
   type CelebrationItem,
+  type HighScore,
 } from "@/app/_components/CelebrationScreen";
+import { submitHighScoreAction } from "../_actions/kid-completions";
 
 // Celebrates approvals this device hasn't celebrated yet. "Seen" approval
 // ids live in browser storage per kid, so there's no server state: the
@@ -15,19 +17,23 @@ const KEY = (kidId: string) => `pp:celebrated:${kidId}`;
 const MAX_REMEMBERED = 200;
 
 export function CelebrationOverlay({
+  slug,
   kidId,
   avatarSrc,
   approvals,
   progress,
   milestones,
   goal,
+  highScores,
 }: {
+  slug: string;
   kidId: string;
   avatarSrc: string;
   approvals: CelebrationItem[];
   progress: number;
   milestones: { name: string; points: number }[];
   goal: { name: string; targetPoints: number } | null;
+  highScores: Record<string, HighScore>;
 }) {
   const [fresh, setFresh] = useState<CelebrationItem[] | null>(null);
   const idsKey = approvals.map((a) => a.id).join(",");
@@ -77,6 +83,11 @@ export function CelebrationOverlay({
       items={fresh}
       milestonesUnlocked={unlocked}
       nextUp={nextUp}
+      highScores={highScores}
+      onSubmitHighScore={async (game, score) => {
+        const res = await submitHighScoreAction(slug, game, score);
+        return res.ok ? { best: res.best, isNew: res.isNew } : null;
+      }}
       onClose={close}
     />
   );

@@ -44,6 +44,8 @@ const BUTTONS = ["Heck yes!", "Woohoo!", "Let's go!", "I'm awesome", "Yay!", "Sw
 
 const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
 
+export type HighScore = { score: number; initials: string };
+
 export type CelebrationItem = {
   id: string;
   name: string;
@@ -58,6 +60,8 @@ export function CelebrationScreen({
   milestonesUnlocked,
   nextUp,
   effectId,
+  highScores,
+  onSubmitHighScore,
   onClose,
 }: {
   avatarSrc: string;
@@ -68,6 +72,11 @@ export function CelebrationScreen({
   nextUp?: { name: string; pointsToGo: number } | null;
   // Force a specific effect (gallery); random when omitted.
   effectId?: string;
+  // Family high scores by game id, e.g. { worm: { score: 42, initials: "FRE" } }.
+  highScores?: Record<string, HighScore>;
+  // Saves a finished round's score (kid view only — gallery previews don't
+  // count). Resolves with the family best afterwards.
+  onSubmitHighScore?: (game: string, score: number) => Promise<{ best: HighScore; isNew: boolean } | null>;
   onClose: () => void;
 }) {
   const [headline] = useState(() => pick(HEADLINES));
@@ -100,6 +109,26 @@ export function CelebrationScreen({
   const [timeLeft, setTimeLeft] = useState(0);
   const [timesUp, setTimesUp] = useState(false);
   const [lives, setLives] = useState<number | null>(null);
+  const [best, setBest] = useState<HighScore | null>(highScores?.[effect.id] ?? null);
+  const [newBest, setNewBest] = useState(false);
+  const scoreRef = useRef(0);
+  const onScore = (n: number) => {
+    scoreRef.current = n;
+    setScore(n);
+  };
+  // Round over (time's up or game over): save it if it's a family best.
+  const endRound = () => {
+    stopGame.current();
+    setTimesUp(true);
+    const final = scoreRef.current;
+    if (!onSubmitHighScore || final <= 0) return;
+    void onSubmitHighScore(effect.id, final).then((res) => {
+      if (!res) return;
+      setBest(res.best);
+      setNewBest(res.isNew);
+      if (res.isNew) void playSound("cheer");
+    });
+  };
   const stopGame = useRef<() => void>(() => {});
   const keepPlaying = () => {
     unlockAudio();
@@ -109,20 +138,18 @@ export function CelebrationScreen({
   // Start once the counter is on screen, so collected candy knows where to fly.
   useEffect(() => {
     if (!playing) return;
-    setScore(0);
+    onScore(0);
     setTimesUp(false);
+    setNewBest(false);
     setLives(null);
     const r = counterRef.current?.getBoundingClientRect();
     stopGame.current = startGame(effect, {
       avatarSrc,
       counter: r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : undefined,
-      onScore: setScore,
+      onScore,
       onLives: setLives,
       // Arcade games end themselves (bit your tail, out of lives).
-      onGameOver: () => {
-        stopGame.current();
-        setTimesUp(true);
-      },
+      onGameOver: endRound,
     });
 
     // Countdown for timed games; at zero the game stops and results show.
@@ -136,9 +163,8 @@ export function CelebrationScreen({
         setTimeLeft(left);
         if (left <= 0) {
           clearInterval(tick);
-          stopGame.current();
-          setTimesUp(true);
           void playSound("cheer");
+          endRound();
         }
       }, 1000);
     }
@@ -146,6 +172,8 @@ export function CelebrationScreen({
       clearInterval(tick);
       stopGame.current();
     };
+    // endRound/onScore only touch refs and state setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, round, effect, avatarSrc]);
 
   // Lock page scroll, close on Escape. Browsers (iPhone especially) block
@@ -317,6 +345,14 @@ export function CelebrationScreen({
               {Array.from({ length: effect.game.lives ?? 0 }, (_, i) => (i < lives ? "❤️" : "🤍")).join("")}
             </div>
           )}
+          {!timesUp && best && best.score > 0 && (
+            <div
+              aria-label={`High score ${best.score} by ${best.initials}`}
+              className="rounded-full bg-white px-3 py-2 text-sm font-bold text-pp-muted shadow-sm tabular-nums"
+            >
+              🏆 {best.score} · {best.initials}
+            </div>
+          )}
           {!timesUp && effect.game.seconds && (
             <div
               aria-label={`${timeLeft} seconds left`}
@@ -340,6 +376,18 @@ export function CelebrationScreen({
               <span aria-hidden>{effect.game.icon}</span> {score}
             </p>
             <p className="mt-1 font-semibold text-pp-muted">{effect.game.label}</p>
+            {newBest ? (
+              <p className="mt-4 rounded-full bg-pp-tint px-4 py-2 font-bold text-pp-primary animate-celebrate-pop-in">
+                🎉 New high score!
+              </p>
+            ) : (
+              best &&
+              best.score > 0 && (
+                <p className="mt-4 font-semibold text-pp-muted tabular-nums">
+                  🏆 High score: {best.score} · {best.initials}
+                </p>
+              )
+            )}
             <div className="mt-6 flex flex-col gap-3">
               <button
                 type="button"

@@ -5,6 +5,7 @@ import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { clearKidSession, getKidSession } from "@/lib/v2/auth";
 import { getKidProfiles } from "@/lib/v2/data";
 import { getKidTodayView } from "@/lib/v2/kid-ops";
+import { getHighScores } from "@/lib/v2/high-scores";
 import { avatarSrc } from "@/lib/avatar";
 import { KidPicker } from "./_components/KidPicker";
 import { V2DailyChecklist } from "./_components/V2DailyChecklist";
@@ -77,6 +78,7 @@ export default async function KidViewPage({
   }
   const { kid, goal, progress, milestones, items, pendingProposals, recentApprovals } =
     view;
+  const highScores = await getHighScores(household.id as string);
 
   // First name only on every screen — last name (= family name) takes up
   // too much room in the centered header and isn't needed by the kid.
@@ -198,12 +200,14 @@ export default async function KidViewPage({
 
           {/* Celebrate approvals this device hasn't celebrated yet. */}
           <CelebrationOverlay
+            slug={slug}
             kidId={kid.id}
             avatarSrc={avatarSrc(kid.avatar_emoji)}
             approvals={recentApprovals}
             progress={progress}
             milestones={milestones.map((m) => ({ name: m.name, points: m.points }))}
             goal={goal ? { name: goal.name, targetPoints: goal.target_points } : null}
+            highScores={highScores}
           />
           <RefreshOnFocus />
 

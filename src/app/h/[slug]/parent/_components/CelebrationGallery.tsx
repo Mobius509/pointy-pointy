@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CELEBRATIONS, playCelebration, unlockAudio } from "@/app/_components/celebrations";
-import { CelebrationScreen } from "@/app/_components/CelebrationScreen";
+import { CelebrationScreen, type HighScore } from "@/app/_components/CelebrationScreen";
 import { avatarSrc } from "@/lib/avatar";
 import { SectionPill } from "./ui";
 
@@ -18,7 +18,14 @@ const SAMPLE_TOTAL = SAMPLE_ITEMS.reduce((sum, i) => sum + i.points, 0);
 
 // Parent Settings → Celebrations: preview every effect the kid view can
 // play when points are approved, plus the full "points approved" screen.
-export function CelebrationGallery({ kids }: { kids: Kid[] }) {
+export function CelebrationGallery({
+  kids,
+  highScores,
+}: {
+  kids: Kid[];
+  // Shown in previews; gallery plays don't set new ones.
+  highScores: Record<string, HighScore>;
+}) {
   const [kidId, setKidId] = useState(kids[0]?.id);
   // Which effect the preview screen should force ("" = random).
   const [preview, setPreview] = useState<string | null>(null);
@@ -53,6 +60,11 @@ export function CelebrationGallery({ kids }: { kids: Kid[] }) {
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-pp-primary-strong">{c.name}</p>
               <p className="text-xs text-pp-muted mt-0.5">{c.description}</p>
+              {highScores[c.id] && highScores[c.id].score > 0 && (
+                <p className="mt-1 text-xs font-bold text-pp-primary tabular-nums">
+                  🏆 High score: {highScores[c.id].score} · {highScores[c.id].initials}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-2 shrink-0">
               <button
@@ -95,6 +107,7 @@ export function CelebrationGallery({ kids }: { kids: Kid[] }) {
           milestonesUnlocked={[{ name: "Ice Cream Trip" }]}
           nextUp={{ name: "Amazon $25", pointsToGo: 730 }}
           effectId={preview || undefined}
+          highScores={highScores}
           onClose={() => setPreview(null)}
         />
       )}
