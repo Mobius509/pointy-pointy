@@ -87,13 +87,14 @@ export function CelebrationGallery({ kids }: { kids: Kid[] }) {
 
       {preview !== null && (
         <CelebrationScreen
+          // Fresh screen (and effect pick) for every preview.
+          key={preview}
           avatarSrc={src}
           total={SAMPLE_TOTAL}
           items={SAMPLE_ITEMS}
           milestonesUnlocked={[{ name: "Ice Cream Trip" }]}
           nextUp={{ name: "Amazon $25", pointsToGo: 730 }}
           effectId={preview || undefined}
-          tapToOpen={preview === ""}
           onClose={() => setPreview(null)}
         />
       )}

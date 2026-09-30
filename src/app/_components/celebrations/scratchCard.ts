@@ -167,6 +167,7 @@ export async function playScratchCard(opts: CelebrationOptions): Promise<void> {
 
   await done;
 
+  opts.onReveal?.();
   void playSound("pop");
   setTimeout(() => void playSound("cheer"), 150);
   await canvas.animate(

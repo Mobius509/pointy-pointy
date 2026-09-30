@@ -142,8 +142,9 @@ export async function playPinata(opts: CelebrationOptions): Promise<void> {
   armAutoHit(3500);
   await done;
 
-  // BREAK! Burst the piñata and spill candy.
+  // BREAK! Burst the piñata, reveal the points, and spill candy.
   swing.pause();
+  opts.onReveal?.();
   const r = pinata.getBoundingClientRect();
   rig.remove();
   void playSound("boom");

@@ -68,7 +68,7 @@ body {
   100% { transform: scale(1.45) rotate(0deg); }
 }
 
-@keyframes celebrate-gift-wiggle {
+@keyframes celebrate-wiggle {
   0%, 60%, 100% { transform: rotate(0deg) scale(1); }
   66% { transform: rotate(-8deg) scale(1.04); }
   74% { transform: rotate(7deg) scale(1.04); }
@@ -76,10 +76,9 @@ body {
   90% { transform: rotate(3deg) scale(1); }
 }
 
-@keyframes celebrate-gift-open {
-  0% { transform: scale(1); opacity: 1; }
-  40% { transform: scale(0.9) rotate(-4deg); opacity: 1; }
-  100% { transform: scale(1.6) rotate(6deg); opacity: 0; }
+@keyframes celebrate-fade-in {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes celebrate-pop-in {
@@ -118,11 +117,12 @@ body {
   .animate-celebrate-wobble {
     animation: celebrate-wobble 0.9s ease-in-out forwards;
   }
-  .animate-celebrate-gift-wiggle {
-    animation: celebrate-gift-wiggle 1.8s ease-in-out infinite;
+  /* Idle "look at me" wiggle (the "?" before a reveal). */
+  .animate-celebrate-wiggle {
+    animation: celebrate-wiggle 1.8s ease-in-out infinite;
   }
-  .animate-celebrate-gift-open {
-    animation: celebrate-gift-open 0.32s ease-in forwards;
+  .animate-celebrate-fade-in {
+    animation: celebrate-fade-in 0.35s ease-out both;
   }
   .animate-celebrate-pop-in {
     animation: celebrate-pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;

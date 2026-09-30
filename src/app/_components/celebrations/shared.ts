@@ -12,6 +12,9 @@ export type CelebrationOptions = {
   target?: HTMLElement | null;
   // Points being celebrated (parade signs, scratch-card fallback).
   points?: number;
+  // "Reveal" effects (piñata, jackpot, balloons, scratch card) call this at
+  // their payoff moment; the screen keeps the points hidden until then.
+  onReveal?: () => void;
 };
 
 export const PARTY = ["party-pink", "party-yellow", "party-cyan", "party-red"];

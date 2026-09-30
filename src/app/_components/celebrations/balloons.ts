@@ -4,6 +4,7 @@ import {
   hintBubble,
   imageEl,
   makeLayer,
+  onStop,
   wait,
   type CelebrationOptions,
 } from "./shared";
@@ -16,10 +17,14 @@ const NEEDLE_ASPECT = 893 / 668;
 // Tints of the red balloon artwork toward the party colors.
 const TINTS = ["none", "hue-rotate(320deg)", "hue-rotate(45deg) saturate(1.4)", "hue-rotate(180deg)", "hue-rotate(250deg)"];
 
+const FIRST_AUTO_POP_MS = 3800; // nobody playing yet
+const IDLE_AUTO_POP_MS = 2500; // they stopped partway
+const AUTO_POP_GAP_MS = 450;
+
 // Balloons float up from the bottom. Tapping one jabs it with the needle —
-// POP, confetti. If nobody taps for a few seconds, they start popping on
-// their own so the moment still lands.
-export async function playBalloons(_opts: CelebrationOptions): Promise<void> {
+// POP, confetti. The last pop reveals the points. If the kid doesn't play
+// (or stops partway), the rest pop on their own so it always finishes.
+export async function playBalloons(opts: CelebrationOptions): Promise<void> {
   const layer = makeLayer();
   const W = window.innerWidth;
   const H = window.innerHeight;
@@ -28,9 +33,22 @@ export async function playBalloons(_opts: CelebrationOptions): Promise<void> {
   const COUNT = W < 480 ? 5 : 7;
 
   const hint = hintBubble(layer, "Pop the balloons!", 64);
+  let remaining = COUNT;
+  let allPopped!: () => void;
+  const finished = new Promise<void>((r) => (allPopped = r));
+  const pops: ((x?: number, y?: number) => void)[] = [];
+  const poppedFlags: boolean[] = [];
 
-  let touched = false;
-  const pops: Promise<void>[] = [];
+  let idle: ReturnType<typeof setTimeout> | undefined;
+  onStop(() => clearTimeout(idle));
+  // After a pause, pop the next balloon, then keep going until none are left.
+  const armIdle = (ms: number) => {
+    clearTimeout(idle);
+    idle = setTimeout(() => {
+      pops.find((_, i) => !poppedFlags[i])?.();
+      if (remaining > 1) armIdle(AUTO_POP_GAP_MS);
+    }, ms);
+  };
 
   for (let i = 0; i < COUNT; i++) {
     // The wrapper floats; the balloon inside it pops (separate transforms).
@@ -48,39 +66,44 @@ export async function playBalloons(_opts: CelebrationOptions): Promise<void> {
     wrap.appendChild(balloon);
     layer.appendChild(wrap);
 
-    // Float up past the top with a gentle sway.
-    const rise = H + bh * 1.2;
+    // Rise into the upper part of the screen with a gentle sway, then bob
+    // there — they wait to be popped rather than drifting off.
+    const top = H * (0.18 + Math.random() * 0.35);
+    const rise = H - top;
     const sway = 20 + Math.random() * 25;
     const flight = wrap.animate(
       [
         { transform: "translate(0, 0) rotate(-4deg)" },
-        { transform: `translate(${sway}px, ${-rise * 0.33}px) rotate(5deg)` },
-        { transform: `translate(${-sway}px, ${-rise * 0.66}px) rotate(-5deg)` },
-        { transform: `translate(0, ${-rise}px) rotate(3deg)` },
+        { transform: `translate(${sway}px, ${-rise * 0.5}px) rotate(5deg)` },
+        { transform: `translate(0, ${-rise}px) rotate(-3deg)` },
       ],
-      { duration: 6500 + Math.random() * 2500, delay: i * 350, easing: "linear", fill: "forwards" },
+      { duration: 2200 + Math.random() * 900, delay: i * 250, easing: "ease-out", fill: "forwards" },
+    );
+    flight.finished.then(
+      () =>
+        balloon.animate(
+          [{ transform: "translateY(0) rotate(-3deg)" }, { transform: "translateY(-12px) rotate(3deg)" }],
+          { duration: 1300 + Math.random() * 500, direction: "alternate", iterations: Infinity, easing: "ease-in-out" },
+        ),
+      () => {},
     );
 
-    let popped = false;
-    let resolvePop!: () => void;
-    pops.push(new Promise<void>((r) => (resolvePop = r)));
-    flight.finished.then(() => resolvePop(), () => {});
-
+    poppedFlags[i] = false;
     const pop = (px?: number, py?: number) => {
-      if (popped) return;
-      popped = true;
+      if (poppedFlags[i]) return;
+      poppedFlags[i] = true;
       const r = balloon.getBoundingClientRect();
       const tx = px ?? r.left + r.width / 2;
       const ty = py ?? r.top + r.height * 0.4;
       flight.pause();
 
-      // Needle jab from the upper right.
+      // Needle jab from the upper right. Its tip is at the bottom-left of
+      // the artwork (~19%, 81%).
       const needle = imageEl(NEEDLE_SRC);
       const nw = bw * 0.7;
       Object.assign(needle.style, {
         width: `${nw}px`,
         height: `${nw * NEEDLE_ASPECT}px`,
-        // Tip is at the bottom-left of the artwork (~19%, 81%).
         left: `${tx - nw * 0.19}px`,
         top: `${ty - nw * NEEDLE_ASPECT * 0.81}px`,
       });
@@ -107,38 +130,33 @@ export async function playBalloons(_opts: CelebrationOptions): Promise<void> {
           origin: { x: tx / W, y: ty / H },
         });
         balloon
-          .animate(
-            [
-              { transform: "scale(1)", opacity: 1 },
-              { transform: "scale(1.35)", opacity: 0 },
-            ],
-            { duration: 110, fill: "forwards" },
-          )
-          .finished.then(() => {
-            wrap.remove();
-            resolvePop();
-          });
+          .animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(1.35)", opacity: 0 }], {
+            duration: 110,
+            fill: "forwards",
+          })
+          .finished.then(() => wrap.remove());
+        if (--remaining === 0) allPopped();
       }, 140);
     };
+    pops.push(pop);
 
     balloon.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      if (!touched) {
-        touched = true;
-        hint.remove();
-      }
+      hint.remove();
       pop(e.clientX, e.clientY);
+      if (remaining > 1) armIdle(IDLE_AUTO_POP_MS);
     });
-
-    // Nobody playing? Pop them one by one so it still celebrates.
-    setTimeout(() => {
-      if (!touched) pop();
-    }, 3800 + i * 450);
   }
 
-  setTimeout(() => hint.remove(), 3500);
-  await Promise.all(pops);
+  armIdle(FIRST_AUTO_POP_MS);
+  await finished;
+  clearTimeout(idle);
+  hint.remove();
+
+  // Last one popped — show the points.
+  opts.onReveal?.();
   void playSound("cheer");
+  confetti({ ...confettiStyle(), particleCount: 100, spread: 360, startVelocity: 35, origin: { x: 0.5, y: 0.35 } });
   await wait(900);
   layer.remove();
 }

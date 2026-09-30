@@ -5,7 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   isMuted,
+  pickCelebration,
   playCelebration,
+  prefersReducedMotion,
   setMuted,
   stopAllCelebrations,
   unlockAudio,
@@ -53,7 +55,6 @@ export function CelebrationScreen({
   milestonesUnlocked,
   nextUp,
   effectId,
-  tapToOpen = false,
   onClose,
 }: {
   avatarSrc: string;
@@ -64,17 +65,17 @@ export function CelebrationScreen({
   nextUp?: { name: string; pointsToGo: number } | null;
   // Force a specific effect (gallery); random when omitted.
   effectId?: string;
-  // Start on a "Tap to open!" gift screen. Browsers only allow sound after
-  // a tap, so the kid view uses this when it opens by itself; the gallery
-  // doesn't need it (the parent's button press already counts).
-  tapToOpen?: boolean;
   onClose: () => void;
 }) {
   const [headline] = useState(() => pick(HEADLINES));
   const [button] = useState(() => pick(BUTTONS));
+  // Chosen up front so we know whether to hide the points until the kid
+  // has whacked / popped / spun / scratched.
+  const [effect] = useState(() => pickCelebration(effectId));
+  const [revealed, setRevealed] = useState(
+    () => !effect.revealsPoints || prefersReducedMotion(),
+  );
   const [shown, setShown] = useState(0);
-  const [opened, setOpened] = useState(!tapToOpen);
-  const [opening, setOpening] = useState(false);
   const [muted, setMutedState] = useState(false);
   useEffect(() => setMutedState(isMuted()), []);
 
@@ -87,25 +88,49 @@ export function CelebrationScreen({
   const circleRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    buttonRef.current?.focus();
-  }, [opened]);
-
-  // Lock page scroll, close on Escape.
+  // Lock page scroll, close on Escape. Browsers (iPhone especially) block
+  // sound until the first tap, so any tap on the screen unlocks it —
+  // reveal effects start with a tap anyway (whack, pop, spin, scratch).
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    unlockAudio(); // works right away if the kid already tapped this visit
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onTap = () => unlockAudio();
     window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onTap, { capture: true });
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onTap, { capture: true });
     };
   }, [onClose]);
 
-  // Count the points up, and fire the effect once the avatar has landed.
+  // Fire the effect once the avatar has landed. Reveal effects call back
+  // when the kid finishes; a safety timer reveals anyway if one never does.
   useEffect(() => {
-    if (!opened) return;
+    const timer = setTimeout(() => {
+      void playCelebration(
+        {
+          avatarSrc,
+          origin: avatarRef.current,
+          target: circleRef.current,
+          points: total,
+          onReveal: () => setRevealed(true),
+        },
+        effect.id,
+      );
+    }, 350);
+    const safety = setTimeout(() => setRevealed(true), 20000);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(safety);
+    };
+  }, [avatarSrc, effect.id, total]);
+
+  // Count the points up once they're revealed.
+  useEffect(() => {
+    if (!revealed) return;
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
@@ -114,23 +139,24 @@ export function CelebrationScreen({
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [revealed, total]);
 
-    const timer = setTimeout(() => {
-      void playCelebration(
-        { avatarSrc, origin: avatarRef.current, target: circleRef.current, points: total },
-        effectId,
-      );
-    }, 350);
-    return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(timer);
-    };
-  }, [avatarSrc, effectId, total, opened]);
+  useEffect(() => {
+    if (revealed) buttonRef.current?.focus();
+  }, [revealed]);
 
   // Closing the screen clears any effect still running (piñata, candy…).
   useEffect(() => () => stopAllCelebrations(), []);
 
-  const extra = items.length - 4;
+  // What earned the points (plus any milestone unlocked), one at a time.
+  const lines = [
+    ...items.map((i) => `${i.isBonus ? "⭐ " : ""}${i.name} +${i.points}`),
+    ...milestonesUnlocked.map((m) => `🏆 Unlocked: ${m.name}!`),
+  ];
+  // Hidden (but still taking up space, so the circle doesn't move under
+  // the effect) until the points are revealed.
+  const reveal = revealed ? "animate-celebrate-pop-in" : "invisible";
 
   // Portal to <body>: the kid/parent panels use backdrop-blur, which would
   // otherwise trap this "fixed" screen inside the panel.
@@ -151,40 +177,6 @@ export function CelebrationScreen({
         {muted ? "🔇" : "🔊"}
       </button>
 
-      {!opened ? (
-        // The gift is the whole screen's one tap target.
-        <button
-          ref={buttonRef}
-          type="button"
-          aria-label="Tap to open your points"
-          disabled={opening}
-          onClick={() => {
-            unlockAudio();
-            setOpening(true);
-            // Let the gift pop open before the celebration takes over.
-            setTimeout(() => setOpened(true), 320);
-          }}
-          className="flex-1 flex flex-col items-center justify-center w-full max-w-xl focus:outline-none"
-        >
-          <img
-            src="/anims/gift.webp"
-            alt=""
-            aria-hidden
-            draggable={false}
-            className={`w-56 sm:w-64 select-none ${
-              opening ? "animate-celebrate-gift-open" : "animate-celebrate-gift-wiggle"
-            }`}
-          />
-          <span
-            className={`mt-4 text-3xl sm:text-4xl font-semibold text-pp-primary transition-opacity ${
-              opening ? "opacity-0" : ""
-            }`}
-          >
-            Tap to open!
-          </span>
-        </button>
-      ) : (
-        <>
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xl">
         {/* Avatar peeking over the points circle. */}
         <div className="relative mt-20">
@@ -201,61 +193,72 @@ export function CelebrationScreen({
             ref={circleRef}
             className="size-48 sm:size-52 rounded-full bg-white flex flex-col items-center justify-center shadow-sm"
           >
-            <span className="text-7xl font-black text-pp-primary tabular-nums leading-none">
-              {shown}
-            </span>
-            <span className="mt-1 text-sm font-semibold text-pp-muted">
-              {total === 1 ? "point" : "points"}
-            </span>
+            {revealed ? (
+              <>
+                <span className="text-7xl font-black text-pp-primary tabular-nums leading-none">
+                  {shown}
+                </span>
+                <span className="mt-1 text-sm font-semibold text-pp-muted">
+                  {total === 1 ? "point" : "points"}
+                </span>
+              </>
+            ) : (
+              <span className="text-8xl font-black text-pp-line leading-none animate-celebrate-wiggle">
+                ?
+              </span>
+            )}
           </div>
         </div>
 
-        <h2 className="mt-10 text-5xl sm:text-6xl font-semibold text-pp-primary text-center leading-tight">
+        <h2
+          className={`mt-10 text-5xl sm:text-6xl font-semibold text-pp-primary text-center leading-tight ${reveal}`}
+        >
           {headline}
         </h2>
 
-        {milestonesUnlocked.map((m) => (
-          <p
-            key={m.name}
-            className="mt-5 rounded-full bg-white px-5 py-2 font-semibold text-pp-primary-strong shadow-sm animate-celebrate-pop-in"
-          >
-            🏆 Unlocked: {m.name}!
-          </p>
-        ))}
-
         {nextUp && nextUp.pointsToGo > 0 && (
-          <p className="mt-4 text-center text-pp-primary-strong">
-            <span className="font-semibold">Next up: {nextUp.name}</span>
-            <span className="block text-sm text-pp-muted tabular-nums">
-              {nextUp.pointsToGo.toLocaleString()}{" "}
-              {nextUp.pointsToGo === 1 ? "point" : "points"} to go
-            </span>
+          <p
+            className={`mt-5 rounded-full bg-white px-5 py-2 font-semibold text-pp-primary-strong shadow-sm tabular-nums ${reveal}`}
+          >
+            🏆 Next up: {nextUp.name} · {nextUp.pointsToGo.toLocaleString()} to go
           </p>
         )}
 
-        <ul className="mt-5 space-y-1 text-center text-sm text-pp-muted">
-          {items.slice(0, 4).map((i) => (
-            <li key={i.id}>
-              {i.isBonus && "⭐ "}
-              {i.name}{" "}
-              <span className="font-semibold text-pp-primary">+{i.points}</span>
-            </li>
-          ))}
-          {extra > 0 && <li>…and {extra} more</li>}
-        </ul>
+        {lines.length > 0 && (
+          <div className={`mt-4 h-6 ${reveal}`}>
+            <CyclingLine lines={lines} />
+          </div>
+        )}
       </div>
 
       <button
         ref={buttonRef}
         type="button"
         onClick={onClose}
-        className="btn-primary btn-lg w-full max-w-xl rounded-2xl h-16"
+        className={`btn-primary btn-lg w-full max-w-xl rounded-2xl h-16 ${reveal}`}
       >
         {button}
       </button>
-        </>
-      )}
     </div>,
     document.body,
+  );
+}
+
+// Shows one line at a time, fading to the next every couple of seconds.
+function CyclingLine({ lines }: { lines: string[] }) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (lines.length < 2) return;
+    const id = setInterval(() => setI((n) => (n + 1) % lines.length), 1800);
+    return () => clearInterval(id);
+  }, [lines.length]);
+  return (
+    <p
+      key={i}
+      aria-live="polite"
+      className="text-center text-sm font-semibold text-pp-muted animate-celebrate-fade-in"
+    >
+      {lines[i]}
+    </p>
   );
 }

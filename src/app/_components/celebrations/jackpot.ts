@@ -1,12 +1,22 @@
 import confetti from "canvas-confetti";
 import { EMOJI_SOURCES } from "../emojiPhysics";
-import { confettiStyle, imageEl, makeLayer, slamWord, wait, type CelebrationOptions } from "./shared";
+import {
+  confettiStyle,
+  imageEl,
+  makeLayer,
+  onStop,
+  slamWord,
+  wait,
+  type CelebrationOptions,
+} from "./shared";
 import { playSound } from "./sounds";
 
 const REEL_ITEMS = 16; // images per reel strip; the last one is the avatar
+const AUTO_SPIN_MS = 3000; // spins on its own if nobody taps
 
-// A slot machine pops in and spins three reels of emojis. They stop one by
-// one — clunk, clunk, clunk — on three of the kid's avatar. JACKPOT!
+// A slot machine pops in: "Tap to spin!". Three reels of emojis spin and
+// stop one by one — clunk, clunk, clunk — on three of the kid's avatar.
+// JACKPOT! (and the points are revealed).
 export async function playJackpot(opts: CelebrationOptions): Promise<void> {
   const layer = makeLayer();
   const W = window.innerWidth;
@@ -56,11 +66,35 @@ export async function playJackpot(opts: CelebrationOptions): Promise<void> {
     spins.push({ strip, duration: 1300 + r * 550 });
   }
 
-  // Pop the machine in, then spin.
+  // Pop the machine in, then wait for a tap to spin (or spin on its own).
   await machine.animate(
     [{ transform: "scale(0.5)", opacity: 0 }, { transform: "scale(1.05)", opacity: 1, offset: 0.7 }, { transform: "scale(1)" }],
     { duration: 380, easing: "ease-out" },
   ).finished;
+
+  title.textContent = "🎰 Tap to spin! 🎰";
+  machine.classList.add("cursor-pointer");
+  machine.style.pointerEvents = "auto";
+  const idle = machine.animate(
+    [{ transform: "rotate(0)" }, { transform: "rotate(-2deg)" }, { transform: "rotate(2deg)" }, { transform: "rotate(0)" }],
+    { duration: 700, iterations: Infinity, delay: 600, endDelay: 900 },
+  );
+  await new Promise<void>((go) => {
+    const timer = setTimeout(go, AUTO_SPIN_MS);
+    onStop(() => clearTimeout(timer));
+    machine.addEventListener(
+      "pointerdown",
+      (e) => {
+        e.preventDefault();
+        clearTimeout(timer);
+        go();
+      },
+      { once: true },
+    );
+  });
+  idle.cancel();
+  machine.style.pointerEvents = "";
+  title.textContent = "🎰 SPIN! 🎰";
 
   const travel = -(REEL_ITEMS - 1) * cell;
   spins.forEach(({ strip, duration }) => {
@@ -86,8 +120,9 @@ export async function playJackpot(opts: CelebrationOptions): Promise<void> {
   });
   await Promise.all(stops);
 
-  // JACKPOT!
+  // JACKPOT! — and the points appear.
   title.textContent = "⭐ JACKPOT! ⭐";
+  opts.onReveal?.();
   const r = machine.getBoundingClientRect();
   const cx = r.left + r.width / 2;
   const cy = r.top + r.height / 2;

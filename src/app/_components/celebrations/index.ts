@@ -19,6 +19,9 @@ export type Celebration = {
   id: string;
   name: string;
   description: string;
+  // The kid has to do something (whack, pop, spin, scratch) before the
+  // points show; the effect calls opts.onReveal() at the payoff.
+  revealsPoints?: boolean;
   play: (opts: CelebrationOptions) => Promise<void>;
 };
 
@@ -57,12 +60,14 @@ export const CELEBRATIONS: Celebration[] = [
   },
   {
     id: "pinata",
+    revealsPoints: true,
     name: "Piñata",
     description: "Tap to whack the llama three times — candy everywhere (throwable!).",
     play: playPinata,
   },
   {
     id: "balloons",
+    revealsPoints: true,
     name: "Balloon pop",
     description: "Balloons float up; tap to jab them with the needle.",
     play: playBalloons,
@@ -81,28 +86,41 @@ export const CELEBRATIONS: Celebration[] = [
   },
   {
     id: "jackpot",
+    revealsPoints: true,
     name: "Jackpot",
-    description: "Slot machine reels land on three avatars.",
+    description: "Tap to spin — the reels land on three avatars.",
     play: playJackpot,
   },
   {
     id: "scratch-card",
+    revealsPoints: true,
     name: "Scratch card",
     description: "Scratch the silver foil off to reveal the points.",
     play: playScratchCard,
   },
 ];
 
+export { prefersReducedMotion } from "./shared";
+
+// The celebration with this id, or a random one.
+export function pickCelebration(id?: string): Celebration {
+  return (
+    CELEBRATIONS.find((c) => c.id === id) ??
+    CELEBRATIONS[Math.floor(Math.random() * CELEBRATIONS.length)]
+  );
+}
+
 // Plays one celebration (random unless an id is given). With "reduce
-// motion" on, plays nothing — the caller still shows its message.
+// motion" on, plays nothing — the caller still shows its message (and
+// reveals straight away).
 export async function playCelebration(
   opts: CelebrationOptions,
   id?: string,
 ): Promise<void> {
-  if (prefersReducedMotion()) return;
+  if (prefersReducedMotion()) {
+    opts.onReveal?.();
+    return;
+  }
   stopAllCelebrations(); // one at a time
-  const pick =
-    CELEBRATIONS.find((c) => c.id === id) ??
-    CELEBRATIONS[Math.floor(Math.random() * CELEBRATIONS.length)];
-  await pick.play(opts);
+  await pickCelebration(id).play(opts);
 }
