@@ -99,6 +99,7 @@ export function CelebrationScreen({
   const [round, setRound] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [timesUp, setTimesUp] = useState(false);
+  const [lives, setLives] = useState<number | null>(null);
   const stopGame = useRef<() => void>(() => {});
   const keepPlaying = () => {
     unlockAudio();
@@ -110,17 +111,24 @@ export function CelebrationScreen({
     if (!playing) return;
     setScore(0);
     setTimesUp(false);
+    setLives(null);
     const r = counterRef.current?.getBoundingClientRect();
     stopGame.current = startGame(effect, {
       avatarSrc,
       counter: r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : undefined,
       onScore: setScore,
+      onLives: setLives,
+      // Arcade games end themselves (bit your tail, out of lives).
+      onGameOver: () => {
+        stopGame.current();
+        setTimesUp(true);
+      },
     });
 
     // Countdown for timed games; at zero the game stops and results show.
     const game = effect.game;
     let tick: ReturnType<typeof setInterval> | undefined;
-    if (game?.kind === "score") {
+    if (game?.kind === "score" && game.seconds) {
       let left = game.seconds;
       setTimeLeft(left);
       tick = setInterval(() => {
@@ -301,7 +309,15 @@ export function CelebrationScreen({
             <span aria-hidden>{effect.game.icon}</span> {score}
             <span className="sr-only"> {effect.game.label}</span>
           </div>
-          {!timesUp && (
+          {!timesUp && lives !== null && (effect.game.lives ?? 1) > 1 && (
+            <div
+              aria-label={`${lives} lives left`}
+              className="rounded-full bg-white px-3 py-2 text-lg shadow-sm tracking-tight"
+            >
+              {Array.from({ length: effect.game.lives ?? 0 }, (_, i) => (i < lives ? "❤️" : "🤍")).join("")}
+            </div>
+          )}
+          {!timesUp && effect.game.seconds && (
             <div
               aria-label={`${timeLeft} seconds left`}
               className={`rounded-full bg-white px-4 py-2 text-lg font-bold shadow-sm tabular-nums ${
@@ -317,7 +333,9 @@ export function CelebrationScreen({
       {playing && timesUp && effect.game?.kind === "score" && (
         <div className="absolute inset-0 flex items-center justify-center px-6">
           <div className="card w-full max-w-sm text-center animate-celebrate-pop-in">
-            <p className="text-4xl font-semibold text-pp-primary">Time&apos;s up!</p>
+            <p className="text-4xl font-semibold text-pp-primary">
+              {effect.game.seconds ? "Time's up!" : "Game over!"}
+            </p>
             <p className="mt-4 text-7xl font-black text-pp-primary tabular-nums">
               <span aria-hidden>{effect.game.icon}</span> {score}
             </p>

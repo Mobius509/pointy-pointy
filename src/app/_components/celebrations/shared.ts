@@ -25,6 +25,9 @@ export type GameOptions = {
   // Where the score counter sits, for collected things to fly into.
   counter?: { x: number; y: number };
   onScore: (score: number) => void;
+  // Arcade games with consequences: lives left, and the end of the game.
+  onLives?: (lives: number) => void;
+  onGameOver?: () => void;
 };
 
 export const PARTY = ["party-pink", "party-yellow", "party-cyan", "party-red"];

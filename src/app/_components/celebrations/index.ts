@@ -2,12 +2,15 @@ import { playAvatarExplosion } from "./avatarExplosion";
 import { playConfetti } from "./confetti";
 import { playFireworks } from "./fireworks";
 import { playHighFive } from "./highFive";
+import { playAsteroids, playAsteroidsGame } from "./asteroids";
 import { playBalloonGame, playBalloons } from "./balloons";
+import { playChomper, playChomperGame } from "./chomper";
 import { playJackpot } from "./jackpot";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
 import { playScratchCard } from "./scratchCard";
+import { playWorm, playWormGame } from "./worm";
 import {
   prefersReducedMotion,
   stopAllCelebrations,
@@ -37,7 +40,11 @@ export type Celebration = {
         kind: "score";
         icon: string;
         label: string;
-        seconds: number; // length of a round
+        // Timed round (piñata, balloons)…
+        seconds?: number;
+        // …or arcade lives, where the game ends itself (worm, chomper,
+        // asteroids). 1 life = no hearts shown.
+        lives?: number;
         start: (opts: GameOptions) => () => void;
       }
     | { kind: "replay" };
@@ -123,7 +130,34 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Scratch card",
     description: "Scratch the silver foil off to reveal the points.",
     play: playScratchCard,
+  },  {
+    id: "worm",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🍎", label: "treats", lives: 1, start: playWormGame },
+    name: "Worm",
+    description: "Steer the worm to a handful of treats. Keep playing: grow long — don't bite your tail!",
+    play: playWorm,
   },
+  {
+    id: "chomper",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "😋", label: "chomps", lives: 3, start: playChomperGame },
+    name: "Chomper",
+    description: "A mini maze with two turns — tap to turn. Keep playing: dots, ghosts, three lives.",
+    play: playChomper,
+  },
+  {
+    id: "asteroids",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "☄️", label: "rocks", lives: 3, start: playAsteroidsGame },
+    name: "Asteroids",
+    description: "Tap the rocks to blast them. Keep playing: they keep coming — three lives.",
+    play: playAsteroids,
+  },
+
 ];
 
 export { prefersReducedMotion } from "./shared";
