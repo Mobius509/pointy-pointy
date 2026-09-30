@@ -58,6 +58,45 @@ Open <http://localhost:3000>.
 
 The parent PIN unlocks for 8 hours and there's a 🔒 Lock button in the parent nav.
 
+## Push notifications
+
+Parents get notified when a kid finishes a task or asks for bonus points;
+kids get notified when something is approved or a bonus lands, plus an
+optional daily reminder (set in the kid's Settings) if they still have open
+tasks. Browsers use Web Push; the iOS app uses Apple's push service (APNs).
+Both go through `src/lib/v2/push/`.
+
+1. **Schema:** run `supabase/migrations/v2_0006_push_devices.sql`.
+2. **Env vars** (in `.env.local` and Vercel):
+
+   | Variable | What it is |
+   | --- | --- |
+   | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Web Push keys — `npx web-push generate-vapid-keys`. Changing them invalidates existing browser subscriptions. |
+   | `VAPID_SUBJECT` | `mailto:` contact address sent to push services. |
+   | `APNS_KEY_ID`, `APNS_TEAM_ID` | From developer.apple.com → Certificates, IDs & Profiles → Keys (key with "Apple Push Notifications service" enabled). |
+   | `APNS_KEY` | Contents of that key's `.p8` file (paste with `\n` for newlines, or base64-encode it). |
+   | `APNS_BUNDLE_ID` | Optional; defaults to `app.pointypoints.ios`. |
+   | `KID_TOKEN_SECRET` | 32+ random characters; signs iOS kid sessions — `openssl rand -base64 48`. |
+   | `CRON_SECRET` | Random string guarding `/api/cron/reminders`. |
+
+   Missing Web Push or APNs keys just disable that transport (logged once).
+
+3. **Reminder schedule:** something must call `/api/cron/reminders` every 15
+   minutes with `Authorization: Bearer $CRON_SECRET`. Vercel's free plan only
+   runs cron jobs once a day, so use Supabase instead — enable the `pg_cron`
+   and `pg_net` extensions (Database → Extensions), then run in the SQL editor:
+
+   ```sql
+   select cron.schedule(
+     'pointy-points-reminders',
+     '*/15 * * * *',
+     $$ select net.http_get(
+          url := 'https://YOUR-APP.vercel.app/api/cron/reminders',
+          headers := jsonb_build_object('Authorization', 'Bearer YOUR_CRON_SECRET')
+        ) $$
+   );
+   ```
+
 ## Deploy to Vercel
 
 1. Push this repo to GitHub.

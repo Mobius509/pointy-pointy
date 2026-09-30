@@ -2,13 +2,27 @@
 
 import { useEffect, useState, useTransition } from "react";
 import {
-  registerPushSubscriptionAction,
-  unregisterPushSubscriptionAction,
+  registerWebPushAction,
+  unregisterWebPushAction,
 } from "@/app/_actions/push";
 import { AvatarPicker } from "../../_components/AvatarPicker";
-import { updateKidAvatarAction } from "../../_actions/kid-settings";
+import {
+  updateKidAvatarAction,
+  updateKidReminderAction,
+} from "../../_actions/kid-settings";
 
 type NotifState = "loading" | "unsupported" | "blocked" | "off" | "on";
+
+// 15-minute steps from 7:00 AM to 9:45 PM — the reminder job runs every 15.
+const REMINDER_TIMES = Array.from({ length: 60 }, (_, i) => {
+  const minutes = 7 * 60 + i * 15;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return {
+    value: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
+    label: `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`,
+  };
+});
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -22,9 +36,11 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 export function KidSettingsPanel({
   slug,
   initialAvatar,
+  initialReminderTime,
 }: {
   slug: string;
   initialAvatar: string;
+  initialReminderTime: string | null;
 }) {
   // ---- Avatar selection ----------------------------------------------------
   const [avatarMsg, setAvatarMsg] = useState<{
@@ -39,6 +55,29 @@ export function KidSettingsPanel({
       const res = await updateKidAvatarAction(slug, next);
       if (res.ok) setAvatarMsg({ kind: "ok", text: "Saved!" });
       else setAvatarMsg({ kind: "err", text: res.error });
+    });
+  };
+
+  // ---- Daily reminder ------------------------------------------------------
+  const [reminderTime, setReminderTime] = useState(initialReminderTime);
+  const [reminderMsg, setReminderMsg] = useState<{
+    kind: "ok" | "err";
+    text: string;
+  } | null>(null);
+  const [reminderPending, startReminder] = useTransition();
+
+  const saveReminder = (next: string | null) => {
+    const previous = reminderTime;
+    setReminderTime(next);
+    setReminderMsg(null);
+    startReminder(async () => {
+      const res = await updateKidReminderAction(slug, next);
+      if (res.ok) {
+        setReminderMsg({ kind: "ok", text: next ? "Saved!" : "Reminder off." });
+      } else {
+        setReminderTime(previous);
+        setReminderMsg({ kind: "err", text: res.error });
+      }
     });
   };
 
@@ -96,7 +135,8 @@ export function KidSettingsPanel({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
         });
-        const res = await registerPushSubscriptionAction(
+        const res = await registerWebPushAction(
+          slug,
           "kid",
           JSON.stringify(sub),
           navigator.userAgent,
@@ -122,7 +162,7 @@ export function KidSettingsPanel({
         if (sub) {
           const endpoint = sub.endpoint;
           await sub.unsubscribe();
-          await unregisterPushSubscriptionAction(endpoint);
+          await unregisterWebPushAction(slug, "kid", endpoint);
         }
         setNotifState("off");
       } catch (e) {
@@ -234,6 +274,46 @@ export function KidSettingsPanel({
         {notifError && (
           <p className="mt-2 text-xs text-rose-600">{notifError}</p>
         )}
+      </div>
+
+      <div className="h-px bg-pp-line/70 my-6" />
+
+      {/* Daily reminder */}
+      <h2
+        className="text-pp-primary leading-tight"
+        style={{ fontSize: 21, fontWeight: 500 }}
+      >
+        Daily Reminder
+      </h2>
+      <p className="mt-2 text-pp-primary text-[12px] font-medium leading-snug">
+        Get a nudge to log your points if you still have tasks left. Needs
+        notifications turned on.
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <select
+          aria-label="Reminder time"
+          value={reminderTime ?? ""}
+          disabled={reminderPending}
+          onChange={(e) => saveReminder(e.target.value || null)}
+          className="rounded-full bg-pp-soft text-pp-primary font-semibold px-4 py-2 text-[14px]"
+        >
+          <option value="">Off</option>
+          {REMINDER_TIMES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <span className="min-h-[18px] text-xs">
+          {reminderPending && <span className="text-pp-muted">Saving…</span>}
+          {!reminderPending && reminderMsg?.kind === "ok" && (
+            <span className="text-emerald-700">{reminderMsg.text}</span>
+          )}
+          {!reminderPending && reminderMsg?.kind === "err" && (
+            <span className="text-rose-600">{reminderMsg.text}</span>
+          )}
+        </span>
       </div>
     </section>
   );

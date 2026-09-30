@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { clearKidSession, getKidSession } from "@/lib/v2/auth";
 import { getKidProfile } from "@/lib/v2/data";
+import { getKidReminderTime } from "@/lib/v2/kid-ops";
 import { KidSettingsPanel } from "./_components/KidSettingsPanel";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ export default async function KidSettingsPage({
 
   const { data: household, error } = await supabaseV2Admin
     .from("households")
-    .select("id, name, slug")
+    .select("id, name, slug, timezone")
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw error;
@@ -49,9 +50,19 @@ export default async function KidSettingsPage({
     notFound();
   }
 
+  const reminderTime = await getKidReminderTime({
+    householdId: household.id as string,
+    kidProfileId: kid.id,
+    timezone: household.timezone as string,
+  });
+
   return (
     <ModalShell slug={slug}>
-      <KidSettingsPanel slug={slug} initialAvatar={kid.avatar_emoji} />
+      <KidSettingsPanel
+        slug={slug}
+        initialAvatar={kid.avatar_emoji}
+        initialReminderTime={reminderTime}
+      />
     </ModalShell>
   );
 }

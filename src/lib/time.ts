@@ -12,6 +12,19 @@ export function todayInTimezone(timezone: string, now: Date = new Date()): strin
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
+// Returns the current wall-clock time as "HH:MM" (24h) in the given timezone.
+export function localTimeInTimezone(timezone: string, now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("hour")}:${get("minute")}`;
+}
+
 export type Frequency =
   | "daily"
   | "weekly"

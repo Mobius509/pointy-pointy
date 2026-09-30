@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import {
-  registerPushSubscriptionAction,
-  unregisterPushSubscriptionAction,
+  registerWebPushAction,
+  unregisterWebPushAction,
 } from "@/app/_actions/push";
 
 type State = "loading" | "unsupported" | "blocked" | "off" | "on";
@@ -23,9 +23,11 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 // and toggles them on/off. Caller picks the role (parent or kid) so the
 // server knows which kind of event to push to this device.
 export function PushToggle({
+  slug,
   role,
   label = "Notify me",
 }: {
+  slug: string;
   role: "parent" | "kid";
   label?: string;
 }) {
@@ -84,7 +86,8 @@ export function PushToggle({
           // strictly for the PushManager type.
           applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
         });
-        const res = await registerPushSubscriptionAction(
+        const res = await registerWebPushAction(
+          slug,
           role,
           JSON.stringify(sub),
           navigator.userAgent,
@@ -110,7 +113,7 @@ export function PushToggle({
         if (sub) {
           const endpoint = sub.endpoint;
           await sub.unsubscribe();
-          await unregisterPushSubscriptionAction(endpoint);
+          await unregisterWebPushAction(slug, role, endpoint);
         }
         setState("off");
       } catch (e) {
@@ -121,10 +124,17 @@ export function PushToggle({
   };
 
   if (state === "loading") return null;
-  if (state === "unsupported") return null;
+  if (state === "unsupported") {
+    return (
+      <p className="text-xs text-pp-muted">
+        This browser can&apos;t get notifications. On iPhone, add Pointy Points
+        to your home screen and open it from there.
+      </p>
+    );
+  }
   if (state === "blocked") {
     return (
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-pp-muted">
         Notifications are blocked. Enable them in your browser settings.
       </p>
     );
@@ -136,9 +146,9 @@ export function PushToggle({
         type="button"
         onClick={state === "on" ? disable : enable}
         disabled={pending}
-        className="rounded-full bg-white ring-1 ring-slate-200 hover:bg-slate-50 px-3 py-1.5 font-semibold text-slate-700"
+        className={state === "on" ? "btn-secondary" : "btn-primary"}
       >
-        {state === "on" ? "🔔 Notifications on" : `🔕 ${label}`}
+        {state === "on" ? "🔔 Notifications on — turn off" : `🔔 ${label}`}
       </button>
       {error && <span className="text-rose-600 text-xs">{error}</span>}
     </div>

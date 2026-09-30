@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
+import { notifyCompletionApproved } from "@/lib/v2/push";
 
 export async function approveCompletionAction(formData: FormData) {
   const slug = String(formData.get("slug") ?? "");
@@ -23,12 +24,23 @@ export async function approveCompletionAction(formData: FormData) {
     update.points_snapshot = Math.round(n);
   }
 
-  const { error } = await supabaseV2Admin
+  const { data: approved, error } = await supabaseV2Admin
     .from("completions")
     .update(update)
     .eq("id", id)
-    .eq("household_id", household.id);
+    .eq("household_id", household.id)
+    .select("kid_profile_id, task_name_snapshot, points_snapshot")
+    .maybeSingle();
   if (error) throw error;
+
+  if (approved?.kid_profile_id) {
+    notifyCompletionApproved(
+      household.id,
+      approved.kid_profile_id as string,
+      approved.task_name_snapshot as string,
+      approved.points_snapshot as number,
+    );
+  }
 
   revalidatePath(`/h/${slug}/parent`);
   revalidatePath(`/h/${slug}/parent/activity`);

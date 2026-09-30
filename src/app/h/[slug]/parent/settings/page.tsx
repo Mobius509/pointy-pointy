@@ -1,3 +1,4 @@
+import { PushToggle } from "@/app/_components/PushToggle";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
 import { getKidProfiles } from "@/lib/v2/data";
 import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
@@ -39,6 +40,17 @@ export default async function ParentSettingsPage({
       <PageTitle>Settings</PageTitle>
 
       <KidUrlCard slug={slug} />
+
+      <section className="card">
+        <SectionPill>Notifications</SectionPill>
+        <p className="text-pp-muted mt-2">
+          Get notified on this device when a kid finishes a task or asks for
+          bonus points. On iPhone, add Pointy Points to your home screen first.
+        </p>
+        <div className="mt-4">
+          <PushToggle slug={slug} role="parent" label="Turn on notifications" />
+        </div>
+      </section>
 
       <KidsAdmin slug={slug} kids={kids} />
 
