@@ -4,6 +4,7 @@ import { requireHouseholdAccess } from "@/lib/v2/auth";
 import { getKidProfiles } from "@/lib/v2/data";
 import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
 import { updateHouseholdSettingsAction } from "../_actions/settings";
+import { CelebrationGallery } from "../_components/CelebrationGallery";
 import { CoParentManager } from "../_components/CoParentManager";
 import { KidRemindersCard } from "../_components/KidRemindersCard";
 import { KidsAdmin } from "../_components/KidsAdmin";
@@ -72,6 +73,10 @@ export default async function ParentSettingsPage({
           avatar_emoji: k.avatar_emoji,
           reminderTime: reminderByKid.get(k.id) ?? null,
         }))}
+      />
+
+      <CelebrationGallery
+        kids={kids.map((k) => ({ id: k.id, name: k.name, avatar_emoji: k.avatar_emoji }))}
       />
 
       <KidsAdmin slug={slug} kids={kids} />

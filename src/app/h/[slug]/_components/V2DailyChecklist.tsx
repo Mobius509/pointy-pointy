@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { celebrate } from "@/app/_components/Confetti";
 import { frequencyLabel, type Frequency } from "@/lib/time";
 import {
   cancelPendingTaskForTodayAction,
@@ -36,7 +35,6 @@ export function V2DailyChecklist({
   const submit = (item: Item) => {
     setError(null);
     setState((s) => ({ ...s, [item.id]: "pending" }));
-    celebrate();
     startTransition(async () => {
       const res = await completeTaskForTodayAction(slug, item.id);
       if (!res.ok) {

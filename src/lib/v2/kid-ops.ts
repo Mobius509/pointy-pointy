@@ -7,6 +7,7 @@ import {
   getKidCompletionsForPeriods,
   getKidGoalProgress,
   getKidProfile,
+  getKidRecentCompletions,
   getKidTodayCompletions,
   getMilestonesForGoal,
   type KidProfile,
@@ -52,6 +53,16 @@ export type KidTodayView = {
   milestones: V2GoalMilestone[];
   items: ChecklistItem[];
   pendingProposals: V2Completion[];
+  // Most recent approved completions/bonuses. The kid's device compares
+  // these against what it has already celebrated (browser storage).
+  recentApprovals: RecentApproval[];
+};
+
+export type RecentApproval = {
+  id: string;
+  name: string;
+  points: number;
+  isBonus: boolean;
 };
 
 // ============================================================================
@@ -153,7 +164,25 @@ export async function getKidTodayView(
     (c) => c.is_bonus && c.task_id === null && c.status === "pending",
   );
 
-  return { kid, goal, progress, milestones, items, pendingProposals };
+  const recent = await getKidRecentCompletions(ctx.householdId, kid.id, 40);
+  const recentApprovals: RecentApproval[] = recent
+    .filter((c) => c.status === "approved")
+    .map((c) => ({
+      id: c.id,
+      name: c.task_name_snapshot,
+      points: c.points_snapshot,
+      isBonus: c.is_bonus,
+    }));
+
+  return {
+    kid,
+    goal,
+    progress,
+    milestones,
+    items,
+    pendingProposals,
+    recentApprovals,
+  };
 }
 
 // ============================================================================

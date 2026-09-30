@@ -11,6 +11,8 @@ import { V2DailyChecklist } from "./_components/V2DailyChecklist";
 import { V2KidProposal } from "./_components/V2KidProposal";
 import { GoalMilestones } from "./_components/GoalMilestones";
 import { RainToggle } from "./_components/RainToggle";
+import { CelebrationOverlay } from "./_components/CelebrationOverlay";
+import { RefreshOnFocus } from "./_components/RefreshOnFocus";
 import { kidSignOutAction } from "./_actions/kid-session";
 
 export const dynamic = "force-dynamic";
@@ -73,7 +75,8 @@ export default async function KidViewPage({
     await clearKidSession();
     notFound();
   }
-  const { kid, goal, progress, milestones, items, pendingProposals } = view;
+  const { kid, goal, progress, milestones, items, pendingProposals, recentApprovals } =
+    view;
 
   // First name only on every screen — last name (= family name) takes up
   // too much room in the centered header and isn't needed by the kid.
@@ -192,6 +195,16 @@ export default async function KidViewPage({
 
           {/* Did something extra? */}
           <V2KidProposal slug={slug} pendingProposals={pendingProposals} />
+
+          {/* Celebrate approvals this device hasn't celebrated yet. */}
+          <CelebrationOverlay
+            kidId={kid.id}
+            avatarSrc={avatarSrc(kid.avatar_emoji)}
+            approvals={recentApprovals}
+            progress={progress}
+            milestones={milestones.map((m) => ({ name: m.name, points: m.points }))}
+          />
+          <RefreshOnFocus />
 
           {/* Fun: falling emojis you can throw around. */}
           <RainToggle avatarSrc={avatarSrc(kid.avatar_emoji)} />
