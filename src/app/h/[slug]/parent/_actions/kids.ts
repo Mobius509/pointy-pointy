@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
+import { cleanInitials } from "@/lib/initials";
 import { hashPin, requireHouseholdAccess } from "@/lib/v2/auth";
 import { AVATAR_IDS, DEFAULT_AVATAR, avatarId } from "@/lib/avatar";
 
@@ -60,12 +61,16 @@ export async function updateKidAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Name required.");
   const avatar = readAvatar(formData);
+  // High score initials; blank goes back to the default.
+  const initials = cleanInitials(String(formData.get("initials") ?? "")) || null;
 
-  const { error } = await supabaseV2Admin
-    .from("kid_profiles")
-    .update({ name, avatar_emoji: avatar })
-    .eq("id", id)
-    .eq("household_id", household.id);
+  const update = (fields: Record<string, unknown>) =>
+    supabaseV2Admin.from("kid_profiles").update(fields).eq("id", id).eq("household_id", household.id);
+  let { error } = await update({ name, avatar_emoji: avatar, initials });
+  // Before the high scores migration there's no initials column — save the rest.
+  if (error && (error.code === "42703" || error.code === "PGRST204")) {
+    ({ error } = await update({ name, avatar_emoji: avatar }));
+  }
   if (error) throw error;
 
   revalidatePath(`/h/${slug}/parent/kids`);

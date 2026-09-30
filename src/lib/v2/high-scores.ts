@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
+import { cleanInitials, defaultKidInitials } from "@/lib/initials";
 import { notifyHighScore, type ScoreHolder } from "@/lib/v2/push";
 
 // Family high scores for the celebration mini games (v2.high_scores): one
@@ -141,4 +142,33 @@ export async function getParentScoreName(
     .maybeSingle();
   const set = (data?.score_name as string | null | undefined)?.trim();
   return set || (email ?? "").split("@")[0].slice(0, 3).toUpperCase() || "???";
+}
+
+// ----- Kid initials -------------------------------------------------------------
+
+// Every kid's high score initials: what a parent set, else the default
+// (first initial + family initial). Works before the initials column
+// exists (defaults only).
+export async function getKidInitials(householdId: string): Promise<Record<string, string>> {
+  const { data: household } = await supabaseV2Admin
+    .from("households")
+    .select("name")
+    .eq("id", householdId)
+    .maybeSingle();
+  const family = (household?.name as string | undefined) ?? "";
+
+  let rows: { id: string; name: string; initials?: string | null }[] = [];
+  const withInitials = await supabaseV2Admin
+    .from("kid_profiles")
+    .select("id, name, initials")
+    .eq("household_id", householdId);
+  if (withInitials.error) {
+    const plain = await supabaseV2Admin.from("kid_profiles").select("id, name").eq("household_id", householdId);
+    rows = (plain.data ?? []) as typeof rows;
+  } else {
+    rows = (withInitials.data ?? []) as typeof rows;
+  }
+  return Object.fromEntries(
+    rows.map((k) => [k.id, cleanInitials(k.initials) || defaultKidInitials(k.name, family)]),
+  );
 }

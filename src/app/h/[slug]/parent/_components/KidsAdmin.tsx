@@ -16,9 +16,12 @@ import { AvatarPicker } from "../../_components/AvatarPicker";
 export function KidsAdmin({
   slug,
   kids,
+  initials,
 }: {
   slug: string;
   kids: KidProfile[];
+  // High score initials per kid (set, or the default first + last initial).
+  initials: Record<string, string>;
 }) {
   return (
     <div className="space-y-6">
@@ -49,13 +52,29 @@ export function KidsAdmin({
                       className="w-14 h-14 object-contain flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <label className="label">Name</label>
+                      <label className="label" htmlFor={`kid-name-${k.id}`}>
+                        Name
+                      </label>
                       <input
+                        id={`kid-name-${k.id}`}
                         name="name"
                         defaultValue={k.name}
                         required
                         maxLength={40}
                         className="input w-full"
+                      />
+                    </div>
+                    <div className="w-20 flex-shrink-0">
+                      <label className="label" htmlFor={`kid-initials-${k.id}`} title="Shown beside their high scores">
+                        Initials
+                      </label>
+                      <input
+                        id={`kid-initials-${k.id}`}
+                        name="initials"
+                        defaultValue={initials[k.id] ?? ""}
+                        maxLength={3}
+                        autoCapitalize="characters"
+                        className="input w-full text-center font-bold tracking-widest uppercase"
                       />
                     </div>
                   </div>

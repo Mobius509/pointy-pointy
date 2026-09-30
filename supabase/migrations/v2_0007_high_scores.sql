@@ -33,3 +33,8 @@ alter table v2.households
 -- What a parent's high scores show as ("DAD", "MOM", initials…).
 alter table v2.household_members
   add column if not exists score_name text;
+
+-- Kids' arcade initials for high scores, set by parents (blank = default:
+-- first initial + the family name's initial, e.g. Freya Steenburg → FS).
+alter table v2.kid_profiles
+  add column if not exists initials text;

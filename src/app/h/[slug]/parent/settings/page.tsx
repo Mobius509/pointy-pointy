@@ -2,7 +2,7 @@ import { PushToggle } from "@/app/_components/PushToggle";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getCurrentUser, requireHouseholdAccess } from "@/lib/v2/auth";
 import { getKidProfiles } from "@/lib/v2/data";
-import { getHighScores, getParentScoreName, getParentsPlay } from "@/lib/v2/high-scores";
+import { getHighScores, getKidInitials, getParentScoreName, getParentsPlay } from "@/lib/v2/high-scores";
 import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
 import { updateHouseholdSettingsAction } from "../_actions/settings";
 import { CelebrationGallery } from "../_components/CelebrationGallery";
@@ -85,7 +85,7 @@ export default async function ParentSettingsPage({
         scoreName={me ? await getParentScoreName(household.id, me.id, me.email) : ""}
       />
 
-      <KidsAdmin slug={slug} kids={kids} />
+      <KidsAdmin slug={slug} kids={kids} initials={await getKidInitials(household.id)} />
 
       <CoParentManager slug={slug} members={members} invites={invites} />
 

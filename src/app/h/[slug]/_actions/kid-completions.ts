@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getKidSession } from "@/lib/v2/auth";
-import { submitHighScore } from "@/lib/v2/high-scores";
-import { getKidProfile } from "@/lib/v2/data";
+import { getKidInitials, submitHighScore } from "@/lib/v2/high-scores";
 import {
   cancelKidProposal,
   cancelPendingTaskForToday,
@@ -107,10 +106,10 @@ export async function submitHighScoreAction(
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }
-  const kid = await getKidProfile(ctx.kidProfileId);
+  const initials = (await getKidInitials(ctx.householdId))[ctx.kidProfileId] ?? "???";
   const res = await submitHighScore(
     ctx.householdId,
-    { kind: "kid", kidProfileId: ctx.kidProfileId, name: kid?.name ?? "" },
+    { kind: "kid", kidProfileId: ctx.kidProfileId, name: initials },
     game,
     score,
   );
