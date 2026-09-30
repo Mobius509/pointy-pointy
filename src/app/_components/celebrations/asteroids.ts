@@ -16,7 +16,10 @@ import { playSound } from "./sounds";
 
 // Artwork slots — set once the files exist in public/anims. Until then the
 // ship and rocks are drawn with shapes.
-const SHIP_SRC: string | undefined = undefined; // e.g. "/anims/ship.webp" (nose pointing up)
+const SHIP_SRC: string | undefined = "/anims/spaceship.webp"; // nose pointing up
+const SHIP_ASPECT = 1036 / 776; // height / width of the artwork
+const SHIP_W = 60;
+const NOSE = (SHIP_W * SHIP_ASPECT) / 2 - 6; // lasers leave from the nose
 const ROCK_SRCS: string[] = []; // e.g. ["/anims/asteroid1.webp", "/anims/asteroid2.webp"]
 
 const SIZES = [0, 16, 26, 40]; // radius by rock size (3 = big)
@@ -95,7 +98,11 @@ function drawShip(
   ctx.translate(x, y);
   ctx.rotate(angle + Math.PI / 2); // artwork points up; angle 0 = right
   if (flash) ctx.globalAlpha = 0.4;
-  if (art) ctx.drawImage(art, -28, -28, 56, 56);
+  if (art) {
+    const w = SHIP_W;
+    const h = w * SHIP_ASPECT;
+    ctx.drawImage(art, -w / 2, -h / 2, w, h);
+  }
   else {
     ctx.fillStyle = color("primary");
     ctx.beginPath();
@@ -151,8 +158,8 @@ const wrap = (r: { x: number; y: number }, area: Area, pad: number) => {
 
 function fire(ship: { x: number; y: number; angle: number }, bullets: Bullet[]) {
   bullets.push({
-    x: ship.x + Math.cos(ship.angle) * 28,
-    y: ship.y + Math.sin(ship.angle) * 28,
+    x: ship.x + Math.cos(ship.angle) * NOSE,
+    y: ship.y + Math.sin(ship.angle) * NOSE,
     vx: Math.cos(ship.angle) * BULLET_SPEED,
     vy: Math.sin(ship.angle) * BULLET_SPEED,
     life: 1.4,
@@ -330,7 +337,7 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
       wrap(r, area, 50);
       // Hit! Lose a life; the rock shatters and the ship flashes (safe for
       // a moment). No lives left: game over.
-      if (bonked === 0 && Math.hypot(r.x - ship.x, r.y - ship.y) < SIZES[r.size] + 18) {
+      if (bonked === 0 && Math.hypot(r.x - ship.x, r.y - ship.y) < SIZES[r.size] + 24) {
         bonked = 1.5;
         lives -= 1;
         opts.onLives?.(lives);
