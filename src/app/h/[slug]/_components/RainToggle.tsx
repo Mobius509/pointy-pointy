@@ -4,13 +4,16 @@ import { useState } from "react";
 import { EmojiRain } from "@/app/_components/EmojiRain";
 
 // Just-for-fun button at the bottom of the kid view: turns on the home
-// page's falling emojis, which can be grabbed and thrown around.
-export function RainToggle() {
+// page's falling emojis, which can be grabbed and thrown around. The kid's
+// own avatar joins the rain (twice, so there's always one to grab).
+export function RainToggle({ avatarSrc }: { avatarSrc: string }) {
   const [on, setOn] = useState(false);
 
   return (
     <>
-      {on && <EmojiRain fixed backRatio={0} />}
+      {on && (
+        <EmojiRain fixed backRatio={0} extraSources={[avatarSrc, avatarSrc]} />
+      )}
       <div className="relative z-30 flex justify-center">
         <button
           type="button"

@@ -194,7 +194,7 @@ export default async function KidViewPage({
           <V2KidProposal slug={slug} pendingProposals={pendingProposals} />
 
           {/* Fun: falling emojis you can throw around. */}
-          <RainToggle />
+          <RainToggle avatarSrc={avatarSrc(kid.avatar_emoji)} />
         </div>
       </div>
     </Shell>

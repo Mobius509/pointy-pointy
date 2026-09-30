@@ -87,16 +87,21 @@ function rand(min: number, max: number) {
 // `fixed` pins both layers to the viewport instead of the parent box — use it
 // on pages that scroll, since the physics runs in viewport coordinates.
 // `backRatio` is the share of particles placed behind the content (0 = all
-// in front, e.g. when there's no card to sandwich).
+// in front, e.g. when there's no card to sandwich). `extraSources` are
+// images that always make it into the rain (e.g. the kid's own avatar).
 export function EmojiRain({
   children,
   fixed = false,
   backRatio = 0.4,
+  extraSources = [],
 }: {
   children?: React.ReactNode;
   fixed?: boolean;
   backRatio?: number;
+  extraSources?: string[];
 }) {
+  // Stable dependency for the effect — callers usually pass a fresh array.
+  const extraKey = extraSources.join("|");
   const backRef = useRef<HTMLDivElement>(null);
   const frontRef = useRef<HTMLDivElement>(null);
 
@@ -108,7 +113,12 @@ export function EmojiRain({
     const W = () => window.innerWidth;
     const H = () => window.innerHeight;
 
-    const { count, sizeMin, sizeMax } = pickCountAndSizeRange(W());
+    const range = pickCountAndSizeRange(W());
+    const { sizeMin, sizeMax } = range;
+    // Extras go first so they're always used, and add to the usual count.
+    const extras = extraKey ? extraKey.split("|") : [];
+    const sources = [...extras, ...SOURCES];
+    const count = range.count + extras.length;
 
     const particles: Particle[] = [];
 
@@ -121,7 +131,7 @@ export function EmojiRain({
       const radius = (size / 2) * 0.78;
 
       const el = document.createElement("img");
-      el.src = SOURCES[i % SOURCES.length];
+      el.src = sources[i % sources.length];
       el.alt = "";
       el.draggable = false;
       el.style.position = "absolute";
@@ -366,7 +376,7 @@ export function EmojiRain({
       cancelAnimationFrame(raf);
       for (const p of particles) p.el.remove();
     };
-  }, [backRatio]);
+  }, [backRatio, extraKey]);
 
   const position = fixed ? "fixed" : "absolute";
   return (
