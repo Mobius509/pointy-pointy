@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useTransition } from "react";
 import {
-  registerPushSubscriptionAction,
-  unregisterPushSubscriptionAction,
+  registerWebPushAction,
+  unregisterWebPushAction,
 } from "@/app/_actions/push";
 
 type State = "loading" | "unsupported" | "blocked" | "off" | "on";
@@ -23,9 +23,11 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 // and toggles them on/off. Caller picks the role (parent or kid) so the
 // server knows which kind of event to push to this device.
 export function PushToggle({
+  slug,
   role,
   label = "Notify me",
 }: {
+  slug: string;
   role: "parent" | "kid";
   label?: string;
 }) {
@@ -84,7 +86,8 @@ export function PushToggle({
           // strictly for the PushManager type.
           applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
         });
-        const res = await registerPushSubscriptionAction(
+        const res = await registerWebPushAction(
+          slug,
           role,
           JSON.stringify(sub),
           navigator.userAgent,
@@ -110,7 +113,7 @@ export function PushToggle({
         if (sub) {
           const endpoint = sub.endpoint;
           await sub.unsubscribe();
-          await unregisterPushSubscriptionAction(endpoint);
+          await unregisterWebPushAction(slug, role, endpoint);
         }
         setState("off");
       } catch (e) {

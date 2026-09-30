@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
 import { todayInTimezone } from "@/lib/time";
+import { notifyBonusAwarded } from "@/lib/v2/push";
 
 export async function awardCustomBonusAction(formData: FormData) {
   const slug = String(formData.get("slug") ?? "");
@@ -35,6 +36,8 @@ export async function awardCustomBonusAction(formData: FormData) {
     period_key: `D-${today}`,
   });
   if (error) throw error;
+
+  notifyBonusAwarded(household.id, kidProfileId, name, Math.round(points));
 
   revalidatePath(`/h/${slug}/parent`);
   revalidatePath(`/h/${slug}/parent/activity`);

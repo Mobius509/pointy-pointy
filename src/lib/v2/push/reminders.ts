@@ -1,0 +1,57 @@
+import "server-only";
+import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
+import { localTimeInTimezone, todayInTimezone } from "@/lib/time";
+import { getKidTodayView } from "@/lib/v2/kid-ops";
+import { notifyKid } from "./index";
+
+// Sends each kid's daily "log your points" reminder once their reminder
+// time has passed in the household's timezone. Meant to be hit every ~15
+// minutes by a scheduler; `last_reminded_on` makes repeat runs harmless.
+export async function runDueReminders(now: Date = new Date()): Promise<{
+  checked: number;
+  sent: number;
+}> {
+  const { data, error } = await supabaseV2Admin
+    .from("kid_profiles")
+    .select("id, household_id, reminder_time, last_reminded_on, households(timezone)")
+    .not("reminder_time", "is", null);
+  if (error) throw error;
+
+  let sent = 0;
+  for (const row of data ?? []) {
+    const rel = (row as unknown as {
+      households: { timezone: string } | { timezone: string }[] | null;
+    }).households;
+    const timezone = (Array.isArray(rel) ? rel[0]?.timezone : rel?.timezone) ?? "UTC";
+
+    const today = todayInTimezone(timezone, now);
+    const due = (row.reminder_time as string).slice(0, 5) <= localTimeInTimezone(timezone, now);
+    if (!due || row.last_reminded_on === today) continue;
+
+    // Claim today's reminder first so overlapping runs can't double-send.
+    const { data: claimed } = await supabaseV2Admin
+      .from("kid_profiles")
+      .update({ last_reminded_on: today })
+      .eq("id", row.id)
+      .or(`last_reminded_on.is.null,last_reminded_on.neq.${today}`)
+      .select("id");
+    if (!claimed?.length) continue;
+
+    const view = await getKidTodayView({
+      householdId: row.household_id as string,
+      kidProfileId: row.id as string,
+      timezone,
+    });
+    const open = view?.items.filter((i) => i.state === "open").length ?? 0;
+    if (open === 0) continue; // all caught up — no nagging
+
+    const delivered = await notifyKid(row.household_id as string, row.id as string, {
+      title: "Time to log your points! ⭐",
+      body: `You have ${open} ${open === 1 ? "task" : "tasks"} left today.`,
+      tag: "reminder",
+    });
+    if (delivered > 0) sent++;
+  }
+
+  return { checked: data?.length ?? 0, sent };
+}

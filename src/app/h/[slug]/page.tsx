@@ -3,17 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { clearKidSession, getKidSession } from "@/lib/v2/auth";
-import {
-  getActiveGoalForKid,
-  getActiveRecurringTasks,
-  getKidCompletionsForPeriods,
-  getKidGoalProgress,
-  getKidProfile,
-  getKidProfiles,
-  getKidTodayCompletions,
-  getMilestonesForGoal,
-} from "@/lib/v2/data";
-import { computePeriodKey } from "@/lib/time";
+import { getKidProfiles } from "@/lib/v2/data";
+import { getKidTodayView } from "@/lib/v2/kid-ops";
 import { avatarSrc } from "@/lib/avatar";
 import { KidPicker } from "./_components/KidPicker";
 import { V2DailyChecklist } from "./_components/V2DailyChecklist";
@@ -71,59 +62,16 @@ export default async function KidViewPage({
   }
 
   // Signed in — load the kid + today's checklist.
-  const kid = await getKidProfile(session.kidProfileId);
-  if (!kid) {
+  const view = await getKidTodayView({
+    householdId: household.id as string,
+    kidProfileId: session.kidProfileId,
+    timezone: household.timezone as string,
+  });
+  if (!view) {
     await clearKidSession();
     notFound();
   }
-
-  const tasks = await getActiveRecurringTasks(household.id as string);
-  const todayCompletions = await getKidTodayCompletions(
-    household.id as string,
-    kid.id,
-    household.timezone as string,
-  );
-  const goal = await getActiveGoalForKid(household.id as string, kid.id);
-  const progress = goal
-    ? await getKidGoalProgress(household.id as string, kid.id, goal)
-    : 0;
-  const milestones = goal
-    ? await getMilestonesForGoal(household.id as string, goal.id)
-    : [];
-
-  const tz = household.timezone as string;
-  const taskPeriodKey = new Map<string, string>(
-    tasks.map((t) => [t.id, computePeriodKey(t.frequency, tz)]),
-  );
-  const distinctPeriodKeys = [...new Set(taskPeriodKey.values())];
-  const periodCompletions = await getKidCompletionsForPeriods(
-    household.id as string,
-    kid.id,
-    distinctPeriodKeys,
-  );
-
-  const stateByTaskId = new Map<string, "pending" | "approved">();
-  for (const c of periodCompletions) {
-    if (c.is_bonus || !c.task_id) continue;
-    if (taskPeriodKey.get(c.task_id) === c.period_key) {
-      stateByTaskId.set(c.task_id, c.status);
-    }
-  }
-  const items = tasks.map((t) => ({
-    id: t.id,
-    name: t.name,
-    description: t.description,
-    points: t.points,
-    frequency: t.frequency,
-    state: (stateByTaskId.get(t.id) ?? "open") as
-      | "open"
-      | "pending"
-      | "approved",
-  }));
-
-  const pendingProposals = todayCompletions.filter(
-    (c) => c.is_bonus && c.task_id === null && c.status === "pending",
-  );
+  const { kid, goal, progress, milestones, items, pendingProposals } = view;
 
   // First name only on every screen — last name (= family name) takes up
   // too much room in the centered header and isn't needed by the kid.

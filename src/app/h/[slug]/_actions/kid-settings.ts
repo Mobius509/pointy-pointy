@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getKidSession } from "@/lib/v2/auth";
 import { AVATAR_IDS } from "@/lib/avatar";
+import { setKidReminderTime, type OpResult } from "@/lib/v2/kid-ops";
 
 // Kid-side action: update the signed-in kid's own avatar. Only the kid
 // session is required (no parent auth). The kid can only change their own
@@ -41,4 +42,33 @@ export async function updateKidAvatarAction(
   revalidatePath(`/h/${slug}/settings`);
   revalidatePath(`/h/${slug}/parent`);
   return { ok: true };
+}
+
+// Kid-side action: set (or clear, with null) the daily reminder time.
+export async function updateKidReminderAction(
+  slug: string,
+  time: string | null,
+): Promise<OpResult> {
+  const session = await getKidSession();
+  if (!session) return { ok: false, error: "Sign in first." };
+
+  const { data: household } = await supabaseV2Admin
+    .from("households")
+    .select("id, slug, timezone")
+    .eq("id", session.householdId)
+    .maybeSingle();
+  if (!household || household.slug !== slug) {
+    return { ok: false, error: "Sign in first." };
+  }
+
+  const res = await setKidReminderTime(
+    {
+      householdId: session.householdId,
+      kidProfileId: session.kidProfileId,
+      timezone: household.timezone as string,
+    },
+    time,
+  );
+  if (res.ok) revalidatePath(`/h/${slug}/settings`);
+  return res;
 }
