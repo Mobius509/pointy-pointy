@@ -21,7 +21,10 @@ const TINTS = ["none", "hue-rotate(320deg)", "hue-rotate(45deg) saturate(1.4)", 
 const FIRST_AUTO_POP_MS = 3800; // nobody playing yet
 const IDLE_AUTO_POP_MS = 2500; // they stopped partway
 const AUTO_POP_GAP_MS = 450;
-const GAME_SPAWN_MS = 700; // endless game: a new balloon this often
+// Endless game: more balloons than anyone can pop, and it speeds up.
+const GAME_SPAWN_START_MS = 480;
+const GAME_SPAWN_FASTEST_MS = 200;
+const GAME_RAMP_MS = 25000; // reaches full speed after this long
 
 type Balloon = { pop: (x?: number, y?: number) => void; popped: () => boolean };
 
@@ -35,6 +38,7 @@ function releaseBalloon(
     index,
     behavior,
     delay = 0,
+    riseMs,
     onPop,
     onGone,
   }: {
@@ -42,6 +46,7 @@ function releaseBalloon(
     index: number;
     behavior: "bob" | "away";
     delay?: number;
+    riseMs?: number; // "away": time to float off the top
     onPop: (byTap: boolean) => void;
     onGone?: () => void; // floated off the top without being popped
   },
@@ -93,7 +98,7 @@ function releaseBalloon(
         { transform: `translate(${-sway}px, ${-rise * 0.66}px) rotate(-5deg)` },
         { transform: `translate(0, ${-rise}px) rotate(3deg)` },
       ],
-      { duration: 4500 + Math.random() * 2500, delay, easing: "linear", fill: "forwards" },
+      { duration: riseMs ?? 4500 + Math.random() * 2500, delay, easing: "linear", fill: "forwards" },
     );
     flight.finished.then(
       () => {
@@ -223,8 +228,9 @@ export async function playBalloons(opts: CelebrationOptions): Promise<void> {
   layer.remove();
 }
 
-// "Keep playing": balloons keep floating up forever; every pop counts.
-// No timer, no auto-pops. Returns a stop function.
+// "Keep playing": balloons keep floating up — more than anyone can pop,
+// faster as the round goes on. Every pop counts; the screen runs the round
+// timer. Returns a stop function.
 export function playBalloonGame(opts: GameOptions): () => void {
   const layer = makeLayer();
   const W = window.innerWidth;
@@ -232,22 +238,34 @@ export function playBalloonGame(opts: GameOptions): () => void {
   let index = 0;
   const hint = hintBubble(layer, "Pop as many as you can!", 96);
 
+  const started = performance.now();
+  // 0 → 1 over the ramp: spawns come faster and balloons rise quicker.
+  const ramp = () => Math.min(1, (performance.now() - started) / GAME_RAMP_MS);
+
   const spawn = () =>
     releaseBalloon(layer, {
       x: 40 + Math.random() * (W - 80),
       index: index++,
       behavior: "away",
+      riseMs: (4200 - ramp() * 1600) * (0.8 + Math.random() * 0.4),
       onPop: () => {
         hint.remove();
         opts.onScore(++popped);
       },
     });
 
-  for (let i = 0; i < 3; i++) setTimeout(spawn, i * 300);
-  const timer = setInterval(spawn, GAME_SPAWN_MS);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const loop = () => {
+    spawn();
+    if (Math.random() < 0.15 + ramp() * 0.3) spawn(); // sometimes two at once
+    const gap = GAME_SPAWN_START_MS - ramp() * (GAME_SPAWN_START_MS - GAME_SPAWN_FASTEST_MS);
+    timer = setTimeout(loop, gap * (0.7 + Math.random() * 0.6));
+  };
+  for (let i = 0; i < 4; i++) setTimeout(spawn, i * 200);
+  timer = setTimeout(loop, 800);
 
   const stop = () => {
-    clearInterval(timer);
+    clearTimeout(timer);
     layer.remove();
   };
   onStop(stop);

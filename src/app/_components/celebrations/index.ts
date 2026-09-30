@@ -20,7 +20,7 @@ import {
 import { playWebglBurst } from "./webglBurst";
 
 export type { CelebrationOptions, GameOptions } from "./shared";
-export { isMuted, setMuted, unlockAudio } from "./sounds";
+export { isMuted, playSound, setMuted, unlockAudio } from "./sounds";
 export { stopAllCelebrations } from "./shared";
 
 export type Celebration = {
@@ -36,7 +36,13 @@ export type Celebration = {
   // "Keep playing" after the celebration: a score game with its own
   // counter, or tap-anywhere-to-replay.
   game?:
-    | { kind: "score"; icon: string; label: string; start: (opts: GameOptions) => () => void }
+    | {
+        kind: "score";
+        icon: string;
+        label: string;
+        seconds: number; // length of a round
+        start: (opts: GameOptions) => () => void;
+      }
     | { kind: "replay" };
   play: (opts: CelebrationOptions) => Promise<void>;
 };
@@ -77,7 +83,7 @@ export const CELEBRATIONS: Celebration[] = [
   },
   {
     id: "pinata",
-    game: { kind: "score", icon: "🍬", label: "candy", start: playPinataGame },
+    game: { kind: "score", icon: "🍬", label: "candy", seconds: 30, start: playPinataGame },
     revealsPoints: true,
     hidesStage: true,
     name: "Piñata",
@@ -86,7 +92,7 @@ export const CELEBRATIONS: Celebration[] = [
   },
   {
     id: "balloons",
-    game: { kind: "score", icon: "🎈", label: "popped", start: playBalloonGame },
+    game: { kind: "score", icon: "🎈", label: "popped", seconds: 30, start: playBalloonGame },
     revealsPoints: true,
     name: "Balloon pop",
     description: "Balloons float up; tap to jab them with the needle. Keep playing: endless balloons.",

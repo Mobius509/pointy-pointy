@@ -212,9 +212,9 @@ export async function playPinata(opts: CelebrationOptions): Promise<void> {
   layer.remove();
 }
 
-// "Keep playing": piñata after piñata, no timer. Each holds a random amount
-// of candy; tapping a piece collects it into the counter (dragging still
-// throws it). Returns a stop function.
+// "Keep playing": piñata after piñata (the screen runs the round timer).
+// Each holds a random amount of candy; tapping a piece collects it into
+// the counter (dragging still throws it). Returns a stop function.
 export function playPinataGame(opts: GameOptions): () => void {
   const layer = makeLayer();
   let stopped = false;

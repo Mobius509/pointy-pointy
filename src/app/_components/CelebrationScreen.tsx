@@ -7,6 +7,7 @@ import {
   isMuted,
   pickCelebration,
   playCelebration,
+  playSound,
   prefersReducedMotion,
   setMuted,
   startGame,
@@ -93,23 +94,50 @@ export function CelebrationScreen({
   // "Keep playing" mini game (piñata, balloons, and tap-to-replay ones).
   const [playing, setPlaying] = useState(false);
   const [score, setScore] = useState(0);
+  // Score games are timed rounds; `round` bumps to start another.
+  const [round, setRound] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [timesUp, setTimesUp] = useState(false);
   const stopGame = useRef<() => void>(() => {});
   const keepPlaying = () => {
     unlockAudio();
-    setScore(0);
     setPlaying(true);
+    setRound((n) => n + 1);
   };
   // Start once the counter is on screen, so collected candy knows where to fly.
   useEffect(() => {
     if (!playing) return;
+    setScore(0);
+    setTimesUp(false);
     const r = counterRef.current?.getBoundingClientRect();
     stopGame.current = startGame(effect, {
       avatarSrc,
       counter: r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : undefined,
       onScore: setScore,
     });
-    return () => stopGame.current();
-  }, [playing, effect, avatarSrc]);
+
+    // Countdown for timed games; at zero the game stops and results show.
+    const game = effect.game;
+    let tick: ReturnType<typeof setInterval> | undefined;
+    if (game?.kind === "score") {
+      let left = game.seconds;
+      setTimeLeft(left);
+      tick = setInterval(() => {
+        left -= 1;
+        setTimeLeft(left);
+        if (left <= 0) {
+          clearInterval(tick);
+          stopGame.current();
+          setTimesUp(true);
+          void playSound("cheer");
+        }
+      }, 1000);
+    }
+    return () => {
+      clearInterval(tick);
+      stopGame.current();
+    };
+  }, [playing, round, effect, avatarSrc]);
 
   // Lock page scroll, close on Escape. Browsers (iPhone especially) block
   // sound until the first tap, so any tap on the screen unlocks it —
@@ -257,13 +285,49 @@ export function CelebrationScreen({
       </div>
 
       {playing && effect.game?.kind === "score" && (
-        <div
-          ref={counterRef}
-          aria-live="polite"
-          className="absolute left-4 top-4 rounded-full bg-white px-5 py-2 text-2xl font-black text-pp-primary shadow-sm tabular-nums"
-        >
-          <span aria-hidden>{effect.game.icon}</span> {score}
-          <span className="sr-only"> {effect.game.label}</span>
+        <div className="absolute left-4 top-4 flex items-center gap-2">
+          <div
+            ref={counterRef}
+            aria-live="polite"
+            className="rounded-full bg-white px-5 py-2 text-2xl font-black text-pp-primary shadow-sm tabular-nums"
+          >
+            <span aria-hidden>{effect.game.icon}</span> {score}
+            <span className="sr-only"> {effect.game.label}</span>
+          </div>
+          {!timesUp && (
+            <div
+              aria-label={`${timeLeft} seconds left`}
+              className={`rounded-full bg-white px-4 py-2 text-lg font-bold shadow-sm tabular-nums ${
+                timeLeft <= 5 ? "text-rose-600 animate-pulse" : "text-pp-muted"
+              }`}
+            >
+              ⏱ {timeLeft}s
+            </div>
+          )}
+        </div>
+      )}
+
+      {playing && timesUp && effect.game?.kind === "score" && (
+        <div className="absolute inset-0 flex items-center justify-center px-6">
+          <div className="card w-full max-w-sm text-center animate-celebrate-pop-in">
+            <p className="text-4xl font-semibold text-pp-primary">Time&apos;s up!</p>
+            <p className="mt-4 text-7xl font-black text-pp-primary tabular-nums">
+              <span aria-hidden>{effect.game.icon}</span> {score}
+            </p>
+            <p className="mt-1 font-semibold text-pp-muted">{effect.game.label}</p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => setRound((n) => n + 1)}
+                className="btn-primary btn-lg w-full rounded-2xl"
+              >
+                Play again
+              </button>
+              <button type="button" onClick={onClose} className="btn-secondary w-full">
+                Done
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -272,7 +336,7 @@ export function CelebrationScreen({
           <button
             type="button"
             onClick={onClose}
-            className="btn-primary btn-lg w-full rounded-2xl h-16"
+            className={`btn-primary btn-lg w-full rounded-2xl h-16 ${timesUp ? "invisible" : ""}`}
           >
             Done
           </button>
