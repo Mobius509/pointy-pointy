@@ -1,8 +1,19 @@
 import { imageEl, makeLayer, type CelebrationOptions } from "./shared";
 import { playSound } from "./sounds";
 
+// Everything the parade might hold up. Shuffled each time.
+const SIGNS = [
+  "Yay!", "Woo!", "Go!", "Wow!", "Yes!", "Boom!", "Nice!", "Epic!",
+  "Whee!", "Hooray!", "Legend!", "Party!", "Go go go!", "So cool!",
+  "Let's go!", "Amazing!", "Superstar!", "You rock!", "High five!",
+  "Big win!", "Nailed it!", "Level up!", "Cha-ching!", "Heck yes!",
+  "Ta-da!", "Bravo!", "Zoom!", "Wheee!", "OMG!", "LOL!", "10/10",
+  "🎉", "⭐", "🔥", "🙌", "💪", "🏆", "🚀", "🎈", "🍭", "🦄", "💯",
+  "🎉🎉", "⭐⭐⭐", "🔥🔥", "👏👏", "😎", "🥳", "🤩", "💖",
+];
+
 // A conga line of mini avatars hops across the screen, each holding up a
-// sign — the points, and some cheers.
+// sign — the points, and a random mix of cheers.
 export async function playParade(opts: CelebrationOptions): Promise<void> {
   const layer = makeLayer();
   const W = window.innerWidth;
@@ -10,9 +21,9 @@ export async function playParade(opts: CelebrationOptions): Promise<void> {
   const size = Math.min(W * 0.2, 84);
   const count = W < 480 ? 6 : 8;
   const points = opts.points ?? 0;
-  const cheers = ["Yay!", "Woo!", "🎉", "Go!", "⭐", "Wow!"];
-  // No points in the replay game — just cheers then.
-  const signs = points ? [`+${points}`, ...cheers.slice(0, 3), `+${points}`, ...cheers.slice(3)] : cheers;
+  // A different mix of signs every parade.
+  const pool = [...SIGNS].sort(() => Math.random() - 0.5);
+  const signs = points ? [`+${points}`, ...pool.slice(0, 3), `+${points}`, ...pool.slice(3)] : pool;
   // March along the tapped height in the replay game.
   const baseline = Math.min(H - 20, Math.max(size * 2, opts.at?.y ?? H * 0.66));
   const DURATION = 4200;

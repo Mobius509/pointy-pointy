@@ -9,9 +9,6 @@ import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
 import { playScratchCard } from "./scratchCard";
 import {
-  hintBubble,
-  makeLayer,
-  onStop,
   prefersReducedMotion,
   stopAllCelebrations,
   type CelebrationOptions,
@@ -72,7 +69,7 @@ export const CELEBRATIONS: Celebration[] = [
     id: "high-five",
     game: { kind: "replay" },
     name: "High five",
-    description: "Two hands swing in and SMACK — burst, confetti, bounce. Keep playing: tap anywhere.",
+    description: "Two hands swing in and SMACK — burst, confetti, bounce. Tap anywhere to do it again.",
     play: playHighFive,
   },
   {
@@ -102,14 +99,14 @@ export const CELEBRATIONS: Celebration[] = [
     id: "rocket",
     game: { kind: "replay" },
     name: "Avatar rocket",
-    description: "Blast off, a random trick, crash landing. Keep playing: tap to launch more.",
+    description: "Blast off, a random trick, crash landing. Tap anywhere to launch more.",
     play: playRocket,
   },
   {
     id: "parade",
     game: { kind: "replay" },
     name: "Avatar parade",
-    description: "A conga line of mini avatars holding up signs. Keep playing: tap to send more.",
+    description: "A conga line of mini avatars holding up signs. Tap anywhere to send more.",
     play: playParade,
   },
   {
@@ -156,32 +153,30 @@ export async function playCelebration(
 
 const MAX_REPLAYS_AT_ONCE = 4;
 
-// Starts a celebration's "Keep playing" game. Score games get the kid's
-// score via onScore; replay games play the effect again wherever the kid
-// taps (taps on buttons — like Done — are ignored). Returns a stop function.
+// Starts a score game ("Keep playing" on the piñata / balloons). Clears
+// the celebration's leftovers first. Returns a stop function.
 export function startGame(celebration: Celebration, opts: GameOptions): () => void {
-  stopAllCelebrations(); // clear the celebration's leftovers first
-  const game = celebration.game;
-  if (!game) return () => {};
-  if (game.kind === "score") return game.start(opts);
+  if (celebration.game?.kind !== "score") return () => {};
+  stopAllCelebrations();
+  return celebration.game.start(opts);
+}
 
-  const hintLayer = makeLayer();
-  const hint = hintBubble(hintLayer, "Tap anywhere!", window.innerHeight * 0.4);
+// Replay effects (high five, parade, rocket): while the celebration screen
+// is open, tapping anywhere (except buttons) plays it again right there.
+// Returns a stop function.
+export function tapToReplay(celebration: Celebration, avatarSrc: string): () => void {
   let running = 0;
   const onTap = (e: PointerEvent) => {
     if ((e.target as Element | null)?.closest("button")) return;
-    if (running >= MAX_REPLAYS_AT_ONCE) return;
-    hint.remove();
+    if (running >= MAX_REPLAYS_AT_ONCE || prefersReducedMotion()) return;
     running++;
     void celebration
-      .play({ avatarSrc: opts.avatarSrc, at: { x: e.clientX, y: e.clientY }, points: 0 })
+      .play({ avatarSrc, at: { x: e.clientX, y: e.clientY }, points: 0 })
       .finally(() => running--);
   };
   window.addEventListener("pointerdown", onTap);
-  const stop = () => {
-    window.removeEventListener("pointerdown", onTap);
-    hintLayer.remove();
-  };
-  onStop(stop);
-  return stop;
+  // Not registered with onStop: starting the celebration itself calls
+  // stopAllCelebrations(), which would remove this listener. The screen
+  // removes it when it closes.
+  return () => window.removeEventListener("pointerdown", onTap);
 }

@@ -12,6 +12,7 @@ import {
   setMuted,
   startGame,
   stopAllCelebrations,
+  tapToReplay,
   unlockAudio,
 } from "./celebrations";
 
@@ -197,6 +198,12 @@ export function CelebrationScreen({
     if (revealed) buttonRef.current?.focus();
   }, [revealed]);
 
+  // High five / parade / rocket: tap anywhere on this screen to replay.
+  useEffect(() => {
+    if (effect.game?.kind !== "replay" || playing) return;
+    return tapToReplay(effect, avatarSrc);
+  }, [effect, avatarSrc, playing]);
+
   // Closing the screen clears any effect still running (piñata, candy…).
   useEffect(() => () => stopAllCelebrations(), []);
 
@@ -350,7 +357,7 @@ export function CelebrationScreen({
             >
               {button}
             </button>
-            {effect.game && (
+            {effect.game?.kind === "score" && (
               <button
                 type="button"
                 onClick={keepPlaying}
@@ -358,6 +365,11 @@ export function CelebrationScreen({
               >
                 Keep playing
               </button>
+            )}
+            {effect.game?.kind === "replay" && (
+              <p className={`text-sm font-semibold text-pp-muted ${reveal}`}>
+                Tap anywhere to do it again!
+              </p>
             )}
           </>
         )}
