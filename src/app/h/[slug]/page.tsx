@@ -9,6 +9,8 @@ import { avatarSrc } from "@/lib/avatar";
 import { KidPicker } from "./_components/KidPicker";
 import { V2DailyChecklist } from "./_components/V2DailyChecklist";
 import { V2KidProposal } from "./_components/V2KidProposal";
+import { GoalMilestones } from "./_components/GoalMilestones";
+import { RainToggle } from "./_components/RainToggle";
 import { kidSignOutAction } from "./_actions/kid-session";
 
 export const dynamic = "force-dynamic";
@@ -108,10 +110,9 @@ export default async function KidViewPage({
         <div className="mt-6 space-y-6">
           {/* Progress card */}
         {goal && (
-          <section className="bg-white rounded-[32px] px-4 sm:px-6 py-6 sm:py-10 shadow-sm">
-            {/* Mobile: vertical stack — icon+name, then bar, then footer.
-                Desktop: original single-row layout with absolutely
-                positioned milestone labels and footer. */}
+          <section className="bg-white rounded-[32px] px-4 sm:px-6 py-6 shadow-sm">
+            {/* Mobile: icon+name, then the bar. Desktop: one row with the
+                target on the right. Milestones sit in an accordion below. */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
               {/* Icon + goal name. */}
               <div className="flex items-center gap-3 sm:gap-5 min-w-0">
@@ -126,42 +127,9 @@ export default async function KidViewPage({
                 </span>
               </div>
 
-              {/* Bar + its labels/footer. On desktop the labels above
-                  and the footer below are absolutely positioned. On
-                  mobile they flow naturally as block rows. */}
-              <div className="relative flex-1 sm:min-w-[160px] sm:h-8">
-                {/* Milestone name labels — desktop only (above the bar).
-                    Hidden on mobile to avoid clipping/overlap. */}
-                <div
-                  className="hidden sm:block absolute inset-x-0 pointer-events-none h-4"
-                  style={{ bottom: "calc(100% + 8px)" }}
-                >
-                  {milestones.map((m) => {
-                    const left = Math.min(
-                      100,
-                      Math.max(0, (m.points / goal.target_points) * 100),
-                    );
-                    const unlocked = progress >= m.points;
-                    return (
-                      <span
-                        key={m.id}
-                        className={`absolute -translate-x-1/2 whitespace-nowrap ${
-                          unlocked ? "text-pp-primary" : "text-pp-muted"
-                        }`}
-                        style={{
-                          left: `${left}%`,
-                          fontSize: 12,
-                          fontWeight: unlocked ? 600 : 500,
-                        }}
-                        title={`${m.name} · ${m.points.toLocaleString()} pts`}
-                      >
-                        {m.name}
-                      </span>
-                    );
-                  })}
-                </div>
-                {/* Bar */}
-                <div className="rounded-full bg-pp-line px-1 flex items-center h-8 sm:h-full">
+              {/* Bar with milestone dots, then the % / points-to-go line. */}
+              <div className="flex-1 sm:min-w-[160px]">
+                <div className="rounded-full bg-pp-line px-1 flex items-center h-8">
                   <div className="relative h-6 w-full">
                     <div
                       className="absolute inset-y-0 left-0 bg-brand-gradient rounded-full flex items-center justify-center text-white tabular-nums font-semibold transition-[width] duration-500 ease-out"
@@ -182,6 +150,7 @@ export default async function KidViewPage({
                         <span
                           key={m.id}
                           aria-hidden
+                          title={`${m.name} · ${m.points.toLocaleString()} pts`}
                           className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full ${
                             unlocked
                               ? "size-2.5 bg-white ring-2 ring-pp-primary"
@@ -193,52 +162,26 @@ export default async function KidViewPage({
                     })}
                   </div>
                 </div>
-                {/* Mobile footer — flows below the bar as a flex row.
-                    On desktop the absolute-positioned footer below
-                    handles this with the % indicator anchored to the
-                    progress edge. */}
                 <div
-                  className="flex sm:hidden items-center justify-between mt-2 text-pp-primary tabular-nums"
+                  className="flex items-center justify-between mt-2 text-pp-primary tabular-nums"
                   style={{ fontSize: 12, fontWeight: 600 }}
                 >
                   <span>{goalPct}% There</span>
-                  <span>
-                    {remaining.toLocaleString()} points to go
-                  </span>
-                </div>
-                {/* Desktop footer — absolutely positioned 8px below. */}
-                <div
-                  className="hidden sm:block absolute inset-x-0 h-4"
-                  style={{ top: "calc(100% + 8px)" }}
-                >
-                  <span
-                    className="absolute -translate-x-1/2 text-pp-primary tabular-nums"
-                    style={{
-                      left: `max(${goalPct}%, 3rem)`,
-                      fontSize: 12,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {goalPct}% There
-                  </span>
-                  <span
-                    className="absolute right-0 text-pp-primary tabular-nums"
-                    style={{ fontSize: 12, fontWeight: 600 }}
-                  >
-                    {remaining.toLocaleString()} points to go
-                  </span>
+                  <span>{remaining.toLocaleString()} points to go</span>
                 </div>
               </div>
 
               {/* Target — desktop only. On mobile the "points to go"
-                  footer already conveys the gap. */}
+                  line already conveys the gap. */}
               <span
-                className="hidden sm:inline flex-shrink-0 text-pp-primary tabular-nums"
+                className="hidden sm:inline flex-shrink-0 self-start mt-1 text-pp-primary tabular-nums"
                 style={{ fontSize: 16, fontWeight: 500 }}
               >
                 {goal.target_points.toLocaleString()}
               </span>
             </div>
+
+            <GoalMilestones milestones={milestones} progress={progress} />
           </section>
         )}
 
@@ -249,6 +192,9 @@ export default async function KidViewPage({
 
           {/* Did something extra? */}
           <V2KidProposal slug={slug} pendingProposals={pendingProposals} />
+
+          {/* Fun: falling emojis you can throw around. */}
+          <RainToggle />
         </div>
       </div>
     </Shell>

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getFirstHouseholdForCurrentUser } from "@/lib/v2/auth";
-import { EmojiRain } from "./_components/EmojiRain";
+import { EmojiRain } from "@/app/_components/EmojiRain";
 import { AuthModalControls } from "./_components/AuthModal";
 
 export const metadata = {

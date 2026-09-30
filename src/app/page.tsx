@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { EmojiRain } from "@/app/welcome/_components/EmojiRain";
+import { EmojiRain } from "@/app/_components/EmojiRain";
 import { getFirstHouseholdForCurrentUser } from "@/lib/v2/auth";
 
 export const metadata = {

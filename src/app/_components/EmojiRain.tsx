@@ -83,7 +83,20 @@ function rand(min: number, max: number) {
 // so the scatter feels organic. Collisions still happen within each
 // layer's set; we don't cross-layer collide (and it doesn't read as a
 // problem visually).
-export function EmojiRain({ children }: { children?: React.ReactNode }) {
+//
+// `fixed` pins both layers to the viewport instead of the parent box — use it
+// on pages that scroll, since the physics runs in viewport coordinates.
+// `backRatio` is the share of particles placed behind the content (0 = all
+// in front, e.g. when there's no card to sandwich).
+export function EmojiRain({
+  children,
+  fixed = false,
+  backRatio = 0.4,
+}: {
+  children?: React.ReactNode;
+  fixed?: boolean;
+  backRatio?: number;
+}) {
   const backRef = useRef<HTMLDivElement>(null);
   const frontRef = useRef<HTMLDivElement>(null);
 
@@ -124,9 +137,9 @@ export function EmojiRain({ children }: { children?: React.ReactNode }) {
       // they're grabbable.
       el.style.pointerEvents = "auto";
       el.style.cursor = "grab";
-      // 40% of particles land behind the page content, 60% in front, so
-      // the white card looks sandwiched in the depth stack.
-      const target = Math.random() < 0.4 ? back : front;
+      // By default 40% of particles land behind the page content, 60% in
+      // front, so the white card looks sandwiched in the depth stack.
+      const target = Math.random() < backRatio ? back : front;
       target.appendChild(el);
 
       const p: Particle = {
@@ -353,20 +366,21 @@ export function EmojiRain({ children }: { children?: React.ReactNode }) {
       cancelAnimationFrame(raf);
       for (const p of particles) p.el.remove();
     };
-  }, []);
+  }, [backRatio]);
 
+  const position = fixed ? "fixed" : "absolute";
   return (
     <>
       <div
         aria-hidden
         ref={backRef}
-        className="pointer-events-none absolute inset-0 overflow-hidden z-0"
+        className={`pointer-events-none ${position} inset-0 overflow-hidden z-0`}
       />
       {children}
       <div
         aria-hidden
         ref={frontRef}
-        className="pointer-events-none absolute inset-0 overflow-hidden z-20"
+        className={`pointer-events-none ${position} inset-0 overflow-hidden z-20`}
       />
     </>
   );
