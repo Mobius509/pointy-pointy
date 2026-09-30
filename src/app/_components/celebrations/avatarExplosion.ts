@@ -1,4 +1,5 @@
 import { EFFECT_Z, wait, type CelebrationOptions } from "./shared";
+import { playSound } from "./sounds";
 
 const GRID = 6;
 
@@ -44,6 +45,8 @@ export async function playAvatarExplosion(opts: CelebrationOptions): Promise<voi
   const tw = w / GRID;
   const th = h / GRID;
   stand.remove();
+  void playSound("pop");
+  setTimeout(() => void playSound("cheer"), 250);
 
   const flights: Promise<unknown>[] = [];
   for (let row = 0; row < GRID; row++) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CELEBRATIONS, playCelebration } from "@/app/_components/celebrations";
+import { CELEBRATIONS, playCelebration, unlockAudio } from "@/app/_components/celebrations";
 import { CelebrationScreen } from "@/app/_components/CelebrationScreen";
 import { avatarSrc } from "@/lib/avatar";
 import { SectionPill } from "./ui";
@@ -56,11 +56,17 @@ export function CelebrationGallery({ kids }: { kids: Kid[] }) {
               <button
                 type="button"
                 className="btn-primary"
-                onClick={() => void playCelebration({ avatarSrc: src }, c.id)}
+                onClick={() => {
+                  unlockAudio();
+                  void playCelebration({ avatarSrc: src }, c.id);
+                }}
               >
                 Play
               </button>
-              <button type="button" className="btn-secondary" onClick={() => setPreview(c.id)}>
+              <button type="button" className="btn-secondary" onClick={() => {
+                  unlockAudio();
+                  setPreview(c.id);
+                }}>
                 Full screen
               </button>
             </div>
@@ -69,7 +75,10 @@ export function CelebrationGallery({ kids }: { kids: Kid[] }) {
       </ul>
 
       <div className="mt-4">
-        <button type="button" className="btn-soft" onClick={() => setPreview("")}>
+        <button type="button" className="btn-soft" onClick={() => {
+            unlockAudio();
+            setPreview("");
+          }}>
           🎲 Surprise me (what {kid?.name ?? "your kid"} sees)
         </button>
       </div>
@@ -82,6 +91,7 @@ export function CelebrationGallery({ kids }: { kids: Kid[] }) {
           milestonesUnlocked={[{ name: "Ice Cream Trip" }]}
           nextUp={{ name: "Amazon $25", pointsToGo: 730 }}
           effectId={preview || undefined}
+          tapToOpen={preview === ""}
           onClose={() => setPreview(null)}
         />
       )}

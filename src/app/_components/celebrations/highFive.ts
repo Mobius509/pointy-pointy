@@ -8,6 +8,7 @@ import {
   wait,
   type CelebrationOptions,
 } from "./shared";
+import { playSound } from "./sounds";
 
 const HAND_SRC = "/anims/highfivehand.png";
 const HAND_ASPECT = 1114 / 834; // height / width of the artwork
@@ -42,8 +43,8 @@ export async function playHighFive(opts: CelebrationOptions): Promise<void> {
   const handW = Math.min(W * 0.42, 230);
   const handH = handW * HAND_ASPECT;
 
-  // Each hand is positioned by its palm center; the mirrored copy comes
-  // from the left. `lean` tilts the fingers toward the other hand.
+  // Each hand is positioned by its palm center; one comes from each side.
+  // Both use the artwork as drawn (same facing) — mirroring one looked off.
   const makeHand = (side: -1 | 1) => {
     const img = document.createElement("img");
     img.src = HAND_SRC;
@@ -56,9 +57,8 @@ export async function playHighFive(opts: CelebrationOptions): Promise<void> {
       top: `${cy - handH * 0.55}px`,
     });
     layer.appendChild(img);
-    const flip = side === -1 ? "scaleX(-1)" : "";
     const at = (dx: number, rot: number) =>
-      `translateX(${dx * side}px) rotate(${rot * side}deg) ${flip}`;
+      `translateX(${dx * side}px) rotate(${rot * side}deg)`;
     return { img, at };
   };
 
@@ -98,6 +98,8 @@ export async function playHighFive(opts: CelebrationOptions): Promise<void> {
 }
 
 function impact(layer: HTMLElement, cx: number, cy: number, opts: CelebrationOptions) {
+  void playSound("pop");
+  setTimeout(() => void playSound("cheer"), 150);
   // Shake the whole layer for weight.
   layer.animate(
     [

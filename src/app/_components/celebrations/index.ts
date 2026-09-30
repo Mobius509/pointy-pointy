@@ -6,6 +6,7 @@ import { prefersReducedMotion, type CelebrationOptions } from "./shared";
 import { playWebglBurst } from "./webglBurst";
 
 export type { CelebrationOptions } from "./shared";
+export { isMuted, setMuted, unlockAudio } from "./sounds";
 
 export type Celebration = {
   id: string;

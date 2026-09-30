@@ -1,4 +1,5 @@
 import { playFireworks } from "./fireworks";
+import { playSound } from "./sounds";
 import {
   BRAND,
   EFFECT_Z,
@@ -133,6 +134,9 @@ export async function playWebglBurst(opts: CelebrationOptions): Promise<void> {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE); // additive glow
+
+    void playSound("boom");
+    setTimeout(() => void playSound("cheer"), 350);
 
     await new Promise<void>((resolve) => {
       const start = performance.now();

@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { playCelebration } from "./celebrations";
+import { isMuted, playCelebration, setMuted, unlockAudio } from "./celebrations";
 
 // Full-screen "points approved" moment: avatar peeking over a white circle
 // with the points, a random silly headline, and one of the celebration
@@ -47,6 +47,7 @@ export function CelebrationScreen({
   milestonesUnlocked,
   nextUp,
   effectId,
+  tapToOpen = false,
   onClose,
 }: {
   avatarSrc: string;
@@ -57,19 +58,35 @@ export function CelebrationScreen({
   nextUp?: { name: string; pointsToGo: number } | null;
   // Force a specific effect (gallery); random when omitted.
   effectId?: string;
+  // Start on a "Tap to open!" gift screen. Browsers only allow sound after
+  // a tap, so the kid view uses this when it opens by itself; the gallery
+  // doesn't need it (the parent's button press already counts).
+  tapToOpen?: boolean;
   onClose: () => void;
 }) {
   const [headline] = useState(() => pick(HEADLINES));
   const [button] = useState(() => pick(BUTTONS));
   const [shown, setShown] = useState(0);
+  const [opened, setOpened] = useState(!tapToOpen);
+  const [muted, setMutedState] = useState(false);
+  useEffect(() => setMutedState(isMuted()), []);
+
+  const toggleMute = () => {
+    unlockAudio();
+    setMuted(!muted);
+    setMutedState(!muted);
+  };
   const avatarRef = useRef<HTMLImageElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Lock page scroll, focus the button, close on Escape.
+  useEffect(() => {
+    buttonRef.current?.focus();
+  }, [opened]);
+
+  // Lock page scroll, close on Escape.
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    buttonRef.current?.focus();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => {
@@ -80,6 +97,7 @@ export function CelebrationScreen({
 
   // Count the points up, and fire the effect once the avatar has landed.
   useEffect(() => {
+    if (!opened) return;
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
@@ -96,7 +114,7 @@ export function CelebrationScreen({
       cancelAnimationFrame(raf);
       clearTimeout(timer);
     };
-  }, [avatarSrc, effectId, total]);
+  }, [avatarSrc, effectId, total, opened]);
 
   const extra = items.length - 4;
 
@@ -109,6 +127,46 @@ export function CelebrationScreen({
       aria-label={`${headline} ${total} points approved`}
       className="fixed inset-0 z-[60] bg-celebrate flex flex-col items-center px-6 pb-8 pt-6 overflow-y-auto"
     >
+      <button
+        type="button"
+        onClick={toggleMute}
+        aria-label={muted ? "Turn sound on" : "Turn sound off"}
+        aria-pressed={muted}
+        className="btn-secondary absolute right-4 top-4 size-11 !p-0 text-lg"
+      >
+        {muted ? "🔇" : "🔊"}
+      </button>
+
+      {!opened ? (
+        <>
+          <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xl">
+            <img
+              src={avatarSrc}
+              alt=""
+              aria-hidden
+              className="size-40 object-contain animate-celebrate-pop-in"
+            />
+            <p className="mt-6 text-4xl sm:text-5xl font-semibold text-pp-primary text-center leading-tight">
+              You&apos;ve got points!
+            </p>
+            <p className="mt-6 text-7xl animate-bounce" aria-hidden>
+              🎁
+            </p>
+          </div>
+          <button
+            ref={buttonRef}
+            type="button"
+            onClick={() => {
+              unlockAudio();
+              setOpened(true);
+            }}
+            className="btn-primary btn-lg w-full max-w-xl rounded-2xl h-16"
+          >
+            Tap to open!
+          </button>
+        </>
+      ) : (
+        <>
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xl">
         {/* Avatar peeking over the points circle. */}
         <div className="relative mt-20">
@@ -174,6 +232,8 @@ export function CelebrationScreen({
       >
         {button}
       </button>
+        </>
+      )}
     </div>,
     document.body,
   );

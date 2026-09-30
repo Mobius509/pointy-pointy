@@ -77,6 +77,7 @@ export function CelebrationOverlay({
       items={fresh}
       milestonesUnlocked={unlocked}
       nextUp={nextUp}
+      tapToOpen
       onClose={close}
     />
   );
