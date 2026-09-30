@@ -1,8 +1,8 @@
 import { PushToggle } from "@/app/_components/PushToggle";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
-import { requireHouseholdAccess } from "@/lib/v2/auth";
+import { getCurrentUser, requireHouseholdAccess } from "@/lib/v2/auth";
 import { getKidProfiles } from "@/lib/v2/data";
-import { getHighScores } from "@/lib/v2/high-scores";
+import { getHighScores, getParentScoreName, getParentsPlay } from "@/lib/v2/high-scores";
 import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
 import { updateHouseholdSettingsAction } from "../_actions/settings";
 import { CelebrationGallery } from "../_components/CelebrationGallery";
@@ -38,6 +38,7 @@ export default async function ParentSettingsPage({
   const members = await getHouseholdMembers(household.id);
   const invites = await getPendingInvites(household.id);
   const kids = await getKidProfiles(household.id);
+  const me = await getCurrentUser();
   const { data: reminderRows } = await supabaseV2Admin
     .from("kid_profiles")
     .select("id, reminder_time")
@@ -77,8 +78,11 @@ export default async function ParentSettingsPage({
       />
 
       <CelebrationGallery
+        slug={slug}
         kids={kids.map((k) => ({ id: k.id, name: k.name, avatar_emoji: k.avatar_emoji }))}
         highScores={await getHighScores(household.id)}
+        parentsPlay={await getParentsPlay(household.id)}
+        scoreName={me ? await getParentScoreName(household.id, me.id, me.email) : ""}
       />
 
       <KidsAdmin slug={slug} kids={kids} />

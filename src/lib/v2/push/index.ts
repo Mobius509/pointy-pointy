@@ -177,6 +177,27 @@ export async function notifyKid(
   });
 }
 
+// One specific parent's devices (e.g. "Freya took your high score").
+export async function notifyParentUser(
+  householdId: string,
+  userId: string,
+  payload: PushPayload,
+): Promise<number> {
+  const { data, error } = await supabaseV2Admin
+    .from("push_devices")
+    .select(DEVICE_COLUMNS)
+    .eq("household_id", householdId)
+    .eq("role", "parent")
+    .eq("user_id", userId);
+  if (error) {
+    console.error("[push] load parent devices failed", error);
+    return 0;
+  }
+  if (!data?.length) return 0;
+  const slug = await householdSlug(householdId);
+  return deliver(data as DeviceRow[], { url: slug ? `/h/${slug}/parent` : undefined, ...payload });
+}
+
 // ============================================================================
 // Events
 // ============================================================================
@@ -255,4 +276,54 @@ export function notifyBonusAwarded(
       tag: "bonus",
     }),
   );
+}
+
+export type ScoreHolder =
+  | { kind: "kid"; kidProfileId: string; name: string }
+  | { kind: "parent"; userId: string; name: string };
+
+// A new family high score. The engagement loop: a parent's record
+// challenges every kid; and whoever lost the record hears about it so
+// they can win it back.
+export function notifyHighScore(
+  householdId: string,
+  gameName: string,
+  score: number,
+  setter: ScoreHolder,
+  previous: ScoreHolder | null,
+) {
+  inBackground(async () => {
+    const same = (a: ScoreHolder, b: ScoreHolder | null) =>
+      !!b &&
+      a.kind === b.kind &&
+      (a.kind === "kid" ? a.kidProfileId === (b as typeof a).kidProfileId : a.userId === (b as typeof a).userId);
+    if (same(setter, previous)) return; // beat their own record
+
+    // Tell whoever held it.
+    if (previous) {
+      const payload = {
+        title: `${setter.name} took your ${gameName} high score!`,
+        body: `🏆 ${score} — win it back!`,
+        tag: `highscore-${gameName}`,
+      };
+      if (previous.kind === "kid") await notifyKid(householdId, previous.kidProfileId, payload);
+      else await notifyParentUser(householdId, previous.userId, payload);
+    }
+
+    // A parent's record is a challenge to every kid.
+    if (setter.kind === "parent") {
+      const { data: kids } = await supabaseV2Admin
+        .from("kid_profiles")
+        .select("id")
+        .eq("household_id", householdId);
+      for (const k of kids ?? []) {
+        if (previous?.kind === "kid" && previous.kidProfileId === k.id) continue; // already told
+        await notifyKid(householdId, k.id as string, {
+          title: `🏆 ${setter.name} set a ${gameName} high score: ${score}!`,
+          body: "Think you can beat it?",
+          tag: `highscore-${gameName}`,
+        });
+      }
+    }
+  });
 }

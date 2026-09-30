@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getKidSession } from "@/lib/v2/auth";
 import { submitHighScore } from "@/lib/v2/high-scores";
+import { getKidProfile } from "@/lib/v2/data";
 import {
   cancelKidProposal,
   cancelPendingTaskForToday,
@@ -106,7 +107,13 @@ export async function submitHighScoreAction(
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }
-  const res = await submitHighScore(ctx.householdId, ctx.kidProfileId, game, score);
+  const kid = await getKidProfile(ctx.kidProfileId);
+  const res = await submitHighScore(
+    ctx.householdId,
+    { kind: "kid", kidProfileId: ctx.kidProfileId, name: kid?.name ?? "" },
+    game,
+    score,
+  );
   if ("error" in res) return { ok: false, error: res.error };
   return { ok: true, ...res };
 }

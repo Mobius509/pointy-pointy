@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { CELEBRATIONS, playCelebration, unlockAudio } from "@/app/_components/celebrations";
 import { CelebrationScreen, type HighScore } from "@/app/_components/CelebrationScreen";
 import { avatarSrc } from "@/lib/avatar";
 import { SectionPill } from "./ui";
+import {
+  setParentsPlayAction,
+  setScoreNameAction,
+  submitParentHighScoreAction,
+} from "../_actions/high-scores";
 
 type Kid = { id: string; name: string; avatar_emoji: string };
 
@@ -19,13 +24,37 @@ const SAMPLE_TOTAL = SAMPLE_ITEMS.reduce((sum, i) => sum + i.points, 0);
 // Parent Settings → Celebrations: preview every effect the kid view can
 // play when points are approved, plus the full "points approved" screen.
 export function CelebrationGallery({
+  slug,
   kids,
   highScores,
+  parentsPlay,
+  scoreName,
 }: {
+  slug: string;
   kids: Kid[];
-  // Shown in previews; gallery plays don't set new ones.
   highScores: Record<string, HighScore>;
+  // "Parents can set high scores": when on, this parent's gallery games
+  // count, under `scoreName` ("DAD").
+  parentsPlay: boolean;
+  scoreName: string;
 }) {
+  const [play, setPlay] = useState(parentsPlay);
+  const [name, setName] = useState(scoreName);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const togglePlay = () => {
+    const next = !play;
+    setPlay(next);
+    start(async () => {
+      const res = await setParentsPlayAction(slug, next);
+      if (!res.ok) setPlay(!next);
+    });
+  };
+  const saveName = () =>
+    start(async () => {
+      const res = await setScoreNameAction(slug, name);
+      setSaved(res.ok ? "Saved." : res.error ?? "Couldn't save.");
+    });
   const [kidId, setKidId] = useState(kids[0]?.id);
   // Which effect the preview screen should force ("" = random).
   const [preview, setPreview] = useState<string | null>(null);
@@ -40,6 +69,47 @@ export function CelebrationGallery({
         When points get approved, your kid sees one of these at random the next
         time they open Pointy Points.
       </p>
+
+      {/* Parents in the high score race. */}
+      <div className="mt-4 rounded-2xl bg-pp-soft p-4">
+        <label className="flex items-center justify-between gap-3">
+          <span>
+            <span className="block font-semibold text-pp-primary-strong">Parents can set high scores</span>
+            <span className="block text-xs text-pp-muted">
+              Play from here to set a record — the kids get a “can you beat it?” notification.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={play}
+            disabled={pending}
+            onChange={togglePlay}
+            className="size-6 shrink-0 accent-pp-primary"
+          />
+        </label>
+        {play && (
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <label className="block">
+              <span className="label">Your initials</span>
+              <input
+                value={name}
+                maxLength={3}
+                onChange={(e) => {
+                  setName(e.target.value.replace(/[^a-z0-9]/gi, "").toUpperCase());
+                  setSaved(null);
+                }}
+                placeholder="DAD"
+                className="input w-24 text-center font-bold tracking-widest"
+              />
+            </label>
+            <button type="button" onClick={saveName} disabled={pending || !name} className="btn-secondary">
+              Save
+            </button>
+            {saved && <span className="text-xs text-pp-muted">{saved}</span>}
+          </div>
+        )}
+      </div>
 
       {kids.length > 1 && (
         <label className="mt-4 block max-w-xs">
@@ -108,6 +178,14 @@ export function CelebrationGallery({
           nextUp={{ name: "Amazon $25", pointsToGo: 730 }}
           effectId={preview || undefined}
           highScores={highScores}
+          onSubmitHighScore={
+            play
+              ? async (game, score) => {
+                  const res = await submitParentHighScoreAction(slug, game, score);
+                  return res.ok ? { best: res.best, isNew: res.isNew } : null;
+                }
+              : undefined
+          }
           onClose={() => setPreview(null)}
         />
       )}
