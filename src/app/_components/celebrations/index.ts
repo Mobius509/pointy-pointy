@@ -1,6 +1,7 @@
 import { playAvatarExplosion } from "./avatarExplosion";
 import { playConfetti } from "./confetti";
 import { playFireworks } from "./fireworks";
+import { playHighFive } from "./highFive";
 import { prefersReducedMotion, type CelebrationOptions } from "./shared";
 import { playWebglBurst } from "./webglBurst";
 
@@ -33,6 +34,12 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Avatar go boom",
     description: "Their avatar wobbles, puffs up… and POPS into pieces.",
     play: playAvatarExplosion,
+  },
+  {
+    id: "high-five",
+    name: "High five",
+    description: "Two hands swing in and SMACK — burst, confetti, bounce.",
+    play: playHighFive,
   },
   {
     id: "starburst",

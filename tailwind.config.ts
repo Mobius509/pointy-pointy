@@ -16,6 +16,10 @@ const config: Config = {
           "tint-hover": "rgb(var(--pp-tint-hover) / <alpha-value>)",
           soft: "rgb(var(--pp-soft) / <alpha-value>)",
           hover: "rgb(var(--pp-hover) / <alpha-value>)",
+          "party-pink": "rgb(var(--pp-party-pink) / <alpha-value>)",
+          "party-yellow": "rgb(var(--pp-party-yellow) / <alpha-value>)",
+          "party-cyan": "rgb(var(--pp-party-cyan) / <alpha-value>)",
+          "party-red": "rgb(var(--pp-party-red) / <alpha-value>)",
         },
       },
       fontFamily: {

@@ -88,6 +88,14 @@ body {
       #fff 85%
     );
   }
+  /* Chunky white outline for big celebration words ("HIGH FIVE!"). */
+  .text-outline-white {
+    text-shadow:
+      0 3px 0 #fff,
+      0 -3px 0 #fff,
+      3px 0 0 #fff,
+      -3px 0 0 #fff;
+  }
   /* Avatar wind-up before it pops (celebration effects). */
   .animate-celebrate-wobble {
     animation: celebrate-wobble 0.9s ease-in-out forwards;
