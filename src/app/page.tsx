@@ -8,11 +8,6 @@ export const metadata = {
   title: "Pointy Points — Reward system for kids",
 };
 
-const PURPLE = "#4730D9"; // primary indigo for buttons + text accents
-const BLUE = "#3BAAF7"; // bright blue, right side of title gradient
-const TITLE_GRADIENT = `linear-gradient(90deg, ${PURPLE} 0%, ${BLUE} 100%)`;
-const BG_GRADIENT = "linear-gradient(180deg, #DCD9FB 0%, #F1F0FE 100%)";
-
 // Marketing landing. Already-signed-in parents skip straight to their
 // household admin; everyone else sees the title, the role-specific
 // sign-in CTAs, and the floating emoji rain. EmojiRain wraps the page
@@ -26,8 +21,7 @@ export default async function HomeLandingPage() {
 
   return (
     <div
-      className="relative min-h-screen flex flex-col overflow-hidden"
-      style={{ background: BG_GRADIENT }}
+      className="relative min-h-screen flex flex-col overflow-hidden bg-page"
     >
       <EmojiRain>
         {/* Desktop-only header — logo top-left, 'What is Pointy Points'
@@ -45,8 +39,7 @@ export default async function HomeLandingPage() {
           </Link>
           <Link
             href="#about"
-            className="font-semibold underline underline-offset-4"
-            style={{ color: PURPLE }}
+            className="font-semibold underline underline-offset-4 text-pp-primary"
           >
             What is Pointy Points
           </Link>
@@ -69,14 +62,7 @@ export default async function HomeLandingPage() {
                   per the spec — font-size and fit-content hold the
                   wordmark to that footprint regardless of viewport. */}
               <h1
-                className="mt-6 mx-auto font-black tracking-tight leading-[0.92] text-[76px] sm:text-[88px]"
-                style={{
-                  backgroundImage: TITLE_GRADIENT,
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
-                  width: "fit-content",
-                }}
+                className="mt-6 mx-auto w-fit font-black tracking-tight leading-[0.92] text-[76px] sm:text-[88px] text-brand-gradient"
               >
                 POINTY
                 <br />
@@ -84,8 +70,7 @@ export default async function HomeLandingPage() {
               </h1>
 
               <p
-                className="mt-4 font-semibold text-base sm:text-lg"
-                style={{ color: PURPLE }}
+                className="mt-4 font-semibold text-base sm:text-lg text-pp-primary"
               >
                 Reward system for kids
               </p>
@@ -97,15 +82,15 @@ export default async function HomeLandingPage() {
             <div className="hidden sm:flex flex-col items-center gap-3 mt-auto">
               <Link
                 href="/sign-in"
-                className="inline-flex items-center justify-center rounded-2xl text-white font-semibold text-base transition hover:opacity-90 active:scale-[0.99]"
-                style={{ width: 324, height: 64, background: PURPLE }}
+                className="inline-flex items-center justify-center rounded-2xl bg-pp-primary text-white font-semibold text-base transition hover:bg-pp-primary-strong active:scale-[0.99]"
+                style={{ width: 324, height: 64 }}
               >
                 Sign In (Parents)
               </Link>
               <Link
                 href="/sign-in"
-                className="inline-flex items-center justify-center rounded-2xl text-white font-semibold text-base transition hover:opacity-90 active:scale-[0.99]"
-                style={{ width: 324, height: 64, background: PURPLE }}
+                className="inline-flex items-center justify-center rounded-2xl bg-pp-primary text-white font-semibold text-base transition hover:bg-pp-primary-strong active:scale-[0.99]"
+                style={{ width: 324, height: 64 }}
               >
                 Sign In (Kids)
               </Link>
@@ -123,24 +108,22 @@ export default async function HomeLandingPage() {
           <div className="flex sm:hidden flex-col items-center gap-3 w-full">
             <Link
               href="/sign-in"
-              className="inline-flex items-center justify-center rounded-2xl text-white font-semibold text-base transition hover:opacity-90 active:scale-[0.99]"
+              className="inline-flex items-center justify-center rounded-2xl bg-pp-primary text-white font-semibold text-base transition hover:bg-pp-primary-strong active:scale-[0.99]"
               style={{
                 width: 381,
                 maxWidth: "100%",
                 height: 78,
-                background: PURPLE,
               }}
             >
               Sign In (Parents)
             </Link>
             <Link
               href="/sign-in"
-              className="inline-flex items-center justify-center rounded-2xl text-white font-semibold text-base transition hover:opacity-90 active:scale-[0.99]"
+              className="inline-flex items-center justify-center rounded-2xl bg-pp-primary text-white font-semibold text-base transition hover:bg-pp-primary-strong active:scale-[0.99]"
               style={{
                 width: 381,
                 maxWidth: "100%",
                 height: 78,
-                background: PURPLE,
               }}
             >
               Sign In (Kids)

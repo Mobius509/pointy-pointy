@@ -155,7 +155,7 @@ export function AwardBonusButton({
               )}
               <button
                 type="submit"
-                className="btn-cyan w-full"
+                className="btn-primary btn-lg w-full"
                 disabled={pending}
               >
                 {pending ? "Awarding…" : "Award"}

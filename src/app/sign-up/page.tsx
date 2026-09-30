@@ -21,7 +21,7 @@ export default async function SignUpPage({
       <div className="w-full max-w-md rounded-3xl bg-white/70 backdrop-blur-md p-7">
         {inviteValid && invite ? (
           <>
-            <h1 className="text-2xl font-extrabold text-orange-700">
+            <h1 className="text-2xl font-extrabold text-pp-primary">
               Join the {invite.household_name} family
             </h1>
             <p className="text-sm text-slate-700 mt-1">
@@ -31,7 +31,7 @@ export default async function SignUpPage({
           </>
         ) : (
           <>
-            <h1 className="text-2xl font-extrabold text-orange-700">
+            <h1 className="text-2xl font-extrabold text-pp-primary">
               Create your family
             </h1>
             <p className="text-sm text-slate-700 mt-1">
@@ -57,7 +57,7 @@ export default async function SignUpPage({
           Already have an account?{" "}
           <Link
             href="/sign-in"
-            className="font-semibold text-orange-700 hover:underline"
+            className="font-semibold text-pp-primary hover:underline"
           >
             Sign in
           </Link>

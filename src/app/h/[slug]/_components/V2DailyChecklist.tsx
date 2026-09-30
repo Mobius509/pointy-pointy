@@ -72,7 +72,7 @@ export function V2DailyChecklist({
 
   if (items.length === 0) {
     return (
-      <p className="text-sm text-[#C3A38A] italic">
+      <p className="text-sm text-pp-muted italic">
         No daily tasks yet — ask a parent to add some!
       </p>
     );
@@ -85,7 +85,7 @@ export function V2DailyChecklist({
           {error}
         </div>
       )}
-      <ul className="divide-y divide-[#F9EBE3]">
+      <ul className="divide-y divide-pp-soft">
         {items.map((item) => {
           const s = state[item.id];
           // State-aware action block — reused in both layouts.
@@ -95,7 +95,7 @@ export function V2DailyChecklist({
                 <button
                   type="button"
                   onClick={() => submit(item)}
-                  className="rounded-full bg-white border border-[#F1D1BD] text-[#F2662A] font-semibold px-6 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99]"
+                  className="rounded-full bg-white border border-pp-line text-pp-primary font-semibold px-6 py-2 text-[14px] transition hover:bg-pp-hover active:scale-[0.99]"
                 >
                   Done
                 </button>
@@ -106,11 +106,11 @@ export function V2DailyChecklist({
                   type="button"
                   onClick={() => cancelPending(item)}
                   aria-label="Tap to cancel"
-                  className="inline-flex items-center gap-2 rounded-full bg-[#FEF3C7] text-[#92400E] font-semibold px-4 py-2 text-[14px] transition hover:bg-[#FDE68A] active:scale-[0.99]"
+                  className="inline-flex items-center gap-2 rounded-full bg-amber-100 text-amber-800 font-semibold px-4 py-2 text-[14px] transition hover:bg-amber-200 active:scale-[0.99]"
                 >
                   <span
                     aria-hidden
-                    className="inline-flex items-center justify-center size-5 rounded-full bg-[#F59E0B] text-white"
+                    className="inline-flex items-center justify-center size-5 rounded-full bg-amber-500 text-white"
                   >
                     <svg viewBox="0 0 20 20" fill="currentColor" className="size-3">
                       <circle cx="5" cy="10" r="1.5" />
@@ -127,14 +127,14 @@ export function V2DailyChecklist({
                   <button
                     type="button"
                     onClick={() => recall(item)}
-                    className="rounded-full bg-white border border-[#F1D1BD] text-[#F2662A] font-semibold px-5 py-2 text-[14px] transition hover:bg-[#FFF7EE] active:scale-[0.99]"
+                    className="rounded-full bg-white border border-pp-line text-pp-primary font-semibold px-5 py-2 text-[14px] transition hover:bg-pp-hover active:scale-[0.99]"
                   >
                     Recall
                   </button>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[#D1FAE5] text-[#065F46] font-semibold px-4 py-2 text-[14px]">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-800 font-semibold px-4 py-2 text-[14px]">
                     <span
                       aria-hidden
-                      className="inline-flex items-center justify-center size-5 rounded-full bg-[#10B981] text-white"
+                      className="inline-flex items-center justify-center size-5 rounded-full bg-emerald-500 text-white"
                     >
                       <svg viewBox="0 0 20 20" fill="none" className="size-3">
                         <path
@@ -155,10 +155,10 @@ export function V2DailyChecklist({
 
           const pillsBlock = (
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="inline-flex items-center justify-center rounded-full bg-[#FBE3CF] text-[#F2662A] text-[12px] font-semibold px-3 py-1">
+              <span className="inline-flex items-center justify-center rounded-full bg-pp-tint text-pp-primary text-[12px] font-semibold px-3 py-1">
                 {frequencyLabel(item.frequency)}
               </span>
-              <span className="inline-flex items-center justify-center rounded-full bg-[#E0F2FE] text-[#0369A1] text-[12px] font-semibold px-3 py-1 tabular-nums">
+              <span className="inline-flex items-center justify-center rounded-full bg-sky-100 text-sky-700 text-[12px] font-semibold px-3 py-1 tabular-nums">
                 +{item.points}
               </span>
             </div>
@@ -167,13 +167,13 @@ export function V2DailyChecklist({
           const nameBlock = (
             <div className="min-w-0">
               <div
-                className="text-[#B64B11] leading-tight"
+                className="text-pp-primary-strong leading-tight"
                 style={{ fontSize: 21, fontWeight: 500 }}
               >
                 {item.name}
               </div>
               {item.description && (
-                <div className="text-[#F2662A] text-[12px] mt-0.5 leading-tight">
+                <div className="text-pp-primary text-[12px] mt-0.5 leading-tight">
                   {item.description}
                 </div>
               )}

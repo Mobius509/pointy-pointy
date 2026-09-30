@@ -2,13 +2,23 @@
 
 import confetti from "canvas-confetti";
 
+// canvas-confetti needs literal colors, so read the brand tokens from
+// globals.css at fire time instead of hard-coding them here.
+function tokenColors(names: string[]): string[] {
+  const style = getComputedStyle(document.documentElement);
+  return names.map((n) => `rgb(${style.getPropertyValue(`--pp-${n}`).trim().split(/\s+/).join(",")})`);
+}
+
+// Brand indigo/blue plus a couple of cheerful non-brand pops.
+const CELEBRATION_EXTRAS = ["gold", "hotpink"];
+
 export function celebrate(opts: { big?: boolean } = {}) {
   if (typeof window === "undefined") return;
   const big = opts.big ?? false;
 
   if (big) {
     const end = Date.now() + 1800;
-    const colors = ["#fb923c", "#f97316", "#fbbf24", "#fde68a", "#fda4af"];
+    const colors = [...tokenColors(["primary", "accent", "line"]), ...CELEBRATION_EXTRAS];
     (function frame() {
       confetti({
         particleCount: 6,
@@ -34,6 +44,6 @@ export function celebrate(opts: { big?: boolean } = {}) {
     spread: 65,
     startVelocity: 35,
     origin: { y: 0.7 },
-    colors: ["#fb923c", "#f97316", "#fbbf24", "#34d399"],
+    colors: [...tokenColors(["primary", "accent", "tint-hover"]), ...CELEBRATION_EXTRAS],
   });
 }

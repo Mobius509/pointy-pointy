@@ -70,7 +70,7 @@ export function PendingApprovals({
                   </span>
                 </span>
                 {!isKidProposal && (
-                  <span className="flex-shrink-0 rounded-full bg-brand-100 text-brand-700 px-3 py-1 text-sm font-bold tabular-nums">
+                  <span className="flex-shrink-0 rounded-full bg-pp-tint text-pp-primary px-3 py-1 text-sm font-bold tabular-nums">
                     +{c.points_snapshot}
                   </span>
                 )}

@@ -35,7 +35,7 @@ export function KidPicker({
               setError(null);
               setPicked(k);
             }}
-            className="flex flex-col items-center gap-2 rounded-2xl bg-white ring-1 ring-slate-200 hover:ring-brand-300 active:scale-[0.98] transition p-5"
+            className="flex flex-col items-center gap-2 rounded-2xl bg-white ring-1 ring-slate-200 hover:ring-pp-primary active:scale-[0.98] transition p-5"
           >
             <img
               src={avatarSrc(k.avatar_emoji)}

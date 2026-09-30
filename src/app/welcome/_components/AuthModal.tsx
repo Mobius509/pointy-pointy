@@ -44,7 +44,7 @@ export function AuthModalControls() {
             aria-modal="true"
           >
             <div className="flex items-start justify-between mb-3">
-              <h2 className="text-xl font-extrabold text-orange-700">
+              <h2 className="text-xl font-extrabold text-pp-primary">
                 {mode === "signin" ? "Welcome back" : "Create your family"}
               </h2>
               <button
@@ -66,7 +66,7 @@ export function AuthModalControls() {
                   <button
                     type="button"
                     onClick={() => setMode("signup")}
-                    className="font-semibold text-orange-700 hover:underline"
+                    className="font-semibold text-pp-primary hover:underline"
                   >
                     Create a family
                   </button>
@@ -77,7 +77,7 @@ export function AuthModalControls() {
                   <button
                     type="button"
                     onClick={() => setMode("signin")}
-                    className="font-semibold text-orange-700 hover:underline"
+                    className="font-semibold text-pp-primary hover:underline"
                   >
                     Sign in
                   </button>
@@ -97,20 +97,20 @@ export function AuthModalControls() {
 function HeaderLinks({ open }: { open: (m: Mode) => void }) {
   return (
     <nav
-      className="fixed top-0 right-0 z-30 px-[36px] py-5 flex items-center gap-5 text-sm text-orange-800 font-semibold"
+      className="fixed top-0 right-0 z-30 px-[36px] py-5 flex items-center gap-5 text-sm text-pp-primary-strong font-semibold"
       // Pin to viewport corner so it sits over the welcome page's existing header.
     >
       <button
         type="button"
         onClick={() => open("signin")}
-        className="underline underline-offset-4 hover:text-orange-900"
+        className="underline underline-offset-4 hover:text-pp-primary-strong"
       >
         Sign In
       </button>
       <button
         type="button"
         onClick={() => open("signup")}
-        className="underline underline-offset-4 hover:text-orange-900"
+        className="underline underline-offset-4 hover:text-pp-primary-strong"
       >
         Sign Up
       </button>
@@ -134,14 +134,14 @@ function BottomCard({ open }: { open: (m: Mode) => void }) {
         <button
           type="button"
           onClick={() => open("signin")}
-          className="block mx-auto w-[280px] rounded-full bg-cyan-200 hover:bg-cyan-300 active:scale-[0.99] transition text-cyan-950 font-bold py-3 text-base text-center"
+          className="block mx-auto w-[280px] rounded-full bg-pp-primary hover:bg-pp-primary-strong active:scale-[0.99] transition text-white font-bold py-3 text-base text-center"
         >
           Sign In
         </button>
         <button
           type="button"
           onClick={() => open("signup")}
-          className="mt-3 block mx-auto w-[280px] rounded-full bg-cyan-200 hover:bg-cyan-300 active:scale-[0.99] transition text-cyan-950 font-bold py-3 text-base text-center"
+          className="mt-3 block mx-auto w-[280px] rounded-full bg-pp-primary hover:bg-pp-primary-strong active:scale-[0.99] transition text-white font-bold py-3 text-base text-center"
         >
           Sign Up
         </button>
@@ -202,7 +202,7 @@ function SignInBody() {
           {error}
         </p>
       )}
-      <button type="submit" className="btn-cyan w-full" disabled={pending}>
+      <button type="submit" className="btn-primary btn-lg w-full" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}
       </button>
     </form>
@@ -273,7 +273,7 @@ function SignUpBody() {
           {error}
         </p>
       )}
-      <button type="submit" className="btn-cyan w-full" disabled={pending}>
+      <button type="submit" className="btn-primary btn-lg w-full" disabled={pending}>
         {pending ? "Creating…" : "Create family"}
       </button>
       <p className="text-xs text-slate-500 text-center">

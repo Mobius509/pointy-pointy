@@ -18,10 +18,7 @@ export default async function ParentAdminLayout({
 
   return (
     <div
-      className="relative min-h-screen flex flex-col"
-      style={{
-        background: "#FFF2E9",
-      }}
+      className="relative min-h-screen flex flex-col bg-page"
     >
       {/* Mobile (<sm): logo left, hamburger right (menu contains Sign Out).
           Desktop (sm+): logo left, pill nav center, Sign Out right. */}
@@ -50,7 +47,7 @@ export default async function ParentAdminLayout({
           <form action={signOutAction} className="hidden sm:block">
             <button
               type="submit"
-              className="text-sm font-semibold text-orange-800 underline underline-offset-4 hover:text-orange-900"
+              className="text-sm font-semibold text-pp-primary-strong underline underline-offset-4 hover:text-pp-primary-strong"
             >
               Sign Out
             </button>

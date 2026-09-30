@@ -46,8 +46,8 @@ export function ParentNav({
               href={href}
               className={`px-4 sm:px-6 py-2 rounded-full font-semibold transition ${
                 active
-                  ? "text-orange-700 underline underline-offset-4"
-                  : "text-orange-800/70 hover:text-orange-900 hover:bg-white/40"
+                  ? "text-pp-primary underline underline-offset-4"
+                  : "text-pp-primary-strong/70 hover:text-pp-primary-strong hover:bg-white/40"
               }`}
             >
               {t.label}
@@ -109,7 +109,7 @@ function MobileHamburger({
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center justify-center size-10 rounded-full text-[#F2662A] hover:bg-white/40 transition"
+        className="inline-flex items-center justify-center size-10 rounded-full text-pp-primary hover:bg-white/40 transition"
       >
         <svg
           aria-hidden
@@ -138,7 +138,7 @@ function MobileHamburger({
       {open && (
         <nav
           role="menu"
-          className="absolute right-0 mt-2 min-w-[200px] rounded-2xl bg-white shadow-lg ring-1 ring-[#F1D1BD] p-1 z-50"
+          className="absolute right-0 mt-2 min-w-[200px] rounded-2xl bg-white shadow-lg ring-1 ring-pp-line p-1 z-50"
         >
           {TABS.map((t) => {
             const href = `${base}${t.path}`;
@@ -150,8 +150,8 @@ function MobileHamburger({
                 role="menuitem"
                 className={`block px-4 py-2 rounded-xl text-sm font-semibold ${
                   active
-                    ? "bg-[#FBE3CF] text-[#F2662A]"
-                    : "text-[#F2662A] hover:bg-[#FFF7EE]"
+                    ? "bg-pp-tint text-pp-primary"
+                    : "text-pp-primary hover:bg-pp-hover"
                 }`}
               >
                 {t.label}
@@ -159,13 +159,13 @@ function MobileHamburger({
             );
           })}
 
-          <div className="my-1 border-t border-[#F9EBE3]" />
+          <div className="my-1 border-t border-pp-soft" />
 
           <form action={signOutAction}>
             <button
               type="submit"
               role="menuitem"
-              className="w-full text-left px-4 py-2 rounded-xl text-sm font-semibold text-[#F2662A] hover:bg-[#FFF7EE]"
+              className="w-full text-left px-4 py-2 rounded-xl text-sm font-semibold text-pp-primary hover:bg-pp-hover"
             >
               Sign Out
             </button>

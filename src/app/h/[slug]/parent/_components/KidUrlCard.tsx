@@ -41,9 +41,9 @@ export function KidUrlCard({ slug }: { slug: string }) {
   };
 
   return (
-    <section className="card-warm">
+    <section className="card">
       <SectionPill>Kid sign-in URL</SectionPill>
-      <p className="text-[#C3A38A] mt-2">
+      <p className="text-pp-muted mt-2">
         Share this with your kid — bookmark it on their phone or add it to
         their home screen.
       </p>
@@ -53,13 +53,13 @@ export function KidUrlCard({ slug }: { slug: string }) {
           readOnly
           value={url}
           onFocus={(e) => e.currentTarget.select()}
-          className="input-warm flex-1 min-w-[200px] font-mono text-[12px] text-[#F2662A]"
+          className="input flex-1 min-w-[200px] font-mono text-[12px] text-pp-primary"
           aria-label="Kid sign-in URL"
         />
         <button
           type="button"
           onClick={onCopy}
-          className="btn-warm-secondary"
+          className="btn-secondary"
         >
           {copied ? "Copied!" : "Copy"}
         </button>
@@ -67,14 +67,14 @@ export function KidUrlCard({ slug }: { slug: string }) {
           <button
             type="button"
             onClick={onShare}
-            className="btn-warm-primary"
+            className="btn-soft"
           >
             Share
           </button>
         )}
       </div>
 
-      <p className="mt-3 text-[12px] text-[#C3A38A]">
+      <p className="mt-3 text-[12px] text-pp-muted">
         Your kid still needs their PIN to unlock the checklist after
         opening the link.
       </p>

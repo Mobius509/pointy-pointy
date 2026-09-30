@@ -13,7 +13,7 @@ export default async function SignInPage({
   return (
     <AuthShell showSignInLink={false}>
       <div className="w-full max-w-md rounded-3xl bg-white/70 backdrop-blur-md p-7">
-        <h1 className="text-2xl font-extrabold text-orange-700">
+        <h1 className="text-2xl font-extrabold text-pp-primary">
           Welcome back
         </h1>
         <p className="text-sm text-slate-700 mt-1">
@@ -30,7 +30,7 @@ export default async function SignInPage({
           New here?{" "}
           <Link
             href="/sign-up"
-            className="font-semibold text-orange-700 hover:underline"
+            className="font-semibold text-pp-primary hover:underline"
           >
             Create a family
           </Link>

@@ -4,21 +4,23 @@ const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      // Brand palette — values live in globals.css (:root --pp-*).
       colors: {
-        brand: {
-          50: "#fff7ed",
-          100: "#ffedd5",
-          200: "#fed7aa",
-          300: "#fdba74",
-          400: "#fb923c",
-          500: "#f97316",
-          600: "#ea580c",
-          700: "#c2410c",
+        pp: {
+          primary: "rgb(var(--pp-primary) / <alpha-value>)",
+          "primary-strong": "rgb(var(--pp-primary-strong) / <alpha-value>)",
+          accent: "rgb(var(--pp-accent) / <alpha-value>)",
+          muted: "rgb(var(--pp-muted) / <alpha-value>)",
+          line: "rgb(var(--pp-line) / <alpha-value>)",
+          tint: "rgb(var(--pp-tint) / <alpha-value>)",
+          "tint-hover": "rgb(var(--pp-tint-hover) / <alpha-value>)",
+          soft: "rgb(var(--pp-soft) / <alpha-value>)",
+          hover: "rgb(var(--pp-hover) / <alpha-value>)",
         },
       },
       fontFamily: {
         sans: [
-          "var(--font-gotham)",
+          "var(--font-dm-sans)",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",

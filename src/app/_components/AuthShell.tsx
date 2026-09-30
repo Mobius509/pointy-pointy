@@ -14,10 +14,7 @@ export function AuthShell({
 }) {
   return (
     <div
-      className="relative min-h-screen flex flex-col"
-      style={{
-        background: "#FFF2E9",
-      }}
+      className="relative min-h-screen flex flex-col bg-page"
     >
       <header className="w-full flex items-center justify-between px-[36px] py-5 text-sm">
         <Link href="/" className="flex items-center gap-3 group">
@@ -28,15 +25,15 @@ export function AuthShell({
             height={32}
             className="w-[21px] h-[32px]"
           />
-          <span className="hidden sm:inline text-orange-800 font-semibold underline underline-offset-4 hover:text-orange-900">
+          <span className="hidden sm:inline text-pp-primary-strong font-semibold underline underline-offset-4 hover:text-pp-primary-strong">
             Pointy Points
           </span>
         </Link>
-        <nav className="flex items-center gap-5 text-orange-800 font-semibold">
+        <nav className="flex items-center gap-5 text-pp-primary-strong font-semibold">
           {showSignInLink && (
             <Link
               href="/sign-in"
-              className="underline underline-offset-4 hover:text-orange-900"
+              className="underline underline-offset-4 hover:text-pp-primary-strong"
             >
               Sign In
             </Link>
@@ -44,7 +41,7 @@ export function AuthShell({
           {showSignUpLink && (
             <Link
               href="/sign-up"
-              className="underline underline-offset-4 hover:text-orange-900"
+              className="underline underline-offset-4 hover:text-pp-primary-strong"
             >
               Sign Up
             </Link>

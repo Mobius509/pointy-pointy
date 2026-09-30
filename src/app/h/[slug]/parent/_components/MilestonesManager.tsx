@@ -24,12 +24,12 @@ export function MilestonesManager({
   return (
     <div>
       <h3
-        className="text-[#B64B11]"
+        className="text-pp-primary-strong"
         style={{ fontSize: 14, fontWeight: 600 }}
       >
         Milestones
       </h3>
-      <p className="text-[#C3A38A] mt-1 text-[12px]">
+      <p className="text-pp-muted mt-1 text-[12px]">
         Add small rewards along the way to {goal.name.toLowerCase()}. They
         show as dots on the progress bar — they light up when reached.
       </p>
@@ -41,7 +41,7 @@ export function MilestonesManager({
             return (
               <li
                 key={m.id}
-                className="rounded-2xl ring-1 ring-[#F1D1BD]/70 bg-[#FFFDF9] p-3 min-w-0"
+                className="rounded-2xl ring-1 ring-pp-line/70 bg-pp-hover p-3 min-w-0"
               >
                 <form
                   action={updateMilestoneAction}
@@ -50,18 +50,18 @@ export function MilestonesManager({
                   <input type="hidden" name="slug" value={slug} />
                   <input type="hidden" name="id" value={m.id} />
                   <div className="min-w-0">
-                    <label className="label-warm">Reward</label>
+                    <label className="label">Reward</label>
                     <input
                       name="name"
                       defaultValue={m.name}
                       required
                       maxLength={60}
-                      className="input-warm w-full"
+                      className="input w-full"
                       placeholder="Ice cream"
                     />
                   </div>
                   <div className="min-w-0">
-                    <label className="label-warm">Points</label>
+                    <label className="label">Points</label>
                     <input
                       name="points"
                       type="number"
@@ -69,17 +69,17 @@ export function MilestonesManager({
                       max={goal.target_points - 1}
                       defaultValue={m.points}
                       required
-                      className="input-warm w-full"
+                      className="input w-full"
                     />
                   </div>
-                  <button type="submit" className="btn-warm-secondary">
+                  <button type="submit" className="btn-secondary">
                     Save
                   </button>
                   <span
                     className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[12px] font-semibold ${
                       unlocked
-                        ? "bg-[#D1FAE5] text-[#065F46]"
-                        : "bg-[#FBE3CF] text-[#F2662A]"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-pp-tint text-pp-primary"
                     }`}
                   >
                     {unlocked ? "Unlocked" : "Locked"}
@@ -112,7 +112,7 @@ export function MilestonesManager({
         <input type="hidden" name="slug" value={slug} />
         <input type="hidden" name="goal_id" value={goal.id} />
         <div className="min-w-0">
-          <label className="label-warm" htmlFor="ms-new-name">
+          <label className="label" htmlFor="ms-new-name">
             Reward
           </label>
           <input
@@ -120,12 +120,12 @@ export function MilestonesManager({
             name="name"
             required
             maxLength={60}
-            className="input-warm w-full"
+            className="input w-full"
             placeholder="Ice cream"
           />
         </div>
         <div className="min-w-0">
-          <label className="label-warm" htmlFor="ms-new-points">
+          <label className="label" htmlFor="ms-new-points">
             Points
           </label>
           <input
@@ -135,11 +135,11 @@ export function MilestonesManager({
             min={1}
             max={goal.target_points - 1}
             required
-            className="input-warm w-full"
+            className="input w-full"
             placeholder="500"
           />
         </div>
-        <button type="submit" className="btn-warm-primary">
+        <button type="submit" className="btn-soft">
           Add milestone
         </button>
       </form>

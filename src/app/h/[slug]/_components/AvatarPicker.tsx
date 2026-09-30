@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AVATAR_IDS, avatarId, type AvatarId } from "@/lib/avatar";
 
 // Horizontal scrollable grid of selectable avatars. Mirrors the modal in
-// the design — selected tile has an orange checkmark badge, others have an
+// the design — selected tile has an indigo checkmark badge, others have an
 // empty pill placeholder.
 //
 // Controlled component: caller owns the value. We expose the current value
@@ -82,10 +82,10 @@ export function AvatarPicker({
                 onClick={() => pick(id)}
                 aria-pressed={isSelected}
                 aria-label={`Choose ${id} avatar`}
-                className={`relative flex-shrink-0 rounded-[24px] bg-[#FEEFE3] transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#F2662A] ${
+                className={`relative flex-shrink-0 rounded-[24px] bg-pp-soft transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-pp-primary ${
                   isSelected
-                    ? "ring-2 ring-[#F2662A]"
-                    : "ring-1 ring-[#F1D1BD] hover:ring-[#E6BA9D]"
+                    ? "ring-2 ring-pp-primary"
+                    : "ring-1 ring-pp-line hover:ring-pp-line"
                 }`}
                 style={{ width: 160, height: 160 }}
               >
@@ -99,8 +99,8 @@ export function AvatarPicker({
                   aria-hidden
                   className={`absolute top-2.5 right-2.5 inline-flex items-center justify-center size-7 rounded-full ${
                     isSelected
-                      ? "bg-[#F2662A] text-white"
-                      : "bg-white ring-1 ring-[#F1D1BD]"
+                      ? "bg-pp-primary text-white"
+                      : "bg-white ring-1 ring-pp-line"
                   }`}
                 >
                   {isSelected && (

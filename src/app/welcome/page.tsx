@@ -19,10 +19,7 @@ export default async function WelcomePage() {
 
   return (
     <div
-      className="relative min-h-screen flex flex-col overflow-hidden"
-      style={{
-        background: "#FFF2E9",
-      }}
+      className="relative min-h-screen flex flex-col overflow-hidden bg-page"
     >
       <EmojiRain />
 
@@ -35,7 +32,7 @@ export default async function WelcomePage() {
             height={32}
             className="w-[21px] h-[32px]"
           />
-          <span className="hidden sm:inline text-orange-800 font-semibold underline underline-offset-4 hover:text-orange-900">
+          <span className="hidden sm:inline text-pp-primary-strong font-semibold underline underline-offset-4 hover:text-pp-primary-strong">
             What is Pointy Points
           </span>
         </Link>
@@ -57,7 +54,7 @@ export default async function WelcomePage() {
           alt="Pointy Points"
           className="mt-4 w-[200px] sm:w-[260px]"
         />
-        <p className="mt-5 text-base sm:text-lg text-orange-900/80 font-medium">
+        <p className="mt-5 text-base sm:text-lg text-pp-primary-strong/80 font-medium">
           A new way to reward kids
         </p>
       </main>

@@ -52,11 +52,11 @@ export function CoParentManager({
   const generatedUrl = generated ? inviteUrl(generated) : null;
 
   return (
-    <section className="card-warm">
-      <span className="inline-block rounded-full bg-[#F9EBE3] text-[#B64B11] px-4 py-1 text-[14px] font-semibold">
+    <section className="card">
+      <span className="inline-block rounded-full bg-pp-soft text-pp-primary-strong px-4 py-1 text-[14px] font-semibold">
         Co-parents
       </span>
-      <p className="text-[#C3A38A] mt-2">
+      <p className="text-pp-muted mt-2">
         Anyone who joins via your invite link can manage the family with you.
       </p>
 
@@ -75,7 +75,7 @@ export function CoParentManager({
                   parent
                 </span>
               </span>
-              <span className="text-xs text-[#C3A38A]">
+              <span className="text-xs text-pp-muted">
                 Joined {new Date(m.created_at).toLocaleDateString()}
               </span>
             </li>
@@ -87,7 +87,7 @@ export function CoParentManager({
         <input type="hidden" name="slug" value={slug} />
         <button
           type="submit"
-          className="btn-warm-primary"
+          className="btn-soft"
           disabled={pending}
         >
           {pending ? "Generating…" : "Invite a co-parent"}
@@ -101,22 +101,22 @@ export function CoParentManager({
       )}
 
       {generatedUrl && (
-        <div className="mt-3 rounded-2xl bg-[#F9EBE3] ring-1 ring-[#F1D1BD] p-3">
-          <p className="text-sm font-semibold text-[#F2662A]">
+        <div className="mt-3 rounded-2xl bg-pp-soft ring-1 ring-pp-line p-3">
+          <p className="text-sm font-semibold text-pp-primary">
             New invite link
           </p>
-          <p className="text-xs text-[#C3A38A] mt-1">
+          <p className="text-xs text-pp-muted mt-1">
             Send this URL to your co-parent. It works for 14 days and can only
             be used once.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <code className="flex-1 min-w-0 truncate text-xs bg-white rounded-lg ring-1 ring-[#F1D1BD] px-2 py-1 text-slate-700">
+            <code className="flex-1 min-w-0 truncate text-xs bg-white rounded-lg ring-1 ring-pp-line px-2 py-1 text-slate-700">
               {generatedUrl}
             </code>
             <button
               type="button"
               onClick={() => copyToClipboard(generatedUrl)}
-              className="btn-warm-secondary text-xs px-3 py-1"
+              className="btn-secondary text-xs px-3 py-1"
             >
               {copied === generatedUrl ? "Copied!" : "Copy"}
             </button>
@@ -126,7 +126,7 @@ export function CoParentManager({
 
       {invites.length > 0 && (
         <div className="mt-4">
-          <h3 className="text-[12px] font-semibold text-[#C3A38A] uppercase tracking-wide">
+          <h3 className="text-[12px] font-semibold text-pp-muted uppercase tracking-wide">
             Pending invites
           </h3>
           <ul className="mt-2 space-y-2">
@@ -135,18 +135,18 @@ export function CoParentManager({
               return (
                 <li
                   key={inv.id}
-                  className="rounded-2xl bg-white ring-1 ring-[#F1D1BD] p-2 flex flex-wrap items-center gap-2"
+                  className="rounded-2xl bg-white ring-1 ring-pp-line p-2 flex flex-wrap items-center gap-2"
                 >
                   <code className="flex-1 min-w-0 truncate text-xs text-slate-700">
                     {url}
                   </code>
-                  <span className="text-xs text-[#C3A38A]">
+                  <span className="text-xs text-pp-muted">
                     expires {new Date(inv.expires_at).toLocaleDateString()}
                   </span>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(url)}
-                    className="text-xs font-semibold text-[#F2662A] hover:underline"
+                    className="text-xs font-semibold text-pp-primary hover:underline"
                   >
                     {copied === url ? "Copied!" : "Copy"}
                   </button>

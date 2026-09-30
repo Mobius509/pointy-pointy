@@ -22,7 +22,7 @@ export function KidsAdmin({
 }) {
   return (
     <div className="space-y-6">
-      <section className="card-warm">
+      <section className="card">
         <SectionPill>Your kids</SectionPill>
         {kids.length === 0 ? (
           <p className="mt-4 text-slate-500 italic">
@@ -33,7 +33,7 @@ export function KidsAdmin({
             {kids.map((k) => (
               <li
                 key={k.id}
-                className="rounded-2xl ring-1 ring-[#F1D1BD]/70 bg-[#FFFDF9] p-4 min-w-0"
+                className="rounded-2xl ring-1 ring-pp-line/70 bg-pp-hover p-4 min-w-0"
               >
                 <form
                   action={updateKidAction}
@@ -49,29 +49,29 @@ export function KidsAdmin({
                       className="w-14 h-14 object-contain flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <label className="label-warm">Name</label>
+                      <label className="label">Name</label>
                       <input
                         name="name"
                         defaultValue={k.name}
                         required
                         maxLength={40}
-                        className="input-warm w-full"
+                        className="input w-full"
                       />
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <label className="label-warm">Avatar</label>
+                    <label className="label">Avatar</label>
                     <AvatarPicker defaultValue={k.avatar_emoji} />
                   </div>
                   <div>
-                    <button type="submit" className="btn-warm-secondary">
+                    <button type="submit" className="btn-secondary">
                       Save
                     </button>
                   </div>
                 </form>
 
                 <details className="mt-3">
-                  <summary className="text-[#F2662A] font-semibold cursor-pointer">
+                  <summary className="text-pp-primary font-semibold cursor-pointer">
                     Reset PIN
                   </summary>
                   <form
@@ -81,7 +81,7 @@ export function KidsAdmin({
                     <input type="hidden" name="slug" value={slug} />
                     <input type="hidden" name="id" value={k.id} />
                     <div>
-                      <label className="label-warm">New PIN</label>
+                      <label className="label">New PIN</label>
                       <input
                         name="pin"
                         type="password"
@@ -90,11 +90,11 @@ export function KidsAdmin({
                         minLength={4}
                         maxLength={8}
                         required
-                        className="input-warm"
+                        className="input"
                       />
                     </div>
                     <div>
-                      <label className="label-warm">Confirm</label>
+                      <label className="label">Confirm</label>
                       <input
                         name="confirm_pin"
                         type="password"
@@ -103,10 +103,10 @@ export function KidsAdmin({
                         minLength={4}
                         maxLength={8}
                         required
-                        className="input-warm"
+                        className="input"
                       />
                     </div>
-                    <button type="submit" className="btn-warm-secondary">
+                    <button type="submit" className="btn-secondary">
                       Reset
                     </button>
                   </form>
@@ -128,7 +128,7 @@ export function KidsAdmin({
         )}
       </section>
 
-      <section className="card-warm">
+      <section className="card">
         <details className="group">
           <summary className="flex items-center justify-between gap-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
             <SectionPill>Add a kid</SectionPill>
@@ -136,7 +136,7 @@ export function KidsAdmin({
               aria-hidden
               viewBox="0 0 16 16"
               fill="none"
-              className="size-4 text-[#F2662A] transition-transform group-open:rotate-180 flex-shrink-0"
+              className="size-4 text-pp-primary transition-transform group-open:rotate-180 flex-shrink-0"
             >
               <path
                 d="M4 6L8 10L12 6"
@@ -147,7 +147,7 @@ export function KidsAdmin({
               />
             </svg>
           </summary>
-          <p className="text-[#C3A38A] mt-3">
+          <p className="text-pp-muted mt-3">
             Each kid gets their own PIN to unlock their checklist.
           </p>
           <form
@@ -157,7 +157,7 @@ export function KidsAdmin({
             <input type="hidden" name="slug" value={slug} />
             <div className="grid gap-3 sm:grid-cols-3 min-w-0">
               <div className="min-w-0">
-                <label className="label-warm" htmlFor="kid-new-name">
+                <label className="label" htmlFor="kid-new-name">
                   Name
                 </label>
                 <input
@@ -165,12 +165,12 @@ export function KidsAdmin({
                   name="name"
                   required
                   maxLength={40}
-                  className="input-warm w-full"
+                  className="input w-full"
                   placeholder="Sam"
                 />
               </div>
               <div className="min-w-0">
-                <label className="label-warm" htmlFor="kid-new-pin">
+                <label className="label" htmlFor="kid-new-pin">
                   PIN (4–8 digits)
                 </label>
                 <input
@@ -182,11 +182,11 @@ export function KidsAdmin({
                   minLength={4}
                   maxLength={8}
                   required
-                  className="input-warm w-full"
+                  className="input w-full"
                 />
               </div>
               <div className="min-w-0">
-                <label className="label-warm" htmlFor="kid-new-pin2">
+                <label className="label" htmlFor="kid-new-pin2">
                   Confirm PIN
                 </label>
                 <input
@@ -198,16 +198,16 @@ export function KidsAdmin({
                   minLength={4}
                   maxLength={8}
                   required
-                  className="input-warm w-full"
+                  className="input w-full"
                 />
               </div>
             </div>
             <div className="min-w-0">
-              <label className="label-warm">Avatar</label>
+              <label className="label">Avatar</label>
               <AvatarPicker />
             </div>
             <div>
-              <button type="submit" className="btn-warm-primary">
+              <button type="submit" className="btn-soft">
                 Add kid
               </button>
             </div>

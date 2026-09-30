@@ -35,9 +35,9 @@ export default async function ParentGoalPage({
     return (
       <div className="space-y-6 text-[14px]">
         <PageTitle>Goal</PageTitle>
-        <section className="card-warm">
+        <section className="card">
           <SectionTitle>Goals</SectionTitle>
-          <p className="text-[#C3A38A] mt-2">
+          <p className="text-pp-muted mt-2">
             Add at least one kid first in Settings.
           </p>
         </section>
@@ -67,7 +67,7 @@ export default async function ParentGoalPage({
       />
 
       {active ? (
-        <section className="card-warm">
+        <section className="card">
           <SectionPill>
             <span className="inline-flex items-center gap-1.5">
               Active goal ·
@@ -87,16 +87,16 @@ export default async function ParentGoalPage({
             <input type="hidden" name="slug" value={slug} />
             <input type="hidden" name="id" value={active.id} />
             <div>
-              <label className="label-warm">Name</label>
+              <label className="label">Name</label>
               <input
                 name="name"
                 defaultValue={active.name}
                 required
-                className="input-warm"
+                className="input"
               />
             </div>
             <div>
-              <label className="label-warm">Target points</label>
+              <label className="label">Target points</label>
               <input
                 name="target_points"
                 type="number"
@@ -104,16 +104,16 @@ export default async function ParentGoalPage({
                 max={1_000_000}
                 defaultValue={active.target_points}
                 required
-                className="input-warm"
+                className="input"
               />
             </div>
-            <button type="submit" className="btn-warm-secondary">
+            <button type="submit" className="btn-secondary">
               Save
             </button>
           </form>
-          <div className="mt-4 text-[#C3A38A]">
+          <div className="mt-4 text-pp-muted">
             Progress so far:{" "}
-            <span className="font-semibold text-[#F2662A] tabular-nums">
+            <span className="font-semibold text-pp-primary tabular-nums">
               {progress.toLocaleString()} /{" "}
               {active.target_points.toLocaleString()}
             </span>
@@ -121,7 +121,7 @@ export default async function ParentGoalPage({
 
           {/* Milestones are nested INSIDE the goal so they read as part of
               the goal definition, not a separate sibling section. */}
-          <div className="mt-6 pt-6 border-t border-[#F1D1BD]/70">
+          <div className="mt-6 pt-6 border-t border-pp-line/70">
             <MilestonesManager
               slug={slug}
               goal={active}
@@ -133,7 +133,7 @@ export default async function ParentGoalPage({
           <form action={redeemGoalAction} className="mt-6">
             <input type="hidden" name="slug" value={slug} />
             <input type="hidden" name="id" value={active.id} />
-            <button type="submit" className="btn-warm-danger">
+            <button type="submit" className="btn-danger">
               Mark redeemed (archive)
             </button>
           </form>
@@ -141,17 +141,17 @@ export default async function ParentGoalPage({
       ) : null}
 
       {!active && (
-        <section className="card-warm">
+        <section className="card">
           <SectionTitle>No active goal</SectionTitle>
-          <p className="text-[#C3A38A] mt-2">
+          <p className="text-pp-muted mt-2">
             Start a new one for {selectedKid.name} below.
           </p>
         </section>
       )}
 
-      <section className="card-warm">
+      <section className="card">
         <SectionPill>Start a new goal for {selectedKid.name}</SectionPill>
-        <p className="text-[#C3A38A] mt-2">
+        <p className="text-pp-muted mt-2">
           Closes any active goal and starts fresh. Past completions stay in
           the activity log.
         </p>
@@ -162,16 +162,16 @@ export default async function ParentGoalPage({
           <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="kid_profile_id" value={selectedKid.id} />
           <div>
-            <label className="label-warm">Name</label>
+            <label className="label">Name</label>
             <input
               name="name"
               required
-              className="input-warm"
+              className="input"
               placeholder="Trip to the trampoline park"
             />
           </div>
           <div>
-            <label className="label-warm">Target points</label>
+            <label className="label">Target points</label>
             <input
               name="target_points"
               type="number"
@@ -179,16 +179,16 @@ export default async function ParentGoalPage({
               max={1_000_000}
               defaultValue={1000}
               required
-              className="input-warm"
+              className="input"
             />
           </div>
-          <button type="submit" className="btn-warm-primary">
+          <button type="submit" className="btn-soft">
             Start goal
           </button>
         </form>
       </section>
 
-      <section className="card-warm">
+      <section className="card">
         <SectionPill>History · {selectedKid.name}</SectionPill>
         {all.length === 0 ? (
           <p className="mt-4 text-slate-500 italic">No goals yet.</p>
@@ -201,13 +201,13 @@ export default async function ParentGoalPage({
               >
                 <span className="min-w-0">
                   <span className="font-medium text-slate-800">{g.name}</span>
-                  <span className="block text-xs text-[#C3A38A]">
+                  <span className="block text-xs text-pp-muted">
                     Started {new Date(g.started_at).toLocaleDateString()}
                     {g.redeemed_at &&
                       ` · Redeemed ${new Date(g.redeemed_at).toLocaleDateString()}`}
                   </span>
                 </span>
-                <span className="font-semibold text-[#F2662A] tabular-nums">
+                <span className="font-semibold text-pp-primary tabular-nums">
                   {g.target_points.toLocaleString()} pts
                   {!g.redeemed_at && (
                     <span className="ml-2 rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs">
@@ -237,17 +237,17 @@ function KidPicker({
 }) {
   if (kids.length <= 1) return null;
   return (
-    <section className="card-warm">
+    <section className="card">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-semibold text-[#C3A38A]">Viewing:</span>
+        <span className="font-semibold text-pp-muted">Viewing:</span>
         {kids.map((k) => (
           <Link
             key={k.id}
             href={`/h/${slug}${basePath}?kid=${k.id}`}
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 ring-1 transition ${
               k.id === selectedId
-                ? "bg-[#FBE3CF] text-[#F2662A] ring-[#F1D1BD] font-semibold"
-                : "bg-white text-[#C3A38A] ring-[#F1D1BD] hover:bg-[#FFF7EE]"
+                ? "bg-pp-tint text-pp-primary ring-pp-line font-semibold"
+                : "bg-white text-pp-muted ring-pp-line hover:bg-pp-hover"
             }`}
           >
             <img

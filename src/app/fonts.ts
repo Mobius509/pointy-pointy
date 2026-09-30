@@ -1,50 +1,10 @@
-import localFont from "next/font/local";
+import { DM_Sans } from "next/font/google";
 
-// Gotham — UI font family. Medium is the body default; bolder weights are
-// available for headings/emphasis via Tailwind's font-bold / font-black classes.
-export const gotham = localFont({
-  src: [
-    {
-      path: "../../public/fonts/gotham/book/gotham-book-webfont.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/gotham/book/gotham-bookitalic-webfont.woff2",
-      weight: "400",
-      style: "italic",
-    },
-    {
-      path: "../../public/fonts/gotham/medium/gotham-medium-webfont.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/gotham/medium/gotham-mediumitalic-webfont.woff2",
-      weight: "500",
-      style: "italic",
-    },
-    {
-      path: "../../public/fonts/gotham/bold/gotham-bold-webfont.woff2",
-      weight: "700",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/gotham/bold/gotham-bolditalic-webfont.woff2",
-      weight: "700",
-      style: "italic",
-    },
-    {
-      path: "../../public/fonts/gotham/black/gotham-black-webfont.woff2",
-      weight: "900",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/gotham/black/gotham-blackitalic-webfont.woff2",
-      weight: "900",
-      style: "italic",
-    },
-  ],
-  variable: "--font-gotham",
+// DM Sans — the UI font everywhere. Variable weight, so every Tailwind
+// weight (font-medium … font-black) renders true. Self-hosted by Next at
+// build time; no request to Google from the browser.
+export const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
   display: "swap",
 });

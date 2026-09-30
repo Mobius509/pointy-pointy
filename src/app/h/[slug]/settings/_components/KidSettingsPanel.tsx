@@ -136,7 +136,7 @@ export function KidSettingsPanel({
     <section className="bg-white rounded-[32px] p-6 sm:p-8 shadow-lg">
       {/* Avatar */}
       <h2
-        className="text-[#F2662A] leading-tight"
+        className="text-pp-primary leading-tight"
         style={{ fontSize: 21, fontWeight: 500 }}
       >
         Select avatar
@@ -149,7 +149,7 @@ export function KidSettingsPanel({
           bleed
         />
         <div className="mt-2 min-h-[18px] text-xs">
-          {avatarPending && <span className="text-[#C3A38A]">Saving…</span>}
+          {avatarPending && <span className="text-pp-muted">Saving…</span>}
           {!avatarPending && avatarMsg?.kind === "ok" && (
             <span className="text-emerald-700">{avatarMsg.text}</span>
           )}
@@ -159,50 +159,50 @@ export function KidSettingsPanel({
         </div>
       </div>
 
-      <div className="h-px bg-[#F1D1BD]/70 my-6" />
+      <div className="h-px bg-pp-line/70 my-6" />
 
       {/* Notifications */}
       <h2
-        className="text-[#F2662A] leading-tight"
+        className="text-pp-primary leading-tight"
         style={{ fontSize: 21, fontWeight: 500 }}
       >
         Turn On Notifications
       </h2>
-      <p className="mt-2 text-[#F2662A] text-[12px] font-medium leading-snug">
+      <p className="mt-2 text-pp-primary text-[12px] font-medium leading-snug">
         To turn on notifications you need to add Pointy Points to your home
         screen as an app.
       </p>
 
       <div className="mt-4">
         {notifState === "loading" && (
-          <p className="text-xs text-[#C3A38A]">Checking…</p>
+          <p className="text-xs text-pp-muted">Checking…</p>
         )}
         {notifState === "unsupported" && (
-          <p className="text-xs text-[#C3A38A]">
+          <p className="text-xs text-pp-muted">
             Notifications aren&apos;t supported on this device yet.
           </p>
         )}
         {notifState === "blocked" && (
-          <p className="text-xs text-[#C3A38A]">
+          <p className="text-xs text-pp-muted">
             Notifications are blocked. Enable them in your browser settings.
           </p>
         )}
         {(notifState === "on" || notifState === "off") && (
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#F9EBE3] p-1">
+          <div className="inline-flex items-center gap-2 rounded-full bg-pp-soft p-1">
             <button
               type="button"
               onClick={enableNotifs}
               disabled={notifPending || notifState === "on"}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[14px] font-semibold transition ${
                 notifState === "on"
-                  ? "bg-[#D1FAE5] text-[#065F46]"
-                  : "text-[#F2662A] hover:bg-white"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "text-pp-primary hover:bg-white"
               }`}
             >
               {notifState === "on" && (
                 <span
                   aria-hidden
-                  className="inline-flex items-center justify-center size-4 rounded-full bg-[#10B981] text-white"
+                  className="inline-flex items-center justify-center size-4 rounded-full bg-emerald-500 text-white"
                 >
                   <svg viewBox="0 0 20 20" fill="none" className="size-2.5">
                     <path
@@ -223,8 +223,8 @@ export function KidSettingsPanel({
               disabled={notifPending || notifState === "off"}
               className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[14px] font-semibold transition ${
                 notifState === "off"
-                  ? "bg-white text-[#F2662A] ring-1 ring-[#F1D1BD]"
-                  : "text-[#F2662A] hover:bg-white"
+                  ? "bg-white text-pp-primary ring-1 ring-pp-line"
+                  : "text-pp-primary hover:bg-white"
               }`}
             >
               Off

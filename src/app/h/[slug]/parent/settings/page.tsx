@@ -44,9 +44,9 @@ export default async function ParentSettingsPage({
 
       <CoParentManager slug={slug} members={members} invites={invites} />
 
-      <section className="card-warm">
+      <section className="card">
         <SectionPill>Family settings</SectionPill>
-        <p className="text-[#C3A38A] mt-2">
+        <p className="text-pp-muted mt-2">
           The daily checklist resets at midnight in this timezone.
         </p>
         <form
@@ -55,7 +55,7 @@ export default async function ParentSettingsPage({
         >
           <input type="hidden" name="slug" value={slug} />
           <div>
-            <label className="label-warm" htmlFor="settings-name">
+            <label className="label" htmlFor="settings-name">
               Family name
             </label>
             <input
@@ -63,11 +63,11 @@ export default async function ParentSettingsPage({
               name="name"
               defaultValue={household.name}
               maxLength={80}
-              className="input-warm"
+              className="input"
             />
           </div>
           <div>
-            <label className="label-warm" htmlFor="settings-tz">
+            <label className="label" htmlFor="settings-tz">
               Timezone (IANA)
             </label>
             <input
@@ -76,7 +76,7 @@ export default async function ParentSettingsPage({
               defaultValue={household.timezone}
               required
               list="settings-tz-options"
-              className="input-warm"
+              className="input"
             />
             <datalist id="settings-tz-options">
               {COMMON_TIMEZONES.map((tz) => (
@@ -84,7 +84,7 @@ export default async function ParentSettingsPage({
               ))}
             </datalist>
           </div>
-          <button type="submit" className="btn-warm-primary">
+          <button type="submit" className="btn-soft">
             Save
           </button>
         </form>

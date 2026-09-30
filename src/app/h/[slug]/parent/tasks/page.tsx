@@ -34,9 +34,9 @@ export default async function ParentTasksPage({
       <PageTitle>Tasks</PageTitle>
 
       {/* Add task */}
-      <section className="card-warm">
+      <section className="card">
         <SectionTitle>Add a task</SectionTitle>
-        <p className="text-[#C3A38A] mt-1">
+        <p className="text-pp-muted mt-1">
           New tasks appear on every kid&apos;s daily checklist.
         </p>
         <form
@@ -45,30 +45,30 @@ export default async function ParentTasksPage({
         >
           <input type="hidden" name="slug" value={slug} />
           <div className="sm:col-span-2">
-            <label className="label-warm" htmlFor="new-name">
+            <label className="label" htmlFor="new-name">
               Name
             </label>
             <input
               id="new-name"
               name="name"
               required
-              className="input-warm"
+              className="input"
               placeholder="Make bed"
             />
           </div>
           <div className="sm:col-span-2">
-            <label className="label-warm" htmlFor="new-desc">
+            <label className="label" htmlFor="new-desc">
               Description (optional)
             </label>
             <input
               id="new-desc"
               name="description"
-              className="input-warm"
+              className="input"
               placeholder="Pillows up, blanket smooth"
             />
           </div>
           <div>
-            <label className="label-warm" htmlFor="new-points">
+            <label className="label" htmlFor="new-points">
               Points
             </label>
             <input
@@ -79,18 +79,18 @@ export default async function ParentTasksPage({
               max={1000}
               defaultValue={5}
               required
-              className="input-warm"
+              className="input"
             />
           </div>
           <div>
-            <label className="label-warm" htmlFor="new-frequency">
+            <label className="label" htmlFor="new-frequency">
               How often
             </label>
             <select
               id="new-frequency"
               name="frequency"
               defaultValue="daily"
-              className="input-warm"
+              className="input"
             >
               {FREQUENCY_OPTIONS.map((f) => (
                 <option key={f} value={f}>
@@ -100,7 +100,7 @@ export default async function ParentTasksPage({
             </select>
           </div>
           <div className="sm:col-span-2">
-            <button type="submit" className="btn-warm-primary">
+            <button type="submit" className="btn-soft">
               Add task
             </button>
           </div>
@@ -108,7 +108,7 @@ export default async function ParentTasksPage({
       </section>
 
       {/* Existing tasks */}
-      <section className="card-warm">
+      <section className="card">
         <SectionPill>Daily tasks</SectionPill>
         {tasks.length === 0 ? (
           <p className="mt-3 text-slate-500 italic">No daily tasks yet.</p>
@@ -120,8 +120,8 @@ export default async function ParentTasksPage({
               return (
                 <li
                   key={t.id}
-                  className={`rounded-2xl ring-1 ring-[#F1D1BD]/70 p-3 ${
-                    t.active ? "bg-[#FFFDF9]" : "bg-[#F9EBE3]/40 opacity-70"
+                  className={`rounded-2xl ring-1 ring-pp-line/70 p-3 ${
+                    t.active ? "bg-pp-hover" : "bg-pp-soft/40 opacity-70"
                   }`}
                 >
                   <div className="flex items-start gap-2">
@@ -133,7 +133,7 @@ export default async function ParentTasksPage({
                           type="submit"
                           disabled={isFirst}
                           aria-label="Move up"
-                          className="grid place-items-center size-7 rounded-lg ring-1 ring-[#F1D1BD] bg-white text-[#F2662A] hover:bg-[#FFF7EE] disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="grid place-items-center size-7 rounded-lg ring-1 ring-pp-line bg-white text-pp-primary hover:bg-pp-hover disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           ▲
                         </button>
@@ -145,7 +145,7 @@ export default async function ParentTasksPage({
                           type="submit"
                           disabled={isLast}
                           aria-label="Move down"
-                          className="grid place-items-center size-7 rounded-lg ring-1 ring-[#F1D1BD] bg-white text-[#F2662A] hover:bg-[#FFF7EE] disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="grid place-items-center size-7 rounded-lg ring-1 ring-pp-line bg-white text-pp-primary hover:bg-pp-hover disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           ▼
                         </button>
@@ -159,37 +159,37 @@ export default async function ParentTasksPage({
                       <input type="hidden" name="slug" value={slug} />
                       <input type="hidden" name="id" value={t.id} />
                       <div>
-                        <label className="label-warm">Name</label>
+                        <label className="label">Name</label>
                         <input
                           name="name"
                           defaultValue={t.name}
                           required
-                          className="input-warm"
+                          className="input"
                         />
                         <input
                           name="description"
                           defaultValue={t.description ?? ""}
                           placeholder="Description (optional)"
-                          className="input-warm mt-2"
+                          className="input mt-2"
                         />
                       </div>
                       <div>
-                        <label className="label-warm">Points</label>
+                        <label className="label">Points</label>
                         <input
                           name="points"
                           type="number"
                           min={0}
                           max={1000}
                           defaultValue={t.points}
-                          className="input-warm"
+                          className="input"
                         />
                       </div>
                       <div>
-                        <label className="label-warm">How often</label>
+                        <label className="label">How often</label>
                         <select
                           name="frequency"
                           defaultValue={t.frequency}
-                          className="input-warm"
+                          className="input"
                         >
                           {FREQUENCY_OPTIONS.map((f) => (
                             <option key={f} value={f}>
@@ -198,17 +198,17 @@ export default async function ParentTasksPage({
                           ))}
                         </select>
                       </div>
-                      <label className="flex items-center gap-2 text-[#F2662A] font-semibold">
+                      <label className="flex items-center gap-2 text-pp-primary font-semibold">
                         <input
                           type="checkbox"
                           name="active"
                           defaultChecked={t.active}
-                          className="accent-[#F2662A]"
+                          className="accent-pp-primary"
                         />
                         Active
                       </label>
                       <div className="sm:col-span-4 flex gap-2">
-                        <button type="submit" className="btn-warm-primary">
+                        <button type="submit" className="btn-soft">
                           Save
                         </button>
                       </div>

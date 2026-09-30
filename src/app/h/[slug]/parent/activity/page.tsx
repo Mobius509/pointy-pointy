@@ -34,9 +34,9 @@ export default async function ParentActivityPage({
     <div className="space-y-6 text-[14px]">
       <PageTitle>Activity</PageTitle>
 
-      <section className="card-warm">
+      <section className="card">
         <SectionPill>Activity log</SectionPill>
-        <p className="text-[#C3A38A] mt-2">
+        <p className="text-pp-muted mt-2">
           Up to last 200 entries across all kids. Use Undo to remove a wrong
           award.
         </p>
@@ -52,8 +52,8 @@ export default async function ParentActivityPage({
               return (
                 <div key={day}>
                   <div className="flex items-baseline justify-between mb-2">
-                    <h3 className="font-semibold text-[#B64B11]">{day}</h3>
-                    <span className="font-semibold text-[#F2662A] tabular-nums">
+                    <h3 className="font-semibold text-pp-primary-strong">{day}</h3>
+                    <span className="font-semibold text-pp-primary tabular-nums">
                       +{dayTotal}
                     </span>
                   </div>
@@ -73,7 +73,7 @@ export default async function ParentActivityPage({
                           key={c.id}
                           className={`flex flex-wrap items-center justify-between gap-3 py-2 ${
                             pending
-                              ? "bg-[#F9EBE3]/60 -mx-2 px-2 rounded-lg"
+                              ? "bg-pp-soft/60 -mx-2 px-2 rounded-lg"
                               : ""
                           }`}
                         >
@@ -83,7 +83,7 @@ export default async function ParentActivityPage({
                               {c.task_name_snapshot}
                             </span>
                             {kid && (
-                              <span className="ml-2 inline-flex items-center gap-1 text-xs text-[#C3A38A]">
+                              <span className="ml-2 inline-flex items-center gap-1 text-xs text-pp-muted">
                                 <img
                                   src={avatarSrc(kid.avatar_emoji)}
                                   alt=""
@@ -94,7 +94,7 @@ export default async function ParentActivityPage({
                               </span>
                             )}
                             {c.note && (
-                              <span className="block text-xs text-[#C3A38A]">
+                              <span className="block text-xs text-pp-muted">
                                 {c.note}
                               </span>
                             )}
@@ -102,7 +102,7 @@ export default async function ParentActivityPage({
                           <span className="flex items-center gap-2">
                             <span
                               className={`font-semibold tabular-nums ${
-                                pending ? "text-amber-700" : "text-[#F2662A]"
+                                pending ? "text-amber-700" : "text-pp-primary"
                               }`}
                             >
                               +{c.points_snapshot}
@@ -118,7 +118,7 @@ export default async function ParentActivityPage({
                                   <input type="hidden" name="id" value={c.id} />
                                   <button
                                     type="submit"
-                                    className="rounded-full bg-[#FBE3CF] text-[#F2662A] font-semibold px-3 py-1 text-xs"
+                                    className="rounded-full bg-pp-tint text-pp-primary font-semibold px-3 py-1 text-xs"
                                   >
                                     Approve
                                   </button>
@@ -132,7 +132,7 @@ export default async function ParentActivityPage({
                                   <input type="hidden" name="id" value={c.id} />
                                   <button
                                     type="submit"
-                                    className="rounded-full bg-white border border-[#F1D1BD] text-[#F2662A] font-semibold px-3 py-1 text-xs"
+                                    className="rounded-full bg-white border border-pp-line text-pp-primary font-semibold px-3 py-1 text-xs"
                                   >
                                     Deny
                                   </button>

@@ -45,7 +45,7 @@ function ChevronIcon() {
       aria-hidden
       viewBox="0 0 16 16"
       fill="none"
-      className="size-4 text-[#F2662A] transition-transform group-open:rotate-180"
+      className="size-4 text-pp-primary transition-transform group-open:rotate-180"
     >
       <path
         d="M4 6L8 10L12 6"
@@ -94,7 +94,7 @@ export function KidOverviewCard({
               fill the whole white-card width; on md+ they stack inside
               the 130px-wide left grid column. */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-6">
-            <div className="bg-[#F9EBE3] rounded-[22px] w-full px-3 pt-5 pb-4 text-center">
+            <div className="bg-pp-soft rounded-[22px] w-full px-3 pt-5 pb-4 text-center">
               <img
                 src={avatarSrc(kid.avatar_emoji)}
                 alt=""
@@ -102,22 +102,22 @@ export function KidOverviewCard({
                 className="mx-auto w-24 h-24 object-contain"
               />
               <h3
-                className="mt-2 text-[#B64B11]"
+                className="mt-2 text-pp-primary-strong"
                 style={{ fontSize: 22, fontWeight: 500, lineHeight: 1.1 }}
               >
                 {kid.name}
               </h3>
             </div>
 
-            <div className="relative bg-[#F9EBE3] rounded-[22px] w-full px-3 pt-5 pb-7 text-center mb-5">
+            <div className="relative bg-pp-soft rounded-[22px] w-full px-3 pt-5 pb-7 text-center mb-5">
               <div
-                className="text-[#F2662A] tabular-nums leading-none"
+                className="text-pp-primary tabular-nums leading-none"
                 style={{ fontSize: 40, fontWeight: 500 }}
               >
                 {progress.toLocaleString()}
               </div>
               <div
-                className="mt-2 text-[#C3A38A]"
+                className="mt-2 text-pp-muted"
                 style={{ fontSize: 12, fontWeight: 500 }}
               >
                 Current Points
@@ -133,17 +133,17 @@ export function KidOverviewCard({
             {/* To Approve */}
             <div>
               <h4
-                className="text-[#B64B11]"
+                className="text-pp-primary-strong"
                 style={{ fontSize: 14, fontWeight: 600 }}
               >
                 To Approve
               </h4>
               {pending.length === 0 ? (
-                <p className="mt-2 italic" style={{ color: "#C3A38A", fontSize: 12 }}>
+                <p className="mt-2 italic text-pp-muted" style={{ fontSize: 12 }}>
                   Nothing waiting on you.
                 </p>
               ) : (
-                <ul className="mt-2 divide-y divide-[#F9EBE3]">
+                <ul className="mt-2 divide-y divide-pp-soft">
                   {pending.map((c) => {
                     const isProposal = c.task_id === null && c.is_bonus;
                     return (
@@ -152,8 +152,8 @@ export function KidOverviewCard({
                         className="py-2 flex flex-wrap items-center gap-3"
                       >
                         <span
-                          className="flex-1 min-w-0 truncate"
-                          style={{ color: "#F2662A", fontSize: 12, fontWeight: 500 }}
+                          className="flex-1 min-w-0 truncate text-pp-primary"
+                           style={{ fontSize: 12, fontWeight: 500 }}
                         >
                           {c.task_name_snapshot}
                           {isProposal && (
@@ -168,7 +168,7 @@ export function KidOverviewCard({
                             <input type="hidden" name="id" value={c.id} />
                             <button
                               type="submit"
-                              className="rounded-full bg-white border border-[#F1D1BD] text-[#F2662A] font-semibold px-4 py-1 text-[12px] transition hover:bg-[#FFF7EE] active:scale-[0.99]"
+                              className="rounded-full bg-white border border-pp-line text-pp-primary font-semibold px-4 py-1 text-[12px] transition hover:bg-pp-hover active:scale-[0.99]"
                             >
                               Deny
                             </button>
@@ -188,12 +188,12 @@ export function KidOverviewCard({
                                 defaultValue={5}
                                 required
                                 aria-label="Points"
-                                className="w-12 rounded-full border-[#F1D1BD] bg-white px-2 py-1 text-[12px] text-center ring-1 ring-[#F1D1BD] focus:outline-none focus:ring-2 focus:ring-[#F2662A]"
+                                className="w-12 rounded-full border-pp-line bg-white px-2 py-1 text-[12px] text-center ring-1 ring-pp-line focus:outline-none focus:ring-2 focus:ring-pp-primary"
                               />
                             )}
                             <button
                               type="submit"
-                              className="rounded-full bg-[#FBE3CF] text-[#F2662A] font-semibold px-4 py-1 text-[12px] transition hover:bg-[#F7D2B3] active:scale-[0.99]"
+                              className="rounded-full bg-pp-tint text-pp-primary font-semibold px-4 py-1 text-[12px] transition hover:bg-pp-tint-hover active:scale-[0.99]"
                             >
                               Approve
                             </button>
@@ -209,12 +209,12 @@ export function KidOverviewCard({
             {/* Outstanding — always shows Daily / Weekly / Monthly. */}
             <div>
               <h4
-                className="text-[#B64B11]"
+                className="text-pp-primary-strong"
                 style={{ fontSize: 14, fontWeight: 600 }}
               >
                 Outstanding
               </h4>
-              <div className="mt-2 divide-y divide-[#F9EBE3]">
+              <div className="mt-2 divide-y divide-pp-soft">
                 {visibleFrequencies.map((freq) => {
                   const list = outstandingByFreq.get(freq) ?? [];
                   const defaultOpen = freq === "daily";
@@ -225,8 +225,8 @@ export function KidOverviewCard({
                       open={defaultOpen}
                     >
                       <summary
-                        className="flex items-center justify-between cursor-pointer list-none font-medium"
-                        style={{ color: "#F2662A", fontSize: 12 }}
+                        className="flex items-center justify-between cursor-pointer list-none font-medium text-pp-primary"
+                         style={{ fontSize: 12 }}
                       >
                         <span>
                           {list.length} {frequencyLabel(freq)}{" "}
@@ -236,8 +236,8 @@ export function KidOverviewCard({
                       </summary>
                       {list.length === 0 ? (
                         <p
-                          className="mt-2 italic"
-                          style={{ color: "#C3A38A", fontSize: 11 }}
+                          className="mt-2 italic text-pp-muted"
+                           style={{ fontSize: 11 }}
                         >
                           Nothing in this bucket right now.
                         </p>
@@ -246,12 +246,12 @@ export function KidOverviewCard({
                           {list.map((t) => (
                             <li
                               key={t.id}
-                              className="flex items-center gap-2"
-                              style={{ color: "#F2662A", fontSize: 12 }}
+                              className="flex items-center gap-2 text-pp-primary"
+                               style={{ fontSize: 12 }}
                             >
                               <span aria-hidden>○</span>
                               <span className="flex-1">{t.name}</span>
-                              <span className="font-semibold text-[#F2662A] tabular-nums">
+                              <span className="font-semibold text-pp-primary tabular-nums">
                                 +{t.points}
                               </span>
                             </li>
@@ -274,14 +274,14 @@ export function KidOverviewCard({
           numbers row 3 (current left, target right). Desktop keeps the
           single-row layout. */}
       {goal && (
-        <div className="mx-4 bg-[#F0DCCF] rounded-[24px] px-6 sm:px-8 py-4 sm:py-5">
+        <div className="mx-4 bg-pp-tint-hover rounded-[24px] px-6 sm:px-8 py-4 sm:py-5">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5">
             <div className="flex items-center gap-3 min-w-0">
               <span className="text-3xl sm:text-4xl flex-shrink-0" aria-hidden>
                 🐶
               </span>
               <span
-                className="flex-shrink-0 text-[#B64B11]"
+                className="flex-shrink-0 text-pp-primary-strong"
                 style={{ fontSize: 16, fontWeight: 500 }}
               >
                 {goal.name}
@@ -305,7 +305,7 @@ export function KidOverviewCard({
                     <span
                       key={m.id}
                       className={`absolute -translate-x-1/2 whitespace-nowrap ${
-                        unlocked ? "text-[#F2662A]" : "text-[#C3A38A]"
+                        unlocked ? "text-pp-primary" : "text-pp-muted"
                       }`}
                       style={{
                         left: `${left}%`,
@@ -321,7 +321,7 @@ export function KidOverviewCard({
               </div>
               <div className="relative h-3 rounded-full bg-white/70">
                 <div
-                  className="absolute inset-y-0 left-0 bg-[#F2662A] rounded-full transition-[width] duration-500 ease-out"
+                  className="absolute inset-y-0 left-0 bg-brand-gradient rounded-full transition-[width] duration-500 ease-out"
                   style={{ width: `${goalPct}%` }}
                 />
                 {milestones.map((m) => {
@@ -336,8 +336,8 @@ export function KidOverviewCard({
                       aria-hidden
                       className={`absolute rounded-full -translate-x-1/2 -translate-y-1/2 ${
                         unlocked
-                          ? "size-2.5 bg-white ring-2 ring-[#F2662A]"
-                          : "size-1.5 bg-[#F2662A]"
+                          ? "size-2.5 bg-white ring-2 ring-pp-primary"
+                          : "size-1.5 bg-pp-primary"
                       }`}
                       style={{ left: `${left}%`, top: "50%" }}
                     />
@@ -347,10 +347,10 @@ export function KidOverviewCard({
               {/* Mobile-only footer under the bar — current points left,
                   target right. Matches the kid view's number treatment. */}
               <div
-                className="flex sm:hidden items-center justify-between mt-1.5 text-[#F2662A] tabular-nums"
+                className="flex sm:hidden items-center justify-between mt-1.5 text-pp-primary tabular-nums"
                 style={{ fontSize: 12, fontWeight: 600 }}
               >
-                <span className="text-[#F2662A]">
+                <span className="text-pp-primary">
                   {progress.toLocaleString()}
                 </span>
                 <span>{goal.target_points.toLocaleString()}</span>
@@ -359,7 +359,7 @@ export function KidOverviewCard({
 
             {/* Desktop-only target on the right of the bar. */}
             <span
-              className="hidden sm:inline flex-shrink-0 text-[#F2662A] tabular-nums"
+              className="hidden sm:inline flex-shrink-0 text-pp-primary tabular-nums"
               style={{ fontSize: 16, fontWeight: 500 }}
             >
               {goal.target_points.toLocaleString()}
@@ -372,12 +372,12 @@ export function KidOverviewCard({
       {recentApproved.length > 0 && (
         <div className="mt-6 bg-white rounded-[32px] p-4 sm:p-6 shadow-sm text-[14px]">
           <h4
-            className="text-[#B64B11]"
+            className="text-pp-primary-strong"
             style={{ fontSize: 14, fontWeight: 600 }}
           >
             Previously Approved
           </h4>
-          <ul className="mt-3 divide-y divide-[#F9EBE3]">
+          <ul className="mt-3 divide-y divide-pp-soft">
             {recentApproved.map((c) => (
               <li
                 key={c.id}
@@ -385,17 +385,17 @@ export function KidOverviewCard({
               >
                 <span className="flex-1 min-w-0">
                   <span
-                    className="block font-medium truncate"
-                    style={{ color: "#F2662A", fontSize: 12 }}
+                    className="block font-medium truncate text-pp-primary"
+                     style={{ fontSize: 12 }}
                   >
                     {c.is_bonus ? "⭐ " : "✅ "}
                     {c.task_name_snapshot}
                   </span>
-                  <span className="block text-[11px] text-[#C3A38A]">
+                  <span className="block text-[11px] text-pp-muted">
                     {humanizeDate(c.completed_at)}
                   </span>
                 </span>
-                <span className="font-semibold text-[#F2662A] tabular-nums text-[12px]">
+                <span className="font-semibold text-pp-primary tabular-nums text-[12px]">
                   +{c.points_snapshot}
                 </span>
                 <ApprovedRowMenu

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { gotham } from "./fonts";
+import { dmSans } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,12 +10,14 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#fb923c",
+  // Browser chrome color — matches --pp-bg-top in globals.css (meta tags
+  // can't read CSS variables).
+  themeColor: "#DCD9FB",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={gotham.variable}>
+    <html lang="en" className={dmSans.variable}>
       <body className="font-sans">{children}</body>
     </html>
   );
