@@ -195,7 +195,7 @@ export function CelebrationScreen({
   }, [onClose]);
 
   // Fire the effect once the avatar has landed. Reveal effects call back
-  // when the kid finishes; a safety timer reveals anyway if one never does.
+  // when the kid finishes the mini game — no timeout, they have to play.
   useEffect(() => {
     const timer = setTimeout(() => {
       void playCelebration(
@@ -209,11 +209,7 @@ export function CelebrationScreen({
         effect.id,
       );
     }, 350);
-    const safety = setTimeout(() => setRevealed(true), 20000);
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(safety);
-    };
+    return () => clearTimeout(timer);
   }, [avatarSrc, effect.id, total]);
 
   // Count the points up once they're revealed.

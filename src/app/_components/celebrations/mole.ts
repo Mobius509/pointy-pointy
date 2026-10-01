@@ -33,6 +33,7 @@ const randomLook = (): Look => {
   return { art, flip: MOLES[art].turned && Math.random() < 0.5 };
 };
 
+const AVATAR_PENALTY = 3; // points lost for bonking your own avatar
 const COLS = 3;
 const ROWS = 3;
 
@@ -45,6 +46,7 @@ type Mole = {
   look: Look;
   bonked: number; // > 0 while squashed and sinking
   label?: number;
+  avatar?: boolean; // the kid's own avatar — don't bonk it!
 };
 
 function layoutHoles(area: Area): Hole[] {
@@ -84,7 +86,14 @@ function drawHoleFront(ctx: CanvasRenderingContext2D, h: Hole) {
   ctx.stroke();
 }
 
-function drawMole(ctx: CanvasRenderingContext2D, art: MoleArt, h: Hole, m: Mole, time: number) {
+function drawMole(
+  ctx: CanvasRenderingContext2D,
+  art: MoleArt,
+  h: Hole,
+  m: Mole,
+  time: number,
+  avatar: HTMLImageElement | null = null,
+) {
   if (m.pop <= 0) return;
   const { w, h: mh } = moleSize(h);
   const top = moleTop(h, m.pop);
@@ -105,11 +114,13 @@ function drawMole(ctx: CanvasRenderingContext2D, art: MoleArt, h: Hole, m: Mole,
   if (m.bonked > 0) ctx.scale(1.15, 0.8); // squashed
   else ctx.rotate(Math.sin(time * 5 + h.x) * 0.04); // a little wiggle
   if (m.look.flip) ctx.scale(-1, 1);
-  const img = art[m.look.art];
+  const img = m.avatar ? avatar : art[m.look.art];
   if (img) {
     // Keep each artwork's own proportions, standing on the same spot.
-    const ih = (w * img.naturalHeight) / img.naturalWidth;
-    ctx.drawImage(img, -w / 2, mh / 2 - ih, w, ih);
+    // (Avatars have space around them, so they're drawn a bit bigger.)
+    const iw = m.avatar ? w * 1.35 : w;
+    const ih = (iw * img.naturalHeight) / img.naturalWidth;
+    ctx.drawImage(img, -iw / 2, mh / 2 - ih, iw, ih);
   }
   else {
     ctx.fillStyle = color("muted");
@@ -274,12 +285,17 @@ export async function playMole(opts: CelebrationOptions): Promise<void> {
 
 // "Keep playing": 30 seconds of moles popping up all over — bonk as many
 // as you can (+1 each). Two at a time to start, up to four, quicker as time
-// goes on.
+// goes on. Sometimes the kid's own avatar pops up instead: bonk that and
+// lose points.
 export function playMoleGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, safe } = createCanvasGame("game");
   let art: MoleArt = [];
   void loadMoleArt().then((a) => (art = a));
+  let avatar: HTMLImageElement | null = null;
+  void loadImage(opts.avatarSrc).then((i) => (avatar = i));
   const holes = layoutHoles(safe);
+  // "-3" pop-ups after bonking the avatar.
+  const oops: { x: number; y: number; t: number }[] = [];
   const moles: Mole[] = [];
   let score = 0;
   let spawnIn = 0.6;
@@ -292,6 +308,16 @@ export function playMoleGame(opts: GameOptions): () => void {
       if (!m) return void mallet.swing(x, y);
       const h = holes[m.hole];
       mallet.swing(h.x, moleTop(h, m.pop) + 10);
+      if (m.avatar) {
+        // Oops — that was you!
+        m.bonked = 0.35;
+        void playSound("boom");
+        if (navigator.vibrate) navigator.vibrate([40, 40, 40]);
+        oops.push({ x: h.x, y: moleTop(h, m.pop), t: 0 });
+        score = Math.max(0, score - AVATAR_PENALTY);
+        opts.onScore(score);
+        return;
+      }
       bonk(h, m);
       opts.onScore(++score);
     },
@@ -305,7 +331,8 @@ export function playMoleGame(opts: GameOptions): () => void {
       const hole = freeHole(holes, moles);
       if (hole !== null) {
         const stay = Math.max(0.55, 1.15 - elapsed * 0.02);
-        moles.push({ hole, pop: 0, rising: true, stay, look: randomLook(), bonked: 0 });
+        const isAvatar = elapsed > 2 && Math.random() < 0.2;
+        moles.push({ hole, pop: 0, rising: true, stay, look: randomLook(), bonked: 0, avatar: isAvatar });
       }
       spawnIn = Math.max(0.25, rand(0.4, 0.75) - elapsed * 0.012);
     }
@@ -314,10 +341,29 @@ export function playMoleGame(opts: GameOptions): () => void {
     ctx.clearRect(0, 0, W, H);
     holes.forEach((h, i) => {
       drawHoleBack(ctx, h);
-      moles.filter((m) => m.hole === i).forEach((m) => drawMole(ctx, art, h, m, time));
+      moles.filter((m) => m.hole === i).forEach((m) => drawMole(ctx, art, h, m, time, avatar));
       drawHoleFront(ctx, h);
     });
     mallet.draw(ctx, dt);
+    for (let i = oops.length - 1; i >= 0; i--) {
+      const o = oops[i];
+      o.t += dt;
+      if (o.t > 0.9) {
+        oops.splice(i, 1);
+        continue;
+      }
+      ctx.save();
+      ctx.globalAlpha = 1 - o.t / 0.9;
+      ctx.font = "900 30px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "white";
+      ctx.fillStyle = color("party-red");
+      const y = o.y - 10 - o.t * 50;
+      ctx.strokeText(`-${AVATAR_PENALTY}`, o.x, y);
+      ctx.fillText(`-${AVATAR_PENALTY}`, o.x, y);
+      ctx.restore();
+    }
   });
 
   const stop = () => layer.remove();

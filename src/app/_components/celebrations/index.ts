@@ -155,7 +155,7 @@ export const CELEBRATIONS: Celebration[] = [
     hidesStage: true,
     game: { kind: "score", icon: "🔨", label: "bonks", seconds: 30, start: playMoleGame },
     name: "Whack-a-mole",
-    description: "Bonk the moles holding the points. Keep playing: 30 seconds of moles — bonk as many as you can.",
+    description: "Bonk the moles holding the points. Keep playing: 30 seconds of moles — but don’t bonk your own avatar!",
     play: playMole,
   },
   {
@@ -192,7 +192,13 @@ export async function playCelebration(
     return;
   }
   stopAllCelebrations(); // one at a time
-  await pickCelebration(id).play(opts);
+  try {
+    await pickCelebration(id).play(opts);
+  } catch (e) {
+    // A broken effect must never leave the points hidden.
+    console.error("[celebration]", e);
+    opts.onReveal?.();
+  }
 }
 
 const MAX_REPLAYS_AT_ONCE = 4;
