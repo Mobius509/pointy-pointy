@@ -6,10 +6,12 @@ import {
   gameInput,
   idleTracker,
   loadImage,
+  tinted,
   pointChunks,
   runLoop,
 } from "./canvasGame";
 import { confettiStyle, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
+import { TINTS } from "./balloons";
 import { playSound } from "./sounds";
 
 // Artwork slots. The chomper is drawn facing right, mouth open and mouth
@@ -20,14 +22,16 @@ const CHOMPER_OPEN_SRC: string | undefined = undefined; // e.g. "/anims/chomper-
 const CHOMPER_CLOSED_SRC: string | undefined = undefined; // e.g. "/anims/chomper-closed.webp"
 const GHOST_SRC: string | undefined = undefined; // e.g. "/anims/ghost.webp"
 const DOT_SRC = "/anims/orb-pearl.webp"; // regular dots
-const BIG_DOT_SRC = "/anims/orb-gold.webp"; // power dots and "+N" dots
+const BIG_DOT_SRC = "/anims/orb-red.webp"; // power dots and "+N" dots, recolored like the balloons
 
-type DotArt = { dot: HTMLImageElement | null; big: HTMLImageElement | null };
+// `big` holds one tinted copy per balloon color; pick with bigDot(i).
+type DotArt = { dot: HTMLImageElement | null; big: CanvasImageSource[] };
 async function loadDotArt(): Promise<DotArt> {
   const [dot, big] = await Promise.all([loadImage(DOT_SRC), loadImage(BIG_DOT_SRC)]);
-  return { dot, big };
+  return { dot, big: big ? TINTS.map((t) => tinted(big, t)) : [] };
 }
-function drawDot(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, x: number, y: number, r: number, fallback: string) {
+const bigDot = (art: DotArt, i: number) => art.big[i % art.big.length] ?? null;
+function drawDot(ctx: CanvasRenderingContext2D, img: CanvasImageSource | null, x: number, y: number, r: number, fallback: string) {
   if (img) ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
   else {
     ctx.fillStyle = color(fallback);
@@ -243,7 +247,7 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
   // Dots along the corridor (up to the right edge); "+N" on the last few.
   const visible = total - size * 2;
   const DOTS = Math.floor(visible / 30);
-  const dots: { d: number; x: number; y: number; label?: number; eaten: boolean }[] = [];
+  const dots: { d: number; x: number; y: number; label?: number; tint?: number; eaten: boolean }[] = [];
   for (let i = 1; i <= DOTS; i++) {
     const d = (i / (DOTS + 1)) * visible;
     const p = pointAt(d);
@@ -253,7 +257,7 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
   const lastLeg = dots.filter((d) => pointAt(d.d).seg === 2);
   chunks.forEach((n, k) => {
     const dot = lastLeg[Math.round(((k + 1) * lastLeg.length) / chunks.length) - 1];
-    if (dot) dot.label = n;
+    if (dot) Object.assign(dot, { label: n, tint: k });
   });
 
   const corners = [segLen(0), segLen(0) + segLen(1)];
@@ -327,7 +331,7 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
 
       for (const dot of dots) {
         if (dot.eaten) continue;
-        if (dot.label) drawDot(ctx, dotArt.big, dot.x, dot.y, 11, "party-yellow");
+        if (dot.label) drawDot(ctx, bigDot(dotArt, dot.tint ?? 0), dot.x, dot.y, 11, "party-yellow");
         else drawDot(ctx, dotArt.dot, dot.x, dot.y, 6, "party-yellow");
         if (dot.label) drawLabel(ctx, `+${dot.label}`, dot.x, dot.y - 24);
       }
@@ -355,7 +359,7 @@ export function playChomperGame(opts: GameOptions): () => void {
   let ghostArt: HTMLImageElement | null = null;
   void loadChomperArt(opts.avatarSrc).then((a) => (art = a));
   void loadImage(GHOST_SRC).then((i) => (ghostArt = i));
-  let dotArt: DotArt = { dot: null, big: null };
+  let dotArt: DotArt = { dot: null, big: [] };
   void loadDotArt().then((a) => (dotArt = a));
 
   const S = Math.floor(Math.min(area.w / COLS, area.h / ROWS));
@@ -511,7 +515,7 @@ export function playChomperGame(opts: GameOptions): () => void {
       }
     for (const [key, kind] of dots) {
       const [c, r] = key.split(",").map(Number);
-      if (kind === "power") drawDot(ctx, dotArt.big, px(c), py(r), S * 0.24 + Math.sin(time * 6) * 2, "party-pink");
+      if (kind === "power") drawDot(ctx, bigDot(dotArt, c * 3 + r), px(c), py(r), S * 0.24 + Math.sin(time * 6) * 2, "party-pink");
       else drawDot(ctx, dotArt.dot, px(c), py(r), S * 0.12, "party-yellow");
     }
     for (const g of ghosts) {

@@ -6,6 +6,7 @@ import {
   gameInput,
   idleTracker,
   loadImage,
+  tinted,
   pointChunks,
   rand,
   runLoop,
@@ -42,18 +43,6 @@ async function loadArt() {
   return { head, body, treats: orb ? TINTS.map((t) => tinted(orb, t)) : [] };
 }
 
-// A copy of `img` with a CSS filter baked in (browsers without canvas
-// filters just get the original color).
-function tinted(img: HTMLImageElement, filter: string): CanvasImageSource {
-  const c = document.createElement("canvas");
-  c.width = img.naturalWidth;
-  c.height = img.naturalHeight;
-  const g = c.getContext("2d");
-  if (!g) return img;
-  g.filter = filter;
-  g.drawImage(img, 0, 0);
-  return c;
-}
 
 function newWorm(start: Vec, angle: number): Worm {
   return { head: { ...start }, angle, speed: 170, segments: 8, trail: [] };
