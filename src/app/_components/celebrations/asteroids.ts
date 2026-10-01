@@ -20,7 +20,18 @@ const SHIP_SRC: string | undefined = "/anims/spaceship.webp"; // nose pointing u
 const SHIP_ASPECT = 1036 / 776; // height / width of the artwork
 const SHIP_W = 60;
 const NOSE = (SHIP_W * SHIP_ASPECT) / 2 - 6; // lasers leave from the nose
-const ROCK_SRCS: string[] = []; // e.g. ["/anims/asteroid1.webp", "/anims/asteroid2.webp"]
+// Big rocks, and the chunks they split into.
+const ROCK_SRCS = [1, 2, 3, 4].map((n) => `/anims/asteroid-${n}.webp`);
+const CHUNK_SRCS = [1, 2, 3, 4, 5].map((n) => `/anims/asteroid-chunk-${n}.webp`);
+
+type RockArt = { rocks: HTMLImageElement[]; chunks: HTMLImageElement[] };
+async function loadRockArt(): Promise<RockArt> {
+  const load = (srcs: string[]) =>
+    Promise.all(srcs.map((s) => loadImage(s))).then((imgs) => imgs.filter(Boolean) as HTMLImageElement[]);
+  const [rocks, chunks] = await Promise.all([load(ROCK_SRCS), load(CHUNK_SRCS)]);
+  return { rocks, chunks };
+}
+const pick = <T,>(list: T[]) => (list.length ? list[Math.floor(Math.random() * list.length)] : null);
 
 const SIZES = [0, 16, 26, 40]; // radius by rock size (3 = big)
 const BULLET_SPEED = 620;
@@ -39,7 +50,7 @@ type Rock = {
 };
 type Bullet = { x: number; y: number; vx: number; vy: number; life: number };
 
-function newRock(x: number, y: number, size: 1 | 2 | 3, art: HTMLImageElement[], speed = 60): Rock {
+function newRock(x: number, y: number, size: 1 | 2 | 3, art: RockArt, speed = 60): Rock {
   const a = rand(0, Math.PI * 2);
   return {
     x,
@@ -50,7 +61,7 @@ function newRock(x: number, y: number, size: 1 | 2 | 3, art: HTMLImageElement[],
     rot: rand(0, Math.PI * 2),
     spin: rand(-1.2, 1.2),
     shape: Array.from({ length: 10 }, () => rand(0.75, 1.1)),
-    img: art.length ? art[Math.floor(Math.random() * art.length)] : null,
+    img: pick(size === 3 ? art.rocks : art.chunks),
   };
 }
 
@@ -213,8 +224,7 @@ function hits(bullets: Bullet[], rocks: Rock[], dt: number): Rock[] {
 // points. If nobody taps, the ship takes aim by itself after a moment.
 export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
   const { layer, ctx, W, H, area } = createCanvasGame("celebration");
-  const [shipArt, ...rockArt] = await Promise.all([loadImage(SHIP_SRC), ...ROCK_SRCS.map((s) => loadImage(s))]);
-  const art = rockArt.filter(Boolean) as HTMLImageElement[];
+  const [shipArt, art] = await Promise.all([loadImage(SHIP_SRC), loadRockArt()]);
   const ship = { x: W / 2, y: area.y + area.h * 0.55, angle: -Math.PI / 2 };
   const chunks = pointChunks(opts.points ?? 0);
   // Rocks on a ring around the ship, drifting slowly.
@@ -299,11 +309,9 @@ export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
 export function playAsteroidsGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, area } = createCanvasGame("game");
   let shipArt: HTMLImageElement | null = null;
-  let art: HTMLImageElement[] = [];
+  let art: RockArt = { rocks: [], chunks: [] };
   void loadImage(SHIP_SRC).then((i) => (shipArt = i));
-  void Promise.all(ROCK_SRCS.map((s) => loadImage(s))).then(
-    (imgs) => (art = imgs.filter(Boolean) as HTMLImageElement[]),
-  );
+  void loadRockArt().then((a) => (art = a));
 
   const ship = { x: area.x + area.w / 2, y: area.y + area.h / 2, angle: -Math.PI / 2 };
   const rocks: Rock[] = [];
