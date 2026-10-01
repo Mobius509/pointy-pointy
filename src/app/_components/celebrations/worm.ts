@@ -124,7 +124,7 @@ function drawTreat(ctx: CanvasRenderingContext2D, t: Treat, time: number) {
 }
 
 function eatBurst(x: number, y: number) {
-  void playSound("pop");
+  void playSound("powerUp");
   confetti({
     ...confettiStyle(),
     particleCount: 18,

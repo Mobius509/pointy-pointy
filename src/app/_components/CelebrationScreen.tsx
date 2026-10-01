@@ -120,6 +120,7 @@ export function CelebrationScreen({
   const endRound = () => {
     stopGame.current();
     setTimesUp(true);
+    void playSound("fanfare");
     const final = scoreRef.current;
     if (!onSubmitHighScore || final <= 0) return;
     void onSubmitHighScore(effect.id, final).then((res) => {
@@ -163,7 +164,6 @@ export function CelebrationScreen({
         setTimeLeft(left);
         if (left <= 0) {
           clearInterval(tick);
-          void playSound("cheer");
           endRound();
         }
       }, 1000);

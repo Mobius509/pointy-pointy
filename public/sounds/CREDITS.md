@@ -30,3 +30,13 @@ some are CC BY-NC (no commercial use).
 | ow-5.m4a | hurt4 | (deleted user) | https://freesound.org/s/553285/ |
 | ow-6.m4a | ow voice 1 | alex36917 | https://freesound.org/s/585605/ |
 | ow-7.m4a | short oww | qubodup | https://freesound.org/s/743351/ |
+| explode-1.m4a | Explode (RPG) 1 | colorscrimsontears | https://freesound.org/s/641899/ |
+| explode-2.m4a | Bonk (RPG) 1 | colorscrimsontears | https://freesound.org/s/641894/ |
+| explode-3.m4a | Slash (RPG) 1 | colorscrimsontears | https://freesound.org/s/641902/ |
+| explode-4.m4a | Slash (RPG) 2 | colorscrimsontears | https://freesound.org/s/641901/ |
+| thud-1.m4a | thud | otisjames | https://freesound.org/s/215162/ |
+| thud-2.m4a | Big Thud 2 | reitanna | https://freesound.org/s/332668/ |
+| thud-3.m4a | Loud Thud | snowblindsounddepot | https://freesound.org/s/464896/ |
+| thud-4.m4a | Wet Clay Thud | highwaistedpants | https://freesound.org/s/847272/ |
+| fanfare-2.m4a | Fanfare 3 (RPG) | colorscrimsontears | https://freesound.org/s/607407/ |
+| fanfare-3.m4a | Fanfare 4 (RPG) | colorscrimsontears | https://freesound.org/s/609028/ |

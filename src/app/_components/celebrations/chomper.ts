@@ -464,7 +464,7 @@ export function playChomperGame(opts: GameOptions): () => void {
       if (dot) {
         dots.delete(key);
         opts.onScore(++score);
-        void playSound("pop");
+        void playSound(dot === "power" ? "powerUp" : "pop");
         if (dot === "power") {
           scaredFor = SCARED_SECONDS;
           crumbs(px(chomper.c), py(chomper.r), 24);

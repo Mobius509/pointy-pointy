@@ -13,16 +13,23 @@ const SOUNDS = {
     "/sounds/cheer-woohoo.m4a",
     "/sounds/cheer-woohoo-cartoon.m4a",
     "/sounds/cheer-joyful.m4a",
+    "/sounds/fanfare.m4a",
+    "/sounds/fanfare-2.m4a",
+    "/sounds/fanfare-3.m4a",
   ],
+  fanfare: ["/sounds/fanfare.m4a", "/sounds/fanfare-2.m4a", "/sounds/fanfare-3.m4a"],
   pop: ["/sounds/pop-cracker.m4a", "/sounds/pop-balloons.m4a"],
   boom: ["/sounds/boom.m4a"],
   laser: ["/sounds/laser.m4a", "/sounds/laser-2.m4a"],
+  explode: [1, 2, 3, 4].map((n) => `/sounds/explode-${n}.m4a`),
+  thud: [1, 2, 3, 4].map((n) => `/sounds/thud-${n}.m4a`),
+  powerUp: ["/sounds/power-up.m4a"],
   ow: [1, 2, 3, 4, 5, 6, 7].map((n) => `/sounds/ow-${n}.m4a`),
 };
 
 export type SoundKind = keyof typeof SOUNDS;
 
-const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6, laser: 0.5, ow: 0.9 };
+const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6, laser: 0.5, ow: 0.9, fanfare: 0.8, explode: 0.7, thud: 0.9, powerUp: 0.7 };
 const MUTE_KEY = "pp:sound-muted";
 
 let ctx: AudioContext | null = null;

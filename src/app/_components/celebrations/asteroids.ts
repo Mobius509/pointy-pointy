@@ -11,7 +11,7 @@ import {
   type Area,
 } from "./canvasGame";
 import { confettiStyle, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
-import { playSound } from "./sounds";
+import { playSound, type SoundKind } from "./sounds";
 
 // Artwork slots — set once the files exist in public/anims. Until then the
 // ship and rocks are drawn with shapes.
@@ -147,8 +147,8 @@ function drawBullets(ctx: CanvasRenderingContext2D, bullets: Bullet[]) {
   ctx.restore();
 }
 
-function boom(x: number, y: number, big: boolean) {
-  void playSound(big ? "boom" : "pop");
+function boom(x: number, y: number, big: boolean, sound: SoundKind = "explode") {
+  void playSound(sound);
   confetti({
     ...confettiStyle(),
     particleCount: big ? 40 : 18,
@@ -369,7 +369,7 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
         bonked = 1.5;
         lives -= 1;
         opts.onLives?.(lives);
-        boom(ship.x, ship.y, true);
+        boom(ship.x, ship.y, true, "boom"); // the ship got hit
         r.size = 1;
         r.vx = (r.x - ship.x) * 3;
         r.vy = (r.y - ship.y) * 3;

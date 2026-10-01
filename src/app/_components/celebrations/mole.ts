@@ -149,7 +149,7 @@ function hit(h: Hole, m: Mole, x: number, y: number) {
 
 function bonk(h: Hole, m: Mole) {
   m.bonked = 0.35;
-  void playSound("pop");
+  void playSound("thud");
   void playSound("ow");
   if (navigator.vibrate) navigator.vibrate(20);
   confetti({
