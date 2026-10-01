@@ -18,3 +18,8 @@ some are CC BY-NC (no commercial use).
 | boom.m4a | NYE single boom | loveburd | https://freesound.org/s/376660/ |
 | pop-cracker.m4a | Balloon pop / christmas cracker / confetti cannon | breviceps | https://freesound.org/s/458398/ |
 | pop-balloons.m4a | Party Pack, Balloons Popping 02-01 | InspectorJ | https://freesound.org/s/484268/ |
+| laser.m4a | Lazer Shot | colorscrimsontears | https://freesound.org/s/566200/ |
+| laser-2.m4a | Lazer Shot 2 | colorscrimsontears | https://freesound.org/s/580308/ |
+| fanfare.m4a | Fanfare (RPG) | colorscrimsontears | https://freesound.org/s/566203/ |
+| power-up.m4a | Apply (RPG) | colorscrimsontears | https://freesound.org/s/577961/ |
+| blip-talk.m4a | Talking (RPG) 1 | colorscrimsontears | https://freesound.org/s/641903/ |
