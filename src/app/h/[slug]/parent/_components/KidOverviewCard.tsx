@@ -9,8 +9,8 @@ import type {
 } from "@/lib/v2/data";
 import { frequencyLabel, humanizeDate, type Frequency } from "@/lib/time";
 import { avatarSrc } from "@/lib/avatar";
+import { ApproveAllButton } from "./ApproveAllButton";
 import {
-  approveAllCompletionsAction,
   approveCompletionAction,
   denyCompletionAction,
 } from "../_actions/approvals";
@@ -74,9 +74,6 @@ export function KidOverviewCard({
   milestones,
   streaks = [],
 }: Props) {
-  // Suggested bonuses need a points value, so "Approve all" skips them.
-  const approvable = pending.filter((c) => !(c.task_id === null && c.is_bonus));
-
   const goalPct = goal
     ? Math.min(
         100,
@@ -145,7 +142,7 @@ export function KidOverviewCard({
           {/* Right column. */}
           <div className="space-y-6">
             {/* To Approve */}
-            <div>
+            <div data-approvals>
               <div className="flex items-center justify-between gap-3">
                 <h4
                   className="text-pp-primary-strong"
@@ -153,18 +150,7 @@ export function KidOverviewCard({
                 >
                   To Approve
                 </h4>
-                {approvable.length > 1 && (
-                  <form action={approveAllCompletionsAction}>
-                    <input type="hidden" name="slug" value={slug} />
-                    <input type="hidden" name="kidProfileId" value={kid.id} />
-                    <button
-                      type="submit"
-                      className="rounded-full bg-pp-primary text-white font-semibold px-4 py-1 text-[12px] transition hover:bg-pp-primary-strong active:scale-[0.99]"
-                    >
-                      Approve all ({approvable.length})
-                    </button>
-                  </form>
-                )}
+                {pending.length > 1 && <ApproveAllButton slug={slug} kidId={kid.id} count={pending.length} />}
               </div>
               {pending.length === 0 ? (
                 <p className="mt-2 italic text-pp-muted" style={{ fontSize: 12 }}>
@@ -216,6 +202,7 @@ export function KidOverviewCard({
                                 defaultValue={5}
                                 required
                                 aria-label="Points"
+                                data-proposal-points={c.id}
                                 className="w-12 rounded-full border-pp-line bg-white px-2 py-1 text-[12px] text-center ring-1 ring-pp-line focus:outline-none focus:ring-2 focus:ring-pp-primary"
                               />
                             )}

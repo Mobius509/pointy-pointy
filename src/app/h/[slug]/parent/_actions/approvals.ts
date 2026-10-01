@@ -59,8 +59,9 @@ export async function approveCompletionAction(formData: FormData) {
   revalidatePath(`/h/${slug}`);
 }
 
-// "Approve all" for one kid: approves everything waiting except suggested
-// bonuses (those need a points value first), with a single notification.
+// "Approve all" for one kid: approves everything waiting, with a single
+// notification. Suggested bonuses (the kid's "did something extra") get the
+// points typed in their boxes, sent as `proposal_points:<id>`.
 export async function approveAllCompletionsAction(formData: FormData) {
   const slug = String(formData.get("slug") ?? "");
   const household = await requireHouseholdAccess(slug);
@@ -74,19 +75,35 @@ export async function approveAllCompletionsAction(formData: FormData) {
     .eq("household_id", household.id)
     .eq("kid_profile_id", kidProfileId)
     .eq("status", "pending")
-    .or("task_id.not.is.null,is_bonus.eq.false") // skip suggested bonuses
+    .or("task_id.not.is.null,is_bonus.eq.false") // suggestions below, with their points
     .select("task_name_snapshot, points_snapshot");
   if (error) throw error;
+  const items = (approved ?? []).map((c) => ({
+    name: c.task_name_snapshot as string,
+    points: c.points_snapshot as number,
+  }));
 
-  notifyCompletionsApproved(
-    household.id,
-    kidProfileId,
-    (approved ?? []).map((c) => ({
-      name: c.task_name_snapshot as string,
-      points: c.points_snapshot as number,
-    })),
-  );
-  if (approved?.length) await payStreaks(household.id, household.timezone, kidProfileId);
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith("proposal_points:")) continue;
+    const points = Number(value);
+    if (!Number.isFinite(points) || points < 0 || points > 1000) throw new Error("Points must be between 0 and 1000.");
+    const { data: proposal, error: proposalError } = await supabaseV2Admin
+      .from("completions")
+      .update({ status: "approved", points_snapshot: Math.round(points) })
+      .eq("id", key.slice("proposal_points:".length))
+      .eq("household_id", household.id)
+      .eq("kid_profile_id", kidProfileId)
+      .eq("status", "pending")
+      .is("task_id", null)
+      .eq("is_bonus", true)
+      .select("task_name_snapshot, points_snapshot")
+      .maybeSingle();
+    if (proposalError) throw proposalError;
+    if (proposal) items.push({ name: proposal.task_name_snapshot as string, points: proposal.points_snapshot as number });
+  }
+
+  notifyCompletionsApproved(household.id, kidProfileId, items);
+  if (items.length) await payStreaks(household.id, household.timezone, kidProfileId);
 
   revalidatePath(`/h/${slug}/parent`);
   revalidatePath(`/h/${slug}/parent/activity`);
