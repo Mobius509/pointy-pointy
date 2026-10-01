@@ -24,12 +24,13 @@ const SOUNDS = {
   explode: [1, 2, 3, 4].map((n) => `/sounds/explode-${n}.m4a`),
   thud: [1, 2, 3, 4].map((n) => `/sounds/thud-${n}.m4a`),
   powerUp: ["/sounds/power-up.m4a"],
+  waka: ["/sounds/waka-1.m4a", "/sounds/waka-2.m4a"], // played in turn: "waka-waka"
   ow: [1, 2, 3, 4, 5, 6, 7].map((n) => `/sounds/ow-${n}.m4a`),
 };
 
 export type SoundKind = keyof typeof SOUNDS;
 
-const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6, laser: 0.5, ow: 0.9, fanfare: 0.8, explode: 0.7, thud: 0.9, powerUp: 0.7 };
+const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6, laser: 0.5, ow: 0.9, fanfare: 0.8, explode: 0.7, thud: 0.9, powerUp: 0.7, waka: 0.6 };
 const MUTE_KEY = "pp:sound-muted";
 
 let ctx: AudioContext | null = null;
@@ -78,12 +79,14 @@ function load(src: string): Promise<AudioBuffer | null> {
   return p;
 }
 
-// Plays a random sound of the given kind. Silently does nothing if audio
-// isn't unlocked, is muted, or the file fails to load.
-export async function playSound(kind: SoundKind): Promise<void> {
+// Plays a random sound of the given kind — or, with `which`, that one in
+// turn (e.g. alternating the two "waka" sounds). Silently does nothing if
+// audio isn't unlocked, is muted, or the file fails to load.
+export async function playSound(kind: SoundKind, which?: number): Promise<void> {
   if (!ctx || ctx.state !== "running" || isMuted()) return;
   const list = SOUNDS[kind];
-  const buffer = await load(list[Math.floor(Math.random() * list.length)]);
+  const i = which === undefined ? Math.floor(Math.random() * list.length) : which % list.length;
+  const buffer = await load(list[i]);
   if (!buffer || !ctx) return;
   const source = ctx.createBufferSource();
   const gain = ctx.createGain();

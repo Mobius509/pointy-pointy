@@ -19,6 +19,7 @@ import { playSound } from "./sounds";
 // facing forward.
 const CHOMPER_OPEN_SRC: string | undefined = undefined; // e.g. "/anims/chomper-open.webp"
 const CHOMPER_CLOSED_SRC: string | undefined = undefined; // e.g. "/anims/chomper-closed.webp"
+let waka = 0; // alternates the two "waka" sounds as dots are eaten
 const MONSTER_SRCS = ["/anims/monster-1.webp", "/anims/monster-2.webp"];
 const DOT_SRC = "/anims/orb-pearl.webp"; // regular dots
 const BIG_DOT_SRC = "/anims/orb-red.webp"; // power dots and "+N" dots, recolored like the balloons
@@ -303,6 +304,7 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
       for (const dot of dots) {
         if (!dot.eaten && d >= dot.d) {
           dot.eaten = true;
+          void playSound("waka", waka++);
           if (dot.label) {
             void playSound("pop");
             crumbs(dot.x, dot.y, 20);
@@ -460,7 +462,8 @@ export function playChomperGame(opts: GameOptions): () => void {
       if (dot) {
         dots.delete(key);
         opts.onScore(++score);
-        void playSound(dot === "power" ? "powerUp" : "pop");
+        if (dot === "power") void playSound("powerUp");
+        else void playSound("waka", waka++);
         if (dot === "power") {
           scaredFor = SCARED_SECONDS;
           crumbs(px(chomper.c), py(chomper.r), 24);

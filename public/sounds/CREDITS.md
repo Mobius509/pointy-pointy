@@ -40,3 +40,5 @@ some are CC BY-NC (no commercial use).
 | thud-4.m4a | Wet Clay Thud | highwaistedpants | https://freesound.org/s/847272/ |
 | fanfare-2.m4a | Fanfare 3 (RPG) | colorscrimsontears | https://freesound.org/s/607407/ |
 | fanfare-3.m4a | Fanfare 4 (RPG) | colorscrimsontears | https://freesound.org/s/609028/ |
+| waka-1.m4a | Sqr beep (freesounds doesn't play it right) C | etheraudio | https://freesound.org/s/752670/ |
+| waka-2.m4a | 000101_0580s3 (trimmed to 1.00–1.16s) | gerent | https://freesound.org/s/669150/ |
