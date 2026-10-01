@@ -126,6 +126,9 @@ export default async function KidViewPage({
         </div>
 
         <div className="mt-6 space-y-6">
+          {/* Streaks up top — what to keep going today. */}
+          <KidStreaks streaks={streaks} items={items} />
+
           {/* Progress card */}
         {goal && (
           <section className="bg-white rounded-[32px] px-4 sm:px-6 py-6 shadow-sm">
@@ -211,8 +214,7 @@ export default async function KidViewPage({
           {/* Did something extra? */}
           <V2KidProposal slug={slug} pendingProposals={pendingProposals} />
 
-          {/* Streaks, and the games they unlock. */}
-          <KidStreaks streaks={streaks} items={items} />
+          {/* The games streaks unlock. */}
           {(streaks.length > 0 || arcade.unlocked.length > 0 || arcade.tickets.length > 0) && (
             <Arcade slug={slug} avatarSrc={avatarSrc(kid.avatar_emoji)} arcade={arcade} highScores={highScores} />
           )}
