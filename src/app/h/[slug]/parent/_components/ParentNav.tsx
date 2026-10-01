@@ -11,6 +11,7 @@ const TABS = [
   { label: "Activity", path: "/activity" },
   { label: "Goal", path: "/goal" },
   { label: "Settings", path: "/settings" },
+  { label: "Kid view", path: "/kid-view" },
 ];
 
 // Two variants, both rendered out of this single component so the active

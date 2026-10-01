@@ -16,11 +16,17 @@ export function Arcade({
   avatarSrc,
   arcade,
   highScores,
+  preview = false,
+  kidName = "",
 }: {
   slug: string;
   avatarSrc: string;
   arcade: ArcadeState;
   highScores: Record<string, HighScore>;
+  // Parent "Kid view": tickets are theirs to open, and games played here
+  // don't set high scores.
+  preview?: boolean;
+  kidName?: string;
 }) {
   const [playing, setPlaying] = useState<string | null>(null);
   const [ticket, setTicket] = useState<ArcadeTicket | null>(null);
@@ -41,13 +47,16 @@ export function Arcade({
       {arcade.tickets.length > 0 && (
         <button
           type="button"
+          disabled={preview}
           onClick={() => {
             unlockAudio();
             setTicket(arcade.tickets[0]);
           }}
-          className="btn-primary btn-lg mt-4 w-full animate-celebrate-wiggle"
+          className={`btn-primary btn-lg mt-4 w-full ${preview ? "" : "animate-celebrate-wiggle"}`}
         >
-          🎟️ Open your arcade ticket{arcade.tickets.length > 1 ? `s (${arcade.tickets.length})` : ""}!
+          {preview
+            ? `🎟️ ${kidName || "Your kid"} has ${arcade.tickets.length > 1 ? `${arcade.tickets.length} tickets` : "a ticket"} to open`
+            : `🎟️ Open your arcade ticket${arcade.tickets.length > 1 ? `s (${arcade.tickets.length})` : ""}!`}
         </button>
       )}
 
@@ -106,10 +115,14 @@ export function Arcade({
           items={[]}
           milestonesUnlocked={[]}
           highScores={highScores}
-          onSubmitHighScore={async (game, score) => {
-            const res = await submitHighScoreAction(slug, game, score);
-            return res.ok ? { best: res.best, isNew: res.isNew } : null;
-          }}
+          onSubmitHighScore={
+            preview
+              ? undefined
+              : async (game, score) => {
+                  const res = await submitHighScoreAction(slug, game, score);
+                  return res.ok ? { best: res.best, isNew: res.isNew } : null;
+                }
+          }
           onClose={() => setPlaying(null)}
         />
       )}

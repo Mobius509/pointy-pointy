@@ -10,9 +10,12 @@ import {
 export function V2KidProposal({
   slug,
   pendingProposals,
+  readOnly = false,
 }: {
   slug: string;
   pendingProposals: V2Completion[];
+  // Parent "Kid view" preview: shown, but can't send or cancel.
+  readOnly?: boolean;
 }) {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -68,12 +71,12 @@ export function V2KidProposal({
             onChange={(e) => setName(e.target.value)}
             maxLength={120}
             placeholder="What was it?"
-            disabled={pending}
+            disabled={pending || readOnly}
             className="w-full min-h-[80px] bg-transparent border-0 resize-none focus:outline-none text-[14px] text-pp-primary placeholder:text-pp-muted pr-32"
           />
           <button
             type="submit"
-            disabled={pending || !name.trim()}
+            disabled={pending || readOnly || !name.trim()}
             className="absolute bottom-3 right-3 rounded-full bg-white border border-pp-line text-pp-primary font-semibold px-4 py-2 text-[14px] transition hover:bg-pp-hover active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
           >
             {pending ? "Sending…" : "Send to Parents"}
@@ -109,6 +112,7 @@ export function V2KidProposal({
                 <button
                   type="button"
                   onClick={() => onCancel(p.id)}
+                  disabled={readOnly}
                   className="text-xs font-semibold text-rose-600 hover:underline"
                 >
                   Cancel

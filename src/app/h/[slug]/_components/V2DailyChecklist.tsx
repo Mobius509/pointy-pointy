@@ -22,9 +22,12 @@ type Item = {
 export function V2DailyChecklist({
   slug,
   items,
+  readOnly = false,
 }: {
   slug: string;
   items: Item[];
+  // Parent "Kid view" preview: shows the buttons, but they don't do anything.
+  readOnly?: boolean;
 }) {
   const [state, setState] = useState<Record<string, ItemState>>(
     () => Object.fromEntries(items.map((i) => [i.id, i.state])),
@@ -93,6 +96,7 @@ export function V2DailyChecklist({
                 <button
                   type="button"
                   onClick={() => submit(item)}
+                  disabled={readOnly}
                   className="rounded-full bg-white border border-pp-line text-pp-primary font-semibold px-6 py-2 text-[14px] transition hover:bg-pp-hover active:scale-[0.99]"
                 >
                   Done
@@ -103,6 +107,7 @@ export function V2DailyChecklist({
                 <button
                   type="button"
                   onClick={() => cancelPending(item)}
+                  disabled={readOnly}
                   aria-label="Tap to cancel"
                   className="inline-flex items-center gap-2 rounded-full bg-amber-100 text-amber-800 font-semibold px-4 py-2 text-[14px] transition hover:bg-amber-200 active:scale-[0.99]"
                 >
@@ -125,6 +130,7 @@ export function V2DailyChecklist({
                   <button
                     type="button"
                     onClick={() => recall(item)}
+                    disabled={readOnly}
                     className="rounded-full bg-white border border-pp-line text-pp-primary font-semibold px-5 py-2 text-[14px] transition hover:bg-pp-hover active:scale-[0.99]"
                   >
                     Recall

@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import Link from "next/link";
 import type {
   KidProfile,
   V2Completion,
@@ -114,6 +115,12 @@ export function KidOverviewCard({
               >
                 {kid.name}
               </h3>
+              <Link
+                href={`/h/${slug}/parent/kid-view?kid=${kid.id}`}
+                className="mt-1 inline-block text-[11px] font-semibold text-pp-primary underline underline-offset-2"
+              >
+                👀 See what {kid.name} sees
+              </Link>
             </div>
 
             <div className="relative bg-pp-soft rounded-[22px] w-full px-3 pt-5 pb-7 text-center mb-5">
