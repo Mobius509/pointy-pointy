@@ -130,7 +130,7 @@ function stepMole(m: Mole, dt: number): boolean {
     return m.pop > 0 || m.bonked > 0;
   }
   if (m.rising) {
-    m.pop = Math.min(1, m.pop + dt * 6);
+    m.pop = Math.min(1, m.pop + dt * 7);
     if (m.pop >= 1) {
       m.stay -= dt;
       if (m.stay <= 0) m.rising = false;
@@ -180,17 +180,17 @@ function hammer(size: number) {
       if (!swing || !img.current) return;
       swing.t += dt;
       const { t } = swing;
-      if (t > 0.38) return void (swing = null);
-      // Down fast, hold for a beat, then lift away and fade.
-      const down = Math.min(1, t / 0.09);
-      const angle = t < 0.17 ? WIND + (HIT - WIND) * down * down : HIT + (t - 0.17) * 2;
+      if (t > 0.6) return void (swing = null);
+      // Swing down, hold for a beat, then lift away and fade.
+      const down = Math.min(1, t / 0.18);
+      const angle = t < 0.3 ? WIND + (HIT - WIND) * down * down : HIT + (t - 0.3) * 1.5;
       // Place the pivot so that at the hit angle the head is on the spot.
       const at = {
         x: swing.x - (head.x * Math.cos(HIT) - head.y * Math.sin(HIT)),
         y: swing.y - (head.x * Math.sin(HIT) + head.y * Math.cos(HIT)),
       };
       ctx.save();
-      ctx.globalAlpha = t < 0.17 ? 1 : Math.max(0, 1 - (t - 0.17) / 0.21);
+      ctx.globalAlpha = t < 0.3 ? 1 : Math.max(0, 1 - (t - 0.3) / 0.3);
       ctx.translate(at.x, at.y);
       ctx.rotate(angle);
       ctx.drawImage(img.current, -pivot.x, -pivot.y, w, h);
@@ -277,7 +277,8 @@ export async function playMole(opts: CelebrationOptions): Promise<void> {
 }
 
 // "Keep playing": 30 seconds of moles popping up all over — bonk as many
-// as you can (+1 each). They come quicker, and more at once, as time goes on.
+// as you can (+1 each). Two at a time to start, up to four, quicker as time
+// goes on.
 export function playMoleGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, safe } = createCanvasGame("game");
   let art: MoleArt = [];
@@ -303,14 +304,14 @@ export function playMoleGame(opts: GameOptions): () => void {
   runLoop(layer, (dt, time) => {
     elapsed += dt;
     spawnIn -= dt;
-    const maxUp = elapsed < 8 ? 1 : elapsed < 18 ? 2 : 3;
+    const maxUp = elapsed < 8 ? 2 : elapsed < 18 ? 3 : 4;
     if (spawnIn <= 0 && moles.filter((m) => m.bonked <= 0).length < maxUp) {
       const hole = freeHole(holes, moles);
       if (hole !== null) {
-        const stay = Math.max(0.5, 1.3 - elapsed * 0.03);
+        const stay = Math.max(0.55, 1.15 - elapsed * 0.02);
         moles.push({ hole, pop: 0, rising: true, stay, look: randomLook(), bonked: 0 });
       }
-      spawnIn = Math.max(0.35, rand(0.6, 1.1) - elapsed * 0.02);
+      spawnIn = Math.max(0.25, rand(0.4, 0.75) - elapsed * 0.012);
     }
     for (let i = moles.length - 1; i >= 0; i--) if (!stepMole(moles[i], dt)) moles.splice(i, 1);
 
