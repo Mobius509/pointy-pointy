@@ -167,6 +167,31 @@ function fire(ship: { x: number; y: number; angle: number }, bullets: Bullet[]) 
   void playSound("pop");
 }
 
+// Glides the ship toward `target` (eased, capped speed), kept inside the
+// play area. Returns true while it's still on the way.
+const SHIP_SPEED = 340;
+function fly(ship: { x: number; y: number }, target: { x: number; y: number } | null, area: Area, dt: number) {
+  if (!target) return false;
+  const pad = 30;
+  target.x = Math.max(area.x + pad, Math.min(area.x + area.w - pad, target.x));
+  target.y = Math.max(area.y + pad, Math.min(area.y + area.h - pad, target.y));
+  const dx = target.x - ship.x;
+  const dy = target.y - ship.y;
+  const d = Math.hypot(dx, dy);
+  if (d < 3) return false;
+  const move = Math.min(d, Math.max(60, Math.min(SHIP_SPEED, d * 5)) * dt);
+  ship.x += (dx / d) * move;
+  ship.y += (dy / d) * move;
+  return true;
+}
+
+// Turns `ship.angle` toward `want`, at most `rate` radians per second.
+function turn(ship: { angle: number }, want: number, rate: number, dt: number) {
+  const diff = Math.atan2(Math.sin(want - ship.angle), Math.cos(want - ship.angle));
+  ship.angle += Math.max(-rate * dt, Math.min(rate * dt, diff));
+  return Math.abs(diff);
+}
+
 // Moves bullets and returns the rocks they hit (bullets are used up).
 function hits(bullets: Bullet[], rocks: Rock[], dt: number): Rock[] {
   const hit: Rock[] = [];
@@ -183,7 +208,8 @@ function hits(bullets: Bullet[], rocks: Rock[], dt: number): Rock[] {
 }
 
 // Celebration: rocks labeled "+N" float around the ship. Tap to fire —
-// a tap on (or near) a rock locks onto it. The last rock reveals the
+// a tap on (or near) a rock locks onto it and the ship moves in a little;
+// a tap on empty space flies the ship there. The last rock reveals the
 // points. If nobody taps, the ship takes aim by itself after a moment.
 export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
   const { layer, ctx, W, H, area } = createCanvasGame("celebration");
@@ -204,6 +230,8 @@ export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
   const idle = idleTracker(3000);
   let autoCooldown = 0;
   let done = false;
+  let target: { x: number; y: number } | null = null;
+  let locked = false; // aimed at a tapped rock: keep facing it while moving in
 
   gameInput({
     down: (x, y) => {
@@ -211,22 +239,29 @@ export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
       hint.remove();
       // Snap to a rock near the tap so little fingers don't have to be exact.
       const near = rocks.find((r) => Math.hypot(r.x - x, r.y - y) < SIZES[r.size] + 40);
-      const tx = near?.x ?? x;
-      const ty = near?.y ?? y;
-      ship.angle = Math.atan2(ty - ship.y, tx - ship.x);
+      locked = !!near;
+      if (!near) {
+        target = { x, y };
+        return;
+      }
+      ship.angle = Math.atan2(near.y - ship.y, near.x - ship.x);
       fire(ship, bullets);
+      // Edge a bit closer, but not on top of it.
+      const d = Math.hypot(near.x - ship.x, near.y - ship.y);
+      target = d < 140 ? null : { x: near.x - (near.x - ship.x) * (120 / d), y: near.y - (near.y - ship.y) * (120 / d) };
     },
   });
 
   await new Promise<void>((finish) =>
     runLoop(layer, (dt) => {
       // Idle: aim at the next rock and fire on our own.
+      if (fly(ship, target, area, dt)) {
+        if (!locked) turn(ship, Math.atan2(target!.y - ship.y, target!.x - ship.x), 10, dt);
+      } else target = null;
       if (idle.idle() && rocks[0] && !done) {
-        const want = Math.atan2(rocks[0].y - ship.y, rocks[0].x - ship.x);
-        const diff = Math.atan2(Math.sin(want - ship.angle), Math.cos(want - ship.angle));
-        ship.angle += Math.max(-8 * dt, Math.min(8 * dt, diff));
+        const diff = turn(ship, Math.atan2(rocks[0].y - ship.y, rocks[0].x - ship.x), 8, dt);
         autoCooldown -= dt;
-        if (Math.abs(diff) < 0.05 && autoCooldown <= 0) {
+        if (diff < 0.05 && autoCooldown <= 0) {
           fire(ship, bullets);
           autoCooldown = 0.5;
         }
@@ -256,8 +291,9 @@ export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
   layer.remove();
 }
 
-// "Keep playing": tap anywhere — the ship turns and fires there (hold to
-// keep firing). Rocks split big → medium → small (+1 each hit) and keep
+// "Keep playing": tap (or drag) anywhere and the ship flies there, facing
+// the way it's going; it fires on its own, and when it stops it turns
+// toward the nearest rock. Rocks split big → medium → small (+1 each hit) and keep
 // coming, faster over time. Three lives: a rock hitting the ship costs
 // one, and the last one is game over.
 export function playAsteroidsGame(opts: GameOptions): () => void {
@@ -275,7 +311,8 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
   let score = 0;
   let lives = 3;
   opts.onLives?.(lives);
-  let aim: number | null = null;
+  let target: { x: number; y: number } | null = null;
+  const hint = hintBubble(layer, "Tap anywhere to fly!", area.y + 16);
   let bonked = 0;
   let spawnIn = 0;
   let elapsed = 0;
@@ -296,17 +333,16 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
 
   gameInput({
     down: (x, y) => {
-      aim = Math.atan2(y - ship.y, x - ship.x);
-      ship.angle = aim;
-      fire(ship, bullets);
+      hint.remove();
+      target = { x, y };
     },
     move: (x, y, pressed) => {
-      if (pressed) aim = Math.atan2(y - ship.y, x - ship.x);
+      if (pressed) target = { x, y };
     },
-    up: () => (aim = null),
     key: (dir) => {
-      ship.angle = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[dir];
-      fire(ship, bullets);
+      hint.remove();
+      const [dx, dy] = { right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1] }[dir];
+      target = { x: ship.x + dx * 90, y: ship.y + dy * 90 };
     },
   });
 
@@ -314,14 +350,23 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
   runLoop(layer, (dt) => {
     elapsed += dt;
     bonked = Math.max(0, bonked - dt);
-    // Holding a finger down keeps firing toward it.
-    if (aim !== null) {
-      ship.angle = aim;
-      autoFire -= dt;
-      if (autoFire <= 0) {
-        fire(ship, bullets);
-        autoFire = 0.22;
-      }
+    // Flying: face the way it's going. Stopped: turn toward the nearest rock.
+    if (fly(ship, target, area, dt)) {
+      turn(ship, Math.atan2(target!.y - ship.y, target!.x - ship.x), 12, dt);
+    } else {
+      target = null;
+      const nearest = rocks.reduce<Rock | null>(
+        (best, r) =>
+          !best || Math.hypot(r.x - ship.x, r.y - ship.y) < Math.hypot(best.x - ship.x, best.y - ship.y) ? r : best,
+        null,
+      );
+      if (nearest) turn(ship, Math.atan2(nearest.y - ship.y, nearest.x - ship.x), 5, dt);
+    }
+    // Always firing.
+    autoFire -= dt;
+    if (autoFire <= 0 && rocks.length) {
+      fire(ship, bullets);
+      autoFire = 0.3;
     }
 
     spawnIn -= dt;

@@ -17,8 +17,8 @@ import { playSound } from "./sounds";
 
 // Artwork slots — set these once the files exist in public/anims. Until
 // then the worm is drawn with shapes.
-const WORM_HEAD_SRC: string | undefined = undefined; // e.g. "/anims/worm-head.webp" (facing right)
-const WORM_BODY_SRC: string | undefined = undefined; // e.g. "/anims/worm-body.webp" (round segment)
+const WORM_HEAD_SRC: string | undefined = "/anims/worm-head.webp"; // facing the viewer, drawn upright
+const WORM_BODY_SRC: string | undefined = "/anims/worm-body.webp"; // round segment
 
 const SEGMENT_SPACING = 9; // px of trail between body segments
 const HEAD_R = 20;
@@ -75,7 +75,8 @@ function drawWorm(ctx: CanvasRenderingContext2D, w: Worm, art: Awaited<ReturnTyp
     if (!p) continue;
     const r = HEAD_R * (0.95 - (i / w.segments) * 0.45);
     if (art.body) {
-      ctx.drawImage(art.body, p.x - r, p.y - r, r * 2, r * 2);
+      const s = r * 1.3; // the spikes stick out past the round part
+      ctx.drawImage(art.body, p.x - s, p.y - s, s * 2, s * 2);
     } else {
       ctx.fillStyle = color(i % 2 ? "party-pink" : "party-yellow");
       ctx.beginPath();
@@ -86,10 +87,12 @@ function drawWorm(ctx: CanvasRenderingContext2D, w: Worm, art: Awaited<ReturnTyp
   // Head.
   ctx.save();
   ctx.translate(w.head.x, w.head.y);
-  ctx.rotate(w.angle);
   if (art.head) {
-    ctx.drawImage(art.head, -HEAD_R * 1.4, -HEAD_R * 1.4, HEAD_R * 2.8, HEAD_R * 2.8);
+    // Faces the viewer, so it stays upright, leaning a little the way it moves.
+    ctx.rotate(Math.cos(w.angle) * 0.15);
+    ctx.drawImage(art.head, -HEAD_R * 1.5, -HEAD_R * 1.5, HEAD_R * 3, HEAD_R * 3);
   } else {
+    ctx.rotate(w.angle);
     ctx.fillStyle = color("party-pink");
     ctx.beginPath();
     ctx.arc(0, 0, HEAD_R, 0, Math.PI * 2);
