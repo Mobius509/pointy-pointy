@@ -19,6 +19,23 @@ import { playSound } from "./sounds";
 const CHOMPER_OPEN_SRC: string | undefined = undefined; // e.g. "/anims/chomper-open.webp"
 const CHOMPER_CLOSED_SRC: string | undefined = undefined; // e.g. "/anims/chomper-closed.webp"
 const GHOST_SRC: string | undefined = undefined; // e.g. "/anims/ghost.webp"
+const DOT_SRC = "/anims/orb-pearl.webp"; // regular dots
+const BIG_DOT_SRC = "/anims/orb-gold.webp"; // power dots and "+N" dots
+
+type DotArt = { dot: HTMLImageElement | null; big: HTMLImageElement | null };
+async function loadDotArt(): Promise<DotArt> {
+  const [dot, big] = await Promise.all([loadImage(DOT_SRC), loadImage(BIG_DOT_SRC)]);
+  return { dot, big };
+}
+function drawDot(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, x: number, y: number, r: number, fallback: string) {
+  if (img) ctx.drawImage(img, x - r, y - r, r * 2, r * 2);
+  else {
+    ctx.fillStyle = color(fallback);
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
 
 type ChomperArt = {
   open: HTMLImageElement | null;
@@ -192,7 +209,7 @@ function crumbs(x: number, y: number, n = 14) {
 // points are revealed. If nobody taps, it turns by itself after a moment.
 export async function playChomper(opts: CelebrationOptions): Promise<void> {
   const { layer, ctx, W, H, area } = createCanvasGame("celebration");
-  const art = await loadChomperArt(opts.avatarSrc);
+  const [art, dotArt] = await Promise.all([loadChomperArt(opts.avatarSrc), loadDotArt()]);
   const size = Math.min(W * 0.16, 64);
 
   // Right → down → right: start, corner 1, corner 2, exit.
@@ -310,10 +327,8 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
 
       for (const dot of dots) {
         if (dot.eaten) continue;
-        ctx.fillStyle = color("party-yellow");
-        ctx.beginPath();
-        ctx.arc(dot.x, dot.y, dot.label ? 9 : 5, 0, Math.PI * 2);
-        ctx.fill();
+        if (dot.label) drawDot(ctx, dotArt.big, dot.x, dot.y, 11, "party-yellow");
+        else drawDot(ctx, dotArt.dot, dot.x, dot.y, 6, "party-yellow");
         if (dot.label) drawLabel(ctx, `+${dot.label}`, dot.x, dot.y - 24);
       }
 
@@ -340,6 +355,8 @@ export function playChomperGame(opts: GameOptions): () => void {
   let ghostArt: HTMLImageElement | null = null;
   void loadChomperArt(opts.avatarSrc).then((a) => (art = a));
   void loadImage(GHOST_SRC).then((i) => (ghostArt = i));
+  let dotArt: DotArt = { dot: null, big: null };
+  void loadDotArt().then((a) => (dotArt = a));
 
   const S = Math.floor(Math.min(area.w / COLS, area.h / ROWS));
   const ox = area.x + (area.w - S * COLS) / 2;
@@ -494,10 +511,8 @@ export function playChomperGame(opts: GameOptions): () => void {
       }
     for (const [key, kind] of dots) {
       const [c, r] = key.split(",").map(Number);
-      ctx.fillStyle = color(kind === "power" ? "party-pink" : "party-yellow");
-      ctx.beginPath();
-      ctx.arc(px(c), py(r), kind === "power" ? S * 0.22 + Math.sin(time * 6) * 2 : S * 0.1, 0, Math.PI * 2);
-      ctx.fill();
+      if (kind === "power") drawDot(ctx, dotArt.big, px(c), py(r), S * 0.24 + Math.sin(time * 6) * 2, "party-pink");
+      else drawDot(ctx, dotArt.dot, px(c), py(r), S * 0.12, "party-yellow");
     }
     for (const g of ghosts) {
       const p = pos(g.m);

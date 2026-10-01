@@ -1,5 +1,4 @@
 import confetti from "canvas-confetti";
-import { EMOJI_SOURCES } from "../emojiPhysics";
 import {
   color,
   createCanvasGame,
@@ -13,19 +12,21 @@ import {
   type Area,
 } from "./canvasGame";
 import { confettiStyle, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
+import { TINTS } from "./balloons";
 import { playSound } from "./sounds";
 
 // Artwork slots — set these once the files exist in public/anims. Until
 // then the worm is drawn with shapes.
 const WORM_HEAD_SRC: string | undefined = "/anims/worm-head.webp"; // facing the viewer, drawn upright
 const WORM_BODY_SRC: string | undefined = "/anims/worm-body.webp"; // round segment
+const TREAT_SRC = "/anims/orb-red.webp"; // what the worm eats, recolored like the balloons
 
 const SEGMENT_SPACING = 9; // px of trail between body segments
 const HEAD_R = 20;
 const TURN_RATE = 5; // radians per second
 
 type Vec = { x: number; y: number };
-type Treat = Vec & { img: HTMLImageElement | null; label?: string; r: number };
+type Treat = Vec & { img: CanvasImageSource | null; label?: string; r: number };
 
 type Worm = {
   head: Vec;
@@ -37,10 +38,21 @@ type Worm = {
 
 async function loadArt() {
   const [head, body] = await Promise.all([loadImage(WORM_HEAD_SRC), loadImage(WORM_BODY_SRC)]);
-  const treats = await Promise.all(
-    [...EMOJI_SOURCES].sort(() => Math.random() - 0.5).slice(0, 6).map((s) => loadImage(s)),
-  );
-  return { head, body, treats: treats.filter(Boolean) as HTMLImageElement[] };
+  const orb = await loadImage(TREAT_SRC);
+  return { head, body, treats: orb ? TINTS.map((t) => tinted(orb, t)) : [] };
+}
+
+// A copy of `img` with a CSS filter baked in (browsers without canvas
+// filters just get the original color).
+function tinted(img: HTMLImageElement, filter: string): CanvasImageSource {
+  const c = document.createElement("canvas");
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  const g = c.getContext("2d");
+  if (!g) return img;
+  g.filter = filter;
+  g.drawImage(img, 0, 0);
+  return c;
 }
 
 function newWorm(start: Vec, angle: number): Worm {

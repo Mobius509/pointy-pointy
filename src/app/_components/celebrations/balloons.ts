@@ -16,7 +16,7 @@ const NEEDLE_SRC = "/anims/needle.webp";
 const BALLOON_ASPECT = 897 / 671;
 const NEEDLE_ASPECT = 893 / 668;
 // Tints of the red balloon artwork toward the party colors.
-const TINTS = ["none", "hue-rotate(320deg)", "hue-rotate(45deg) saturate(1.4)", "hue-rotate(180deg)", "hue-rotate(250deg)"];
+export const TINTS = ["none", "hue-rotate(320deg)", "hue-rotate(45deg) saturate(1.4)", "hue-rotate(180deg)", "hue-rotate(250deg)"];
 
 const FIRST_AUTO_POP_MS = 3800; // nobody playing yet
 const IDLE_AUTO_POP_MS = 2500; // they stopped partway
