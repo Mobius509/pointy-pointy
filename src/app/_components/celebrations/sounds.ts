@@ -63,8 +63,30 @@ export function unlockAudio() {
     if (!AC) return;
     ctx = new AC();
   }
-  void ctx.resume();
-  for (const list of Object.values(SOUNDS)) for (const src of list) void load(src);
+  if (ctx.state !== "running") {
+    void ctx.resume();
+    // iPhone also wants a sound actually started inside the tap: a silent
+    // one-sample blip does it.
+    const blip = ctx.createBufferSource();
+    blip.buffer = ctx.createBuffer(1, 1, 22050);
+    blip.connect(ctx.destination);
+    blip.start(0);
+  }
+  if (!preloaded) {
+    preloaded = true;
+    for (const list of Object.values(SOUNDS)) for (const src of list) void load(src);
+  }
+}
+let preloaded = false;
+
+// iPhone Safari only lets a tap unlock sound when the finger lifts (touchend /
+// pointerup / click) — not on touch-down, which is when the games listen. So
+// every tap anywhere also tries to unlock, which also brings sound back after
+// switching apps (the audio gets "interrupted").
+if (typeof window !== "undefined") {
+  for (const type of ["pointerup", "touchend", "click", "keydown"]) {
+    window.addEventListener(type, unlockAudio, { capture: true, passive: true });
+  }
 }
 
 function load(src: string): Promise<AudioBuffer | null> {
