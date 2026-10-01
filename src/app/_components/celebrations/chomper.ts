@@ -367,7 +367,7 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
 // catch costs one, and the last one is game over. Clearing the maze
 // refills it.
 export function playChomperGame(opts: GameOptions): () => void {
-  const { layer, ctx, W, H, area } = createCanvasGame("game");
+  const { layer, ctx, W, H, safe: area } = createCanvasGame("game"); // the maze stays fully in view
   let art: ChomperArt | null = null;
   let monsterArt: MonsterArt = [];
   void loadChomperArt(opts.avatarSrc).then((a) => (art = a));

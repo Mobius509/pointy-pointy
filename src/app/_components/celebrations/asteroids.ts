@@ -306,20 +306,20 @@ export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
 // → small (+1 each hit) and keep coming, faster over time. Three lives:
 // a rock hitting the ship costs one, and the last one is game over.
 export function playAsteroidsGame(opts: GameOptions): () => void {
-  const { layer, ctx, W, H, area } = createCanvasGame("game");
+  const { layer, ctx, W, H, area, safe } = createCanvasGame("game");
   let shipArt: HTMLImageElement | null = null;
   let art: RockArt = { rocks: [], chunks: [] };
   void loadImage(SHIP_SRC).then((i) => (shipArt = i));
   void loadRockArt().then((a) => (art = a));
 
-  const ship = { x: area.x + area.w / 2, y: area.y + area.h / 2, angle: -Math.PI / 2 };
+  const ship = { x: safe.x + safe.w / 2, y: safe.y + safe.h / 2, angle: -Math.PI / 2 };
   const rocks: Rock[] = [];
   const bullets: Bullet[] = [];
   let score = 0;
   let lives = 3;
   opts.onLives?.(lives);
   let target: { x: number; y: number } | null = null;
-  const hint = hintBubble(layer, "Tap anywhere to fly!", area.y + 16);
+  const hint = hintBubble(layer, "Tap anywhere to fly!", safe.y + 16);
   let bonked = 0;
   let spawnIn = 0;
   let elapsed = 0;
@@ -358,7 +358,7 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
     elapsed += dt;
     bonked = Math.max(0, bonked - dt);
     // Flying: face the way it's going. Stopped: keep facing that way.
-    if (fly(ship, target, area, dt)) {
+    if (fly(ship, target, safe, dt)) {
       turn(ship, Math.atan2(target!.y - ship.y, target!.x - ship.x), 12, dt);
     } else target = null;
     // Always firing, straight ahead.
@@ -409,14 +409,9 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
     }
 
     ctx.clearRect(0, 0, W, H);
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(area.x, area.y, area.w, area.h, 24);
-    ctx.clip();
     rocks.forEach((r) => drawRock(ctx, r));
     drawBullets(ctx, bullets);
     drawShip(ctx, shipArt, ship.x, ship.y, ship.angle, bonked > 0 && Math.floor(bonked * 12) % 2 === 0);
-    ctx.restore();
   });
 
   const stop = () => layer.remove();

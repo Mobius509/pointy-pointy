@@ -12,13 +12,21 @@ export type CanvasGame = {
   ctx: CanvasRenderingContext2D;
   W: number;
   H: number;
-  // Where the game is played. In "Keep playing" mode it stays clear of the
-  // score counter (top) and the Done button (bottom).
+  // Where the game is played. In "Keep playing" mode that's the whole
+  // screen: the game runs underneath the score counter and Done button.
   area: Area;
+  // The part of the screen clear of that UI — for things that must stay
+  // visible (spawn spots, the maze, where the ship can fly).
+  safe: Area;
 };
+
+// "Keep playing" games sit between the celebration screen's background and
+// its buttons (CelebrationScreen: backdrop z-50, UI z-60).
+const GAME_Z = 55;
 
 export function createCanvasGame(mode: "celebration" | "game"): CanvasGame {
   const layer = makeLayer();
+  if (mode === "game") layer.style.zIndex = String(GAME_Z);
   const W = window.innerWidth;
   const H = window.innerHeight;
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -32,9 +40,13 @@ export function createCanvasGame(mode: "celebration" | "game"): CanvasGame {
   const ctx = canvas.getContext("2d")!;
   ctx.scale(dpr, dpr);
 
-  const top = mode === "game" ? 76 : 24;
-  const bottom = mode === "game" ? 116 : 24;
-  return { layer, ctx, W, H, area: { x: 12, y: top, w: W - 24, h: H - top - bottom } };
+  if (mode === "celebration") {
+    const area = { x: 12, y: 24, w: W - 24, h: H - 48 };
+    return { layer, ctx, W, H, area, safe: area };
+  }
+  const top = 76;
+  const bottom = 116;
+  return { layer, ctx, W, H, area: { x: 0, y: 0, w: W, h: H }, safe: { x: 12, y: top, w: W - 24, h: H - top - bottom } };
 }
 
 // Calls `frame(dt, elapsed)` every animation frame (dt in seconds, capped so

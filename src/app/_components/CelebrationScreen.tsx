@@ -255,197 +255,202 @@ export function CelebrationScreen({
   const stage = effect.hidesStage || playing ? reveal : "";
 
   // Portal to <body>: the kid/parent panels use backdrop-blur, which would
-  // otherwise trap this "fixed" screen inside the panel.
+  // otherwise trap this "fixed" screen inside the panel. The background is
+  // its own layer (z-50) under the UI (z-60) so "Keep playing" games can run
+  // full screen in between (canvasGame GAME_Z); effects go over the top.
   return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${headline} ${total} points approved`}
-      // While a game or a tap-to-unlock effect is going, swipes and drags
-      // steer the game instead of scrolling the screen (phones cancel the
-      // gesture otherwise).
-      className={`fixed inset-0 z-[60] bg-celebrate flex flex-col items-center px-6 pb-8 pt-6 overflow-y-auto ${
-        playing || (effect.revealsPoints && !revealed) ? "touch-none" : ""
-      }`}
-    >
-      <button
-        type="button"
-        onClick={toggleMute}
-        aria-label={muted ? "Turn sound on" : "Turn sound off"}
-        aria-pressed={muted}
-        className="btn-secondary absolute right-4 top-4 size-11 !p-0 text-lg"
+    <>
+      <div aria-hidden className="fixed inset-0 z-50 bg-celebrate" />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${headline} ${total} points approved`}
+        // While a game or a tap-to-unlock effect is going, swipes and drags
+        // steer the game instead of scrolling the screen (phones cancel the
+        // gesture otherwise).
+        className={`fixed inset-0 z-[60] flex flex-col items-center px-6 pb-8 pt-6 overflow-y-auto ${
+          playing || (effect.revealsPoints && !revealed) ? "touch-none" : ""
+        }`}
       >
-        {muted ? "🔇" : "🔊"}
-      </button>
-
-      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xl">
-        {/* Avatar peeking over the points circle. */}
-        <div className={`relative mt-20 ${stage}`}>
-          <div className="absolute left-1/2 -top-20 -translate-x-1/2">
-            <img
-              ref={avatarRef}
-              src={avatarSrc}
-              alt=""
-              aria-hidden
-              className="size-32 object-contain animate-celebrate-pop-in"
-            />
-          </div>
-          <div
-            ref={circleRef}
-            className="size-48 sm:size-52 rounded-full bg-white flex flex-col items-center justify-center shadow-sm"
-          >
-            {revealed ? (
-              <>
-                <span className="text-7xl font-black text-pp-primary tabular-nums leading-none">
-                  {shown}
-                </span>
-                <span className="mt-1 text-sm font-semibold text-pp-muted">
-                  {total === 1 ? "point" : "points"}
-                </span>
-              </>
-            ) : (
-              <span className="text-8xl font-black text-pp-line leading-none animate-celebrate-wiggle">
-                ?
-              </span>
-            )}
-          </div>
-        </div>
-
-        <h2
-          className={`mt-10 text-5xl sm:text-6xl font-semibold text-pp-primary text-center leading-tight ${reveal}`}
+        <button
+          type="button"
+          onClick={toggleMute}
+          aria-label={muted ? "Turn sound on" : "Turn sound off"}
+          aria-pressed={muted}
+          className="btn-secondary absolute right-4 top-4 size-11 !p-0 text-lg"
         >
-          {headline}
-        </h2>
+          {muted ? "🔇" : "🔊"}
+        </button>
 
-        {nextUp && nextUp.pointsToGo > 0 && (
-          <p
-            className={`mt-5 rounded-full bg-white px-5 py-2 font-semibold text-pp-primary-strong shadow-sm tabular-nums ${reveal}`}
-          >
-            🏆 Next up: {nextUp.name} · {nextUp.pointsToGo.toLocaleString()} to go
-          </p>
-        )}
-
-        {lines.length > 0 && (
-          <div className={`mt-4 h-6 ${reveal}`}>
-            <CyclingLine lines={lines} />
-          </div>
-        )}
-      </div>
-
-      {playing && effect.game?.kind === "score" && (
-        <div className="absolute left-4 top-4 flex items-center gap-2">
-          <div
-            ref={counterRef}
-            aria-live="polite"
-            className="rounded-full bg-white px-5 py-2 text-2xl font-black text-pp-primary shadow-sm tabular-nums"
-          >
-            <span aria-hidden>{effect.game.icon}</span> {score}
-            <span className="sr-only"> {effect.game.label}</span>
-          </div>
-          {!timesUp && lives !== null && (effect.game.lives ?? 1) > 1 && (
-            <div
-              aria-label={`${lives} lives left`}
-              className="rounded-full bg-white px-3 py-2 text-lg shadow-sm tracking-tight"
-            >
-              {Array.from({ length: effect.game.lives ?? 0 }, (_, i) => (i < lives ? "❤️" : "🤍")).join("")}
+        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xl">
+          {/* Avatar peeking over the points circle. */}
+          <div className={`relative mt-20 ${stage}`}>
+            <div className="absolute left-1/2 -top-20 -translate-x-1/2">
+              <img
+                ref={avatarRef}
+                src={avatarSrc}
+                alt=""
+                aria-hidden
+                className="size-32 object-contain animate-celebrate-pop-in"
+              />
             </div>
-          )}
-          {!timesUp && best && best.score > 0 && (
             <div
-              aria-label={`High score ${best.score} by ${best.initials}`}
-              className="rounded-full bg-white px-3 py-2 text-sm font-bold text-pp-muted shadow-sm tabular-nums"
+              ref={circleRef}
+              className="size-48 sm:size-52 rounded-full bg-white flex flex-col items-center justify-center shadow-sm"
             >
-              🏆 {best.score} · {best.initials}
+              {revealed ? (
+                <>
+                  <span className="text-7xl font-black text-pp-primary tabular-nums leading-none">
+                    {shown}
+                  </span>
+                  <span className="mt-1 text-sm font-semibold text-pp-muted">
+                    {total === 1 ? "point" : "points"}
+                  </span>
+                </>
+              ) : (
+                <span className="text-8xl font-black text-pp-line leading-none animate-celebrate-wiggle">
+                  ?
+                </span>
+              )}
             </div>
-          )}
-          {!timesUp && effect.game.seconds && (
-            <div
-              aria-label={`${timeLeft} seconds left`}
-              className={`rounded-full bg-white px-4 py-2 text-lg font-bold shadow-sm tabular-nums ${
-                timeLeft <= 5 ? "text-rose-600 animate-pulse" : "text-pp-muted"
-              }`}
+          </div>
+
+          <h2
+            className={`mt-10 text-5xl sm:text-6xl font-semibold text-pp-primary text-center leading-tight ${reveal}`}
+          >
+            {headline}
+          </h2>
+
+          {nextUp && nextUp.pointsToGo > 0 && (
+            <p
+              className={`mt-5 rounded-full bg-white px-5 py-2 font-semibold text-pp-primary-strong shadow-sm tabular-nums ${reveal}`}
             >
-              ⏱ {timeLeft}s
+              🏆 Next up: {nextUp.name} · {nextUp.pointsToGo.toLocaleString()} to go
+            </p>
+          )}
+
+          {lines.length > 0 && (
+            <div className={`mt-4 h-6 ${reveal}`}>
+              <CyclingLine lines={lines} />
             </div>
           )}
         </div>
-      )}
 
-      {playing && timesUp && effect.game?.kind === "score" && (
-        <div className="absolute inset-0 flex items-center justify-center px-6">
-          <div className="card w-full max-w-sm text-center animate-celebrate-pop-in">
-            <p className="text-4xl font-semibold text-pp-primary">
-              {effect.game.seconds ? "Time's up!" : "Game over!"}
-            </p>
-            <p className="mt-4 text-7xl font-black text-pp-primary tabular-nums">
+        {playing && effect.game?.kind === "score" && (
+          <div className="absolute left-4 top-4 flex items-center gap-2">
+            <div
+              ref={counterRef}
+              aria-live="polite"
+              className="rounded-full bg-white px-5 py-2 text-2xl font-black text-pp-primary shadow-sm tabular-nums"
+            >
               <span aria-hidden>{effect.game.icon}</span> {score}
-            </p>
-            <p className="mt-1 font-semibold text-pp-muted">{effect.game.label}</p>
-            {newBest ? (
-              <p className="mt-4 rounded-full bg-pp-tint px-4 py-2 font-bold text-pp-primary animate-celebrate-pop-in">
-                🎉 New high score!
-              </p>
-            ) : (
-              best &&
-              best.score > 0 && (
-                <p className="mt-4 font-semibold text-pp-muted tabular-nums">
-                  🏆 High score: {best.score} · {best.initials}
-                </p>
-              )
-            )}
-            <div className="mt-6 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={() => setRound((n) => n + 1)}
-                className="btn-primary btn-lg w-full rounded-2xl"
+              <span className="sr-only"> {effect.game.label}</span>
+            </div>
+            {!timesUp && lives !== null && (effect.game.lives ?? 1) > 1 && (
+              <div
+                aria-label={`${lives} lives left`}
+                className="rounded-full bg-white px-3 py-2 text-lg shadow-sm tracking-tight"
               >
-                Play again
-              </button>
-              <button type="button" onClick={onClose} className="btn-secondary w-full">
-                Done
-              </button>
+                {Array.from({ length: effect.game.lives ?? 0 }, (_, i) => (i < lives ? "❤️" : "🤍")).join("")}
+              </div>
+            )}
+            {!timesUp && best && best.score > 0 && (
+              <div
+                aria-label={`High score ${best.score} by ${best.initials}`}
+                className="rounded-full bg-white px-3 py-2 text-sm font-bold text-pp-muted shadow-sm tabular-nums"
+              >
+                🏆 {best.score} · {best.initials}
+              </div>
+            )}
+            {!timesUp && effect.game.seconds && (
+              <div
+                aria-label={`${timeLeft} seconds left`}
+                className={`rounded-full bg-white px-4 py-2 text-lg font-bold shadow-sm tabular-nums ${
+                  timeLeft <= 5 ? "text-rose-600 animate-pulse" : "text-pp-muted"
+                }`}
+              >
+                ⏱ {timeLeft}s
+              </div>
+            )}
+          </div>
+        )}
+
+        {playing && timesUp && effect.game?.kind === "score" && (
+          <div className="absolute inset-0 flex items-center justify-center px-6">
+            <div className="card w-full max-w-sm text-center animate-celebrate-pop-in">
+              <p className="text-4xl font-semibold text-pp-primary">
+                {effect.game.seconds ? "Time's up!" : "Game over!"}
+              </p>
+              <p className="mt-4 text-7xl font-black text-pp-primary tabular-nums">
+                <span aria-hidden>{effect.game.icon}</span> {score}
+              </p>
+              <p className="mt-1 font-semibold text-pp-muted">{effect.game.label}</p>
+              {newBest ? (
+                <p className="mt-4 rounded-full bg-pp-tint px-4 py-2 font-bold text-pp-primary animate-celebrate-pop-in">
+                  🎉 New high score!
+                </p>
+              ) : (
+                best &&
+                best.score > 0 && (
+                  <p className="mt-4 font-semibold text-pp-muted tabular-nums">
+                    🏆 High score: {best.score} · {best.initials}
+                  </p>
+                )
+              )}
+              <div className="mt-6 flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRound((n) => n + 1)}
+                  className="btn-primary btn-lg w-full rounded-2xl"
+                >
+                  Play again
+                </button>
+                <button type="button" onClick={onClose} className="btn-secondary w-full">
+                  Done
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="flex w-full max-w-xl flex-col items-center gap-3">
-        {playing ? (
-          <button
-            type="button"
-            onClick={onClose}
-            className={`btn-primary btn-lg w-full rounded-2xl h-16 ${timesUp ? "invisible" : ""}`}
-          >
-            Done
-          </button>
-        ) : (
-          <>
+        <div className="flex w-full max-w-xl flex-col items-center gap-3">
+          {playing ? (
             <button
-              ref={buttonRef}
               type="button"
               onClick={onClose}
-              className={`btn-primary btn-lg w-full rounded-2xl h-16 ${reveal}`}
+              className={`btn-primary btn-lg w-full rounded-2xl h-16 ${timesUp ? "invisible" : ""}`}
             >
-              {button}
+              Done
             </button>
-            {effect.game?.kind === "score" && (
+          ) : (
+            <>
               <button
+                ref={buttonRef}
                 type="button"
-                onClick={keepPlaying}
-                className={`font-semibold text-pp-primary underline underline-offset-4 ${reveal}`}
+                onClick={onClose}
+                className={`btn-primary btn-lg w-full rounded-2xl h-16 ${reveal}`}
               >
-                Keep playing
+                {button}
               </button>
-            )}
-            {effect.game?.kind === "replay" && (
-              <p className={`text-sm font-semibold text-pp-muted ${reveal}`}>
-                Tap anywhere to do it again!
-              </p>
-            )}
-          </>
-        )}
+              {effect.game?.kind === "score" && (
+                <button
+                  type="button"
+                  onClick={keepPlaying}
+                  className={`font-semibold text-pp-primary underline underline-offset-4 ${reveal}`}
+                >
+                  Keep playing
+                </button>
+              )}
+              {effect.game?.kind === "replay" && (
+                <p className={`text-sm font-semibold text-pp-muted ${reveal}`}>
+                  Tap anywhere to do it again!
+                </p>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>,
+    </>,
     document.body,
   );
 }

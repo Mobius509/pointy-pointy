@@ -220,17 +220,20 @@ export async function playWorm(opts: CelebrationOptions): Promise<void> {
 // "Keep playing": steer with a finger (the worm follows it), eat treats,
 // grow — and don't bite your own tail: that's game over.
 export function playWormGame(opts: GameOptions): () => void {
-  const { layer, ctx, W, H, area } = createCanvasGame("game");
+  const { layer, ctx, W, H, safe } = createCanvasGame("game");
+  // Wraps around the whole screen, just past the edges so the head slides
+  // out of sight before it pops in on the other side.
+  const wrapArea = { x: -HEAD_R, y: -HEAD_R, w: W + HEAD_R * 2, h: H + HEAD_R * 2 };
   let score = 0;
   let target: Vec | null = null;
-  const worm = newWorm({ x: area.x + area.w / 2, y: area.y + area.h / 2 }, -Math.PI / 2);
+  const worm = newWorm({ x: safe.x + safe.w / 2, y: safe.y + safe.h / 2 }, -Math.PI / 2);
   let art: Awaited<ReturnType<typeof loadArt>> = { head: null, body: null, treats: [] };
   void loadArt().then((a) => (art = a));
 
   const pickTreat = () => (art.treats.length ? art.treats[Math.floor(Math.random() * art.treats.length)] : null);
   const spawnTreat = (): Treat => ({
-    x: rand(area.x + 30, area.x + area.w - 30),
-    y: rand(area.y + 30, area.y + area.h - 30),
+    x: rand(safe.x + 30, safe.x + safe.w - 30),
+    y: rand(safe.y + 30, safe.y + safe.h - 30),
     img: pickTreat(),
     r: 20,
   });
@@ -252,7 +255,7 @@ export function playWormGame(opts: GameOptions): () => void {
     for (const t of treats) t.img ??= pickTreat(); // spawned before the art loaded
     // Slowly speeds up as it grows.
     worm.speed = Math.min(260, 170 + worm.segments * 1.5);
-    stepWorm(worm, dt, area, target);
+    stepWorm(worm, dt, wrapArea, target);
 
     for (let i = treats.length - 1; i >= 0; i--) {
       const t = treats[i];
@@ -277,13 +280,8 @@ export function playWormGame(opts: GameOptions): () => void {
     }
 
     ctx.clearRect(0, 0, W, H);
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(area.x, area.y, area.w, area.h, 24);
-    ctx.clip();
     treats.forEach((t) => drawTreat(ctx, t, time));
     drawWorm(ctx, worm, art);
-    ctx.restore();
   });
 
   const stop = () => layer.remove();
