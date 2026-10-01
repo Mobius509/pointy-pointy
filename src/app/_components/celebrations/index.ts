@@ -145,7 +145,7 @@ export const CELEBRATIONS: Celebration[] = [
     hidesStage: true,
     game: { kind: "score", icon: "😋", label: "chomps", lives: 3, start: playChomperGame },
     name: "Chomper",
-    description: "A mini maze with two turns — tap to turn. Keep playing: dots, ghosts, three lives.",
+    description: "A mini maze with two turns — tap to turn. Keep playing: dots, monsters, three lives.",
     play: playChomper,
   },
   {

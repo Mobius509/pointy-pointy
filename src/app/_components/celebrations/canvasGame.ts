@@ -126,12 +126,12 @@ export function loadImage(src?: string): Promise<HTMLImageElement | null> {
 
 // A copy of `img` with a CSS filter baked in, e.g. a hue-rotate tint
 // (browsers without canvas filters just get the original color).
-export function tinted(img: HTMLImageElement, filter: string): CanvasImageSource {
+export function tinted(img: HTMLImageElement | HTMLCanvasElement, filter: string): HTMLCanvasElement | HTMLImageElement {
   const c = document.createElement("canvas");
-  c.width = img.naturalWidth;
-  c.height = img.naturalHeight;
+  c.width = img instanceof HTMLImageElement ? img.naturalWidth : img.width;
+  c.height = img instanceof HTMLImageElement ? img.naturalHeight : img.height;
   const g = c.getContext("2d");
-  if (!g) return img;
+  if (!g || !c.width || !c.height) return img;
   g.filter = filter;
   g.drawImage(img, 0, 0);
   return c;

@@ -16,13 +16,23 @@ import { playSound } from "./sounds";
 
 // Artwork slots. The chomper is drawn facing right, mouth open and mouth
 // closed (it flips to face where it's going). Until it exists, the kid's
-// avatar is cut into a pac-man shape. The ghost is drawn facing forward
-// (tinted per ghost); until it exists, ghosts are drawn with shapes.
+// avatar is cut into a pac-man shape. The monsters chasing it are drawn
+// facing forward.
 const CHOMPER_OPEN_SRC: string | undefined = undefined; // e.g. "/anims/chomper-open.webp"
 const CHOMPER_CLOSED_SRC: string | undefined = undefined; // e.g. "/anims/chomper-closed.webp"
-const GHOST_SRC: string | undefined = undefined; // e.g. "/anims/ghost.webp"
+const MONSTER_SRCS = ["/anims/monster-1.webp", "/anims/monster-2.webp"];
 const DOT_SRC = "/anims/orb-pearl.webp"; // regular dots
 const BIG_DOT_SRC = "/anims/orb-red.webp"; // power dots and "+N" dots, recolored like the balloons
+
+// One look per monster in the game (the third is monster 1 recolored), plus
+// a pale "scared" version of each for when the power dots are on.
+type MonsterArt = { normal: CanvasImageSource; scared: CanvasImageSource }[];
+async function loadMonsterArt(): Promise<MonsterArt> {
+  const imgs = (await Promise.all(MONSTER_SRCS.map((s) => loadImage(s)))).filter(Boolean) as HTMLImageElement[];
+  if (!imgs.length) return [];
+  const looks = [imgs[0], imgs[1] ?? imgs[0], tinted(imgs[0], "hue-rotate(250deg)")];
+  return looks.map((normal) => ({ normal, scared: tinted(normal, "saturate(0.25) brightness(1.25)") }));
+}
 
 // `big` holds one tinted copy per balloon color; pick with bigDot(i).
 type DotArt = { dot: HTMLImageElement | null; big: CanvasImageSource[] };
@@ -51,7 +61,7 @@ async function loadChomperArt(avatarSrc: string): Promise<ChomperArt> {
   return { open, closed, avatar: open ? null : await loadImage(avatarSrc) };
 }
 
-// # wall   . dot   o power dot   G ghost house (no dots)   P start
+// # wall   . dot   o power dot   G monster house (no dots)   P start
 const MAZE = [
   "#########",
   "#o.....o#",
@@ -68,7 +78,7 @@ const MAZE = [
 ];
 const ROWS = MAZE.length;
 const COLS = MAZE[0].length;
-const GHOST_COLORS = ["party-red", "party-pink", "party-cyan"];
+const MONSTER_COLORS = ["party-red", "party-pink", "party-cyan"];
 const SCARED_SECONDS = 6;
 
 type Dir = { dc: number; dr: number };
@@ -153,9 +163,9 @@ function drawChomper(
   ctx.restore();
 }
 
-function drawGhost(
+function drawMonster(
   ctx: CanvasRenderingContext2D,
-  art: HTMLImageElement | null,
+  art: MonsterArt[number] | null,
   x: number,
   y: number,
   size: number,
@@ -166,10 +176,13 @@ function drawGhost(
   const r = size / 2;
   ctx.save();
   ctx.translate(x, y);
-  if (scared) ctx.globalAlpha = 0.75 + Math.sin(time * 20) * 0.2;
   if (art) {
-    ctx.drawImage(art, -r, -r, size, size);
+    // A little bob; scared monsters go pale and shiver.
+    if (scared) ctx.translate(Math.sin(time * 40) * 1.5, 0);
+    else ctx.rotate(Math.sin(time * 6 + x) * 0.08);
+    ctx.drawImage(scared ? art.scared : art.normal, -r * 1.1, -r * 1.1, size * 1.1, size * 1.1);
   } else {
+    if (scared) ctx.globalAlpha = 0.75 + Math.sin(time * 20) * 0.2;
     ctx.fillStyle = color(scared ? "accent" : tint);
     ctx.beginPath();
     ctx.arc(0, -r * 0.1, r * 0.9, Math.PI, 0);
@@ -350,15 +363,15 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
 }
 
 // "Keep playing": swipe to steer through the maze, eat dots (+1). Power dots
-// scare the ghosts for a few seconds — eat them for +5. Three lives: each
+// scare the monsters for a few seconds — eat them for +5. Three lives: each
 // catch costs one, and the last one is game over. Clearing the maze
 // refills it.
 export function playChomperGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, area } = createCanvasGame("game");
   let art: ChomperArt | null = null;
-  let ghostArt: HTMLImageElement | null = null;
+  let monsterArt: MonsterArt = [];
   void loadChomperArt(opts.avatarSrc).then((a) => (art = a));
-  void loadImage(GHOST_SRC).then((i) => (ghostArt = i));
+  void loadMonsterArt().then((a) => (monsterArt = a));
   let dotArt: DotArt = { dot: null, big: [] };
   void loadDotArt().then((a) => (dotArt = a));
 
@@ -396,7 +409,7 @@ export function playChomperGame(opts: GameOptions): () => void {
   });
   const chomper = newMover(start, 4.2);
   let queued: Dir | null = null;
-  const ghosts = GHOST_COLORS.map((tint, i) => ({
+  const monsters = MONSTER_COLORS.map((tint, i) => ({
     m: newMover({ c: home.c - 1 + i, r: home.r + 1 }, 2.6 + i * 0.25),
     tint,
     releaseIn: 1 + i * 2,
@@ -434,7 +447,7 @@ export function playChomperGame(opts: GameOptions): () => void {
     if (!isWall(m.c + m.dir.dc, m.r + m.dir.dr)) return m.dir;
     return null;
   };
-  const chooseGhost = (m: Mover): Dir | null => {
+  const chooseMonster = (m: Mover): Dir | null => {
     const options = Object.values(DIRS).filter(
       (d) => !isWall(m.c + d.dc, m.r + d.dr) && !(d.dc === -m.dir.dc && d.dr === -m.dir.dr),
     );
@@ -469,18 +482,18 @@ export function playChomperGame(opts: GameOptions): () => void {
       }
     }
 
-    for (const g of ghosts) {
+    for (const g of monsters) {
       if (g.releaseIn > 0) {
         g.releaseIn -= dt;
         continue;
       }
       g.m.speed = scaredFor > 0 ? 1.8 : 2.6;
-      step(g.m, dt, chooseGhost);
+      step(g.m, dt, chooseMonster);
       const a = pos(g.m);
       const b = pos(chomper);
       if (Math.hypot(a.c - b.c, a.r - b.r) < 0.6) {
         if (scaredFor > 0) {
-          // Chomp the ghost: +5, and it goes home.
+          // Chomp the monster: +5, and it goes home.
           score += 5;
           opts.onScore(score);
           void playSound("boom");
@@ -518,9 +531,9 @@ export function playChomperGame(opts: GameOptions): () => void {
       if (kind === "power") drawDot(ctx, bigDot(dotArt, c * 3 + r), px(c), py(r), S * 0.24 + Math.sin(time * 6) * 2, "party-pink");
       else drawDot(ctx, dotArt.dot, px(c), py(r), S * 0.12, "party-yellow");
     }
-    for (const g of ghosts) {
+    for (const g of monsters) {
       const p = pos(g.m);
-      drawGhost(ctx, ghostArt, px(p.c), py(p.r), S * 0.9, g.tint, scaredFor > 0, time);
+      drawMonster(ctx, monsterArt[monsters.indexOf(g)] ?? null, px(p.c), py(p.r), S * 0.9, g.tint, scaredFor > 0, time);
     }
     const p = pos(chomper);
     const angle = Math.atan2(chomper.dir.dr, chomper.dir.dc);
