@@ -7,6 +7,7 @@ import { playBalloonGame, playBalloons } from "./balloons";
 import { playChomper, playChomperGame } from "./chomper";
 import { playJackpot } from "./jackpot";
 import { playMole, playMoleGame } from "./mole";
+import { playFlappy, playFlappyGame } from "./flappy";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -158,6 +159,15 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Whack-a-mole",
     description: "Bonk the moles holding the points. Keep playing: 30 seconds of moles — but don’t bonk your own avatar!",
     play: playMole,
+  },
+  {
+    id: "flappy",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🐦", label: "pipes", lives: 3, start: playFlappyGame },
+    name: "Flappy bird",
+    description: "Tap to flap through the gaps to grab the points. Keep playing: how many pipes can you clear? Three lives.",
+    play: playFlappy,
   },
   {
     id: "asteroids",
