@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
-import { clearKidSession, getKidSession } from "@/lib/v2/auth";
+import { getKidSession } from "@/lib/v2/auth";
 import { getKidProfile } from "@/lib/v2/data";
 import { getKidReminderTime } from "@/lib/v2/kid-ops";
 import { getKidInitials } from "@/lib/v2/high-scores";
@@ -28,8 +28,12 @@ export default async function KidSettingsPage({
   if (error) throw error;
   if (!household) notFound();
 
+  // A session for a kid that's since been removed counts as signed out
+  // (pages can't clear cookies; signing in again replaces it).
   const session = await getKidSession();
-  if (!session || session.householdId !== household.id) {
+  const kid =
+    session && session.householdId === household.id ? await getKidProfile(session.kidProfileId) : null;
+  if (!kid) {
     return (
       <ModalShell slug={slug}>
         <p className="text-pp-primary">
@@ -43,12 +47,6 @@ export default async function KidSettingsPage({
         </Link>
       </ModalShell>
     );
-  }
-
-  const kid = await getKidProfile(session.kidProfileId);
-  if (!kid) {
-    await clearKidSession();
-    notFound();
   }
 
   const reminderTime = await getKidReminderTime({

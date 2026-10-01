@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
-import { clearKidSession, getKidSession } from "@/lib/v2/auth";
+import { getKidSession } from "@/lib/v2/auth";
 import { getKidProfiles } from "@/lib/v2/data";
 import { getKidTodayView } from "@/lib/v2/kid-ops";
 import { getHighScores } from "@/lib/v2/high-scores";
@@ -41,8 +41,19 @@ export default async function KidViewPage({
   const sessionMatchesHousehold =
     session && session.householdId === household.id;
 
+  // Signed in — load the kid + today's checklist. (A session for a kid
+  // that's since been removed counts as signed out; signing in again
+  // replaces the cookie — pages can't clear cookies themselves.)
+  const view = sessionMatchesHousehold
+    ? await getKidTodayView({
+        householdId: household.id as string,
+        kidProfileId: session.kidProfileId,
+        timezone: household.timezone as string,
+      })
+    : null;
+
   // Not signed in — show kid picker + PIN.
-  if (!sessionMatchesHousehold) {
+  if (!view) {
     const kids = await getKidProfiles(household.id as string);
     return (
       <Shell slug={slug}>
@@ -69,21 +80,11 @@ export default async function KidViewPage({
     );
   }
 
-  // Signed in — load the kid + today's checklist.
-  const view = await getKidTodayView({
-    householdId: household.id as string,
-    kidProfileId: session.kidProfileId,
-    timezone: household.timezone as string,
-  });
-  if (!view) {
-    await clearKidSession();
-    notFound();
-  }
   const { kid, goal, progress, milestones, items, pendingProposals, recentApprovals } =
     view;
   const kidCtx = {
     householdId: household.id as string,
-    kidProfileId: session.kidProfileId,
+    kidProfileId: view.kid.id,
     timezone: household.timezone as string,
   };
   const [highScores, streaks, arcade] = await Promise.all([
