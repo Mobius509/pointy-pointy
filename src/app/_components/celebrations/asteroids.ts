@@ -4,7 +4,6 @@ import {
   createCanvasGame,
   drawLabel,
   gameInput,
-  idleTracker,
   loadImage,
   pointChunks,
   rand,
@@ -221,7 +220,7 @@ function hits(bullets: Bullet[], rocks: Rock[], dt: number): Rock[] {
 // Celebration: rocks labeled "+N" float around the ship. Tap to fire —
 // a tap on (or near) a rock locks onto it and the ship moves in a little;
 // a tap on empty space flies the ship there. The last rock reveals the
-// points. If nobody taps, the ship takes aim by itself after a moment.
+// points.
 export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
   const { layer, ctx, W, H, area } = createCanvasGame("celebration");
   const [shipArt, art] = await Promise.all([loadImage(SHIP_SRC), loadRockArt()]);
@@ -237,15 +236,12 @@ export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
   });
   const bullets: Bullet[] = [];
   const hint = hintBubble(layer, "Tap the rocks!", area.y + 16);
-  const idle = idleTracker(3000);
-  let autoCooldown = 0;
   let done = false;
   let target: { x: number; y: number } | null = null;
   let locked = false; // aimed at a tapped rock: keep facing it while moving in
 
   gameInput({
     down: (x, y) => {
-      idle.poke();
       hint.remove();
       // Snap to a rock near the tap so little fingers don't have to be exact.
       const near = rocks.find((r) => Math.hypot(r.x - x, r.y - y) < SIZES[r.size] + 40);
@@ -264,22 +260,14 @@ export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
 
   await new Promise<void>((finish) =>
     runLoop(layer, (dt) => {
-      // Idle: aim at the next rock and fire on our own.
       if (fly(ship, target, area, dt)) {
         if (!locked) turn(ship, Math.atan2(target!.y - ship.y, target!.x - ship.x), 10, dt);
       } else target = null;
-      if (idle.idle() && rocks[0] && !done) {
-        const diff = turn(ship, Math.atan2(rocks[0].y - ship.y, rocks[0].x - ship.x), 8, dt);
-        autoCooldown -= dt;
-        if (diff < 0.05 && autoCooldown <= 0) {
-          fire(ship, bullets);
-          autoCooldown = 0.5;
-        }
-      }
       for (const r of rocks) {
         r.x += r.vx * dt;
         r.y += r.vy * dt;
         r.rot += r.spin * dt;
+        wrap(r, area, 40); // drifting off one side brings it back on the other
       }
       for (const r of hits(bullets, rocks, dt)) {
         rocks.splice(rocks.indexOf(r), 1);

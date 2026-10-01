@@ -11,7 +11,6 @@ import {
 import { playSound } from "./sounds";
 
 const REVEAL_AT = 0.5; // share of the foil scratched off before it clears
-const AUTO_AFTER_MS = 5000; // nobody scratching? do it for them
 
 // Silver foil covers the points circle; scratch it off with a finger to
 // reveal the points. Without the screen (gallery "Play"), it brings its
@@ -103,7 +102,6 @@ export async function playScratchCard(opts: CelebrationOptions): Promise<void> {
   let last: { x: number; y: number } | null = null;
   let strokes = 0;
   let revealed = false;
-  let touched = false;
   let reveal!: () => void;
   const done = new Promise<void>((r) => (reveal = r));
 
@@ -134,7 +132,6 @@ export async function playScratchCard(opts: CelebrationOptions): Promise<void> {
   };
   canvas.addEventListener("pointerdown", (e) => {
     e.preventDefault();
-    touched = true;
     canvas.setPointerCapture(e.pointerId);
     last = null;
     const p = local(e);
@@ -152,18 +149,6 @@ export async function playScratchCard(opts: CelebrationOptions): Promise<void> {
     revealed = true;
     reveal();
   }
-
-  // Nobody scratching? Zig-zag it clean for them.
-  setTimeout(async () => {
-    if (touched || revealed) return;
-    last = null;
-    for (let i = 0; i <= 24 && !revealed; i++) {
-      const row = i / 24;
-      scratchTo(i % 2 ? w * 0.9 : w * 0.1, h * (0.1 + row * 0.8));
-      await wait(45);
-    }
-    finish();
-  }, AUTO_AFTER_MS);
 
   await done;
 

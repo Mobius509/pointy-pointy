@@ -4,7 +4,6 @@ import {
   confettiStyle,
   imageEl,
   makeLayer,
-  onStop,
   slamWord,
   wait,
   type CelebrationOptions,
@@ -12,7 +11,6 @@ import {
 import { playSound } from "./sounds";
 
 const REEL_ITEMS = 16; // images per reel strip; the last one is the avatar
-const AUTO_SPIN_MS = 3000; // spins on its own if nobody taps
 
 // A slot machine pops in: "Tap to spin!". Three reels of emojis spin and
 // stop one by one — clunk, clunk, clunk — on three of the kid's avatar.
@@ -70,7 +68,7 @@ export async function playJackpot(opts: CelebrationOptions): Promise<void> {
   // plays, so the machine has the stage to itself.
   machine.style.top = `${Math.max(24, H / 2 - machine.offsetHeight / 2 - 40)}px`;
 
-  // Pop the machine in, then wait for a tap to spin (or spin on its own).
+  // Pop the machine in, then wait for a tap to spin.
   await machine.animate(
     [{ transform: "scale(0.5)", opacity: 0 }, { transform: "scale(1.05)", opacity: 1, offset: 0.7 }, { transform: "scale(1)" }],
     { duration: 380, easing: "ease-out" },
@@ -84,13 +82,10 @@ export async function playJackpot(opts: CelebrationOptions): Promise<void> {
     { duration: 700, iterations: Infinity, delay: 600, endDelay: 900 },
   );
   await new Promise<void>((go) => {
-    const timer = setTimeout(go, AUTO_SPIN_MS);
-    onStop(() => clearTimeout(timer));
     machine.addEventListener(
       "pointerdown",
       (e) => {
         e.preventDefault();
-        clearTimeout(timer);
         go();
       },
       { once: true },

@@ -4,7 +4,6 @@ import {
   createCanvasGame,
   drawLabel,
   gameInput,
-  idleTracker,
   loadImage,
   tinted,
   pointChunks,
@@ -138,8 +137,8 @@ function eatBurst(x: number, y: number) {
 
 // Celebration: a handful of "+N" treats are scattered around; the kid
 // steers the worm to them (drag — it follows the finger). Eating the last
-// one reveals the points. If they don't touch it, the worm finds the
-// treats on its own.
+// one reveals the points. Until they touch it, the worm just loops around
+// where it is — it never goes for the treats by itself.
 export async function playWorm(opts: CelebrationOptions): Promise<void> {
   const { layer, ctx, W, H, area } = createCanvasGame("celebration");
   const art = await loadArt();
@@ -159,18 +158,17 @@ export async function playWorm(opts: CelebrationOptions): Promise<void> {
   }
 
   const hint = hintBubble(layer, "Steer to the treats!", area.y + 16);
-  const idle = idleTracker(3000);
   let finger: Vec | null = null;
+  let touched = false;
   gameInput({
     down: (x, y) => {
       finger = { x, y };
-      idle.poke();
+      touched = true;
       hint.remove();
     },
     move: (x, y, pressed) => {
       if (!pressed) return;
       finger = { x, y };
-      idle.poke();
     },
     up: () => (finger = null),
   });
@@ -178,15 +176,10 @@ export async function playWorm(opts: CelebrationOptions): Promise<void> {
   let revealedAt = 0;
   await new Promise<void>((done) => {
     runLoop(layer, (dt, time) => {
-      // Follow the finger; if idle, head for the nearest treat by itself.
-      const nearest = [...treats].sort(
-        (a, b) => Math.hypot(a.x - worm.head.x, a.y - worm.head.y) - Math.hypot(b.x - worm.head.x, b.y - worm.head.y),
-      )[0];
-      const target = revealedAt
-        ? { x: W + 300, y: worm.head.y }
-        : finger && !idle.idle()
-          ? finger
-          : nearest ?? null;
+      // Follow the finger (let go: carry on straight). Before the first
+      // touch, loop gently in place.
+      if (!touched) worm.angle += dt * 2.2;
+      const target = revealedAt ? { x: W + 300, y: worm.head.y } : finger;
       stepWorm(worm, dt, revealedAt ? { x: -400, y: -400, w: W + 800, h: H + 800 } : area, target);
 
       for (let i = treats.length - 1; i >= 0; i--) {

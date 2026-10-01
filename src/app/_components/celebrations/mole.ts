@@ -4,7 +4,6 @@ import {
   createCanvasGame,
   drawLabel,
   gameInput,
-  idleTracker,
   loadImage,
   pointChunks,
   rand,
@@ -207,7 +206,7 @@ const freeHole = (holes: Hole[], moles: Mole[], avoid?: number) => {
 
 // Celebration: moles pop up holding "+N". Bonk each one; the last bonk
 // reveals the points. A mole that isn't bonked ducks and pops up somewhere
-// else. If nobody taps, the moles get bonked by themselves after a moment.
+// else, until it's bonked.
 export async function playMole(opts: CelebrationOptions): Promise<void> {
   const { layer, ctx, W, H, area } = createCanvasGame("celebration");
   const art = await loadMoleArt();
@@ -215,7 +214,6 @@ export async function playMole(opts: CelebrationOptions): Promise<void> {
   const queue = pointChunks(opts.points ?? 0);
   const moles: Mole[] = [];
   const hint = hintBubble(layer, "Bonk the moles!", area.y + 16);
-  const idle = idleTracker(3000);
   let revealed = false;
   let lastHole: number | undefined;
   const mallet = hammer(holes[0].w * 0.75);
@@ -242,7 +240,6 @@ export async function playMole(opts: CelebrationOptions): Promise<void> {
 
   gameInput({
     down: (x, y) => {
-      idle.poke();
       hint.remove();
       const m = moles.find((m) => hit(holes[m.hole], m, x, y));
       if (m) whack(m);
@@ -255,8 +252,6 @@ export async function playMole(opts: CelebrationOptions): Promise<void> {
     runLoop(layer, (dt, time) => {
       for (let i = moles.length - 1; i >= 0; i--) {
         const m = moles[i];
-        // Nobody's playing: bonk it for them once it's all the way up.
-        if (idle.idle() && m.bonked <= 0 && m.pop >= 1 && !revealed) whack(m);
         // Not bonked in time: duck down (it'll pop up somewhere else).
         if (!stepMole(m, dt)) moles.splice(i, 1);
       }

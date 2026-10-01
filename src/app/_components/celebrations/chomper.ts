@@ -4,7 +4,6 @@ import {
   createCanvasGame,
   drawLabel,
   gameInput,
-  idleTracker,
   loadImage,
   tinted,
   pointChunks,
@@ -225,7 +224,7 @@ function crumbs(x: number, y: number, n = 14) {
 // Celebration: a mini maze with two turns. The chomper runs along the
 // corridor gobbling dots and waits at each corner for a tap ("Tap to
 // turn!"). After the second turn it chomps the last "+N" dots and the
-// points are revealed. If nobody taps, it turns by itself after a moment.
+// points are revealed. It waits at each corner until they tap.
 export async function playChomper(opts: CelebrationOptions): Promise<void> {
   const { layer, ctx, W, H, area } = createCanvasGame("celebration");
   const [art, dotArt] = await Promise.all([loadChomperArt(), loadDotArt()]);
@@ -280,13 +279,7 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
   let waitingAt: number | null = null; // index of the corner we're waiting at
   let tapped = false;
   let hint: HTMLElement | null = null;
-  const idle = idleTracker(2500);
-  gameInput({
-    down: () => {
-      tapped = true;
-      idle.poke();
-    },
-  });
+  gameInput({ down: () => (tapped = true) });
 
   let revealed = false;
   await new Promise<void>((done) =>
@@ -297,11 +290,10 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
         if (next !== undefined && d >= next) {
           waitingAt = corners.indexOf(next);
           tapped = false;
-          idle.poke();
           const p = pointAt(d);
           hint = hintBubble(layer, "Tap to turn!", Math.max(area.y, p.y - size * 1.6));
         }
-      } else if (tapped || idle.idle()) {
+      } else if (tapped) {
         waitingAt = null;
         hint?.remove();
         void playSound("pop");

@@ -25,12 +25,8 @@ const HIT_WORDS = ["BONK!", "WHACK!", "POW!"];
 
 // Hangs one piñata: it drops in on a string and swings; each tap swings the
 // bat (BONK!) and the third hit bursts it into pieces. Resolves with where
-// it was when it burst. With `autoHit`, the bat swings on its own if nobody
-// taps (the one-off celebration); the endless game waits for the kid.
-async function hangPinata(
-  layer: HTMLElement,
-  { autoHit, hint }: { autoHit: boolean; hint: boolean },
-): Promise<DOMRect> {
+// it was when it burst. It waits for the kid — the bat never swings by itself.
+async function hangPinata(layer: HTMLElement, { hint }: { hint: boolean }): Promise<DOMRect> {
   const W = window.innerWidth;
   const H = window.innerHeight;
   const pw = Math.min(W * 0.5, 240);
@@ -86,13 +82,6 @@ async function hangPinata(
   let busy = false;
   let broken!: () => void;
   const done = new Promise<void>((r) => (broken = r));
-  let idle: ReturnType<typeof setTimeout> | undefined;
-  onStop(() => clearTimeout(idle));
-  const armAutoHit = (ms: number) => {
-    if (!autoHit) return;
-    clearTimeout(idle);
-    idle = setTimeout(() => void hit(), ms);
-  };
 
   async function hit() {
     if (busy || hits >= HITS_TO_BREAK) return;
@@ -132,19 +121,13 @@ async function hangPinata(
     await swingBat.finished;
     busy = false;
 
-    if (hits >= HITS_TO_BREAK) {
-      clearTimeout(idle);
-      broken();
-    } else {
-      armAutoHit(1600);
-    }
+    if (hits >= HITS_TO_BREAK) broken();
   }
 
   rig.addEventListener("pointerdown", (e) => {
     e.preventDefault();
     void hit();
   });
-  armAutoHit(3500);
   await done;
 
   // BREAK!
@@ -190,11 +173,11 @@ function candyEngine(layer: HTMLElement, avatarSrc: string, extra: Partial<Param
   return engine;
 }
 
-// The celebration: one piñata, three whacks (or auto-whacks), then it
+// The celebration: one piñata, three whacks, then it
 // bursts — the points are revealed and throwable candy piles up.
 export async function playPinata(opts: CelebrationOptions): Promise<void> {
   const layer = makeLayer();
-  const r = await hangPinata(layer, { autoHit: true, hint: true });
+  const r = await hangPinata(layer, { hint: true });
   opts.onReveal?.();
   void playSound("boom");
   setTimeout(() => void playSound("cheer"), 250);
@@ -232,7 +215,7 @@ export function playPinataGame(opts: GameOptions): () => void {
   void (async () => {
     let first = true;
     while (!stopped) {
-      const r = await hangPinata(layer, { autoHit: false, hint: first });
+      const r = await hangPinata(layer, { hint: first });
       if (stopped) return;
       first = false;
       void playSound("cheer");

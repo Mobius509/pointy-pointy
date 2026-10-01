@@ -18,9 +18,6 @@ const NEEDLE_ASPECT = 893 / 668;
 // Tints of the red balloon artwork toward the party colors.
 export const TINTS = ["none", "hue-rotate(320deg)", "hue-rotate(45deg) saturate(1.4)", "hue-rotate(180deg)", "hue-rotate(250deg)"];
 
-const FIRST_AUTO_POP_MS = 3800; // nobody playing yet
-const IDLE_AUTO_POP_MS = 2500; // they stopped partway
-const AUTO_POP_GAP_MS = 450;
 // Endless game: more balloons than anyone can pop, and it speeds up.
 const GAME_SPAWN_START_MS = 480;
 const GAME_SPAWN_FASTEST_MS = 200;
@@ -184,17 +181,6 @@ export async function playBalloons(opts: CelebrationOptions): Promise<void> {
   const finished = new Promise<void>((r) => (allPopped = r));
   const balloons: Balloon[] = [];
 
-  let idle: ReturnType<typeof setTimeout> | undefined;
-  onStop(() => clearTimeout(idle));
-  // After a pause, pop the next balloon, then keep going until none are left.
-  const armIdle = (ms: number) => {
-    clearTimeout(idle);
-    idle = setTimeout(() => {
-      balloons.find((b) => !b.popped())?.pop();
-      if (remaining > 1) armIdle(AUTO_POP_GAP_MS);
-    }, ms);
-  };
-
   for (let i = 0; i < COUNT; i++) {
     // Spread across the width with a little jitter.
     const x = ((i + 0.5) / COUNT) * W + (Math.random() - 0.5) * 30;
@@ -205,19 +191,14 @@ export async function playBalloons(opts: CelebrationOptions): Promise<void> {
         behavior: "bob",
         delay: i * 250,
         onPop: (byTap) => {
-          if (byTap) {
-            hint.remove();
-            if (remaining > 1) armIdle(IDLE_AUTO_POP_MS);
-          }
+          if (byTap) hint.remove();
           if (--remaining === 0) allPopped();
         },
       }),
     );
   }
 
-  armIdle(FIRST_AUTO_POP_MS);
   await finished;
-  clearTimeout(idle);
   hint.remove();
 
   // Last one popped — show the points.
