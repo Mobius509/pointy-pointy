@@ -11,7 +11,7 @@ import {
   runLoop,
   type Area,
 } from "./canvasGame";
-import { confettiStyle, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
+import { confettiStyle, fadeOutLayer, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
 import { playSound } from "./sounds";
 
 // Artwork: a few moles, straight on or turned. Each time one pops up it's
@@ -246,8 +246,11 @@ export async function playMole(opts: CelebrationOptions): Promise<void> {
       hint.remove();
       opts.onReveal?.();
       setTimeout(() => void playSound("cheer"), 150);
+      // Let the last bonk land, then clear the holes off the points screen.
+      void fadeOutLayer(layer, 250).then(() => (faded = true));
     }
   };
+  let faded = false;
 
   gameInput({
     down: (x, y) => {
@@ -259,7 +262,6 @@ export async function playMole(opts: CelebrationOptions): Promise<void> {
   });
 
   await new Promise<void>((finish) => {
-    let doneIn = 1.2;
     runLoop(layer, (dt, time) => {
       for (let i = moles.length - 1; i >= 0; i--) {
         const m = moles[i];
@@ -267,7 +269,7 @@ export async function playMole(opts: CelebrationOptions): Promise<void> {
         if (!stepMole(m, dt)) moles.splice(i, 1);
       }
       if (!revealed && !moles.some((m) => m.bonked <= 0)) popNext();
-      if (revealed && (doneIn -= dt) <= 0) {
+      if (faded) {
         finish();
         return false;
       }

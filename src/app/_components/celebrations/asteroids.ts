@@ -10,7 +10,7 @@ import {
   runLoop,
   type Area,
 } from "./canvasGame";
-import { confettiStyle, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
+import { confettiStyle, fadeOutLayer, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
 import { playSound, type SoundKind } from "./sounds";
 
 // Artwork slots — set once the files exist in public/anims. Until then the
@@ -277,7 +277,7 @@ export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
           hint.remove();
           opts.onReveal?.();
           setTimeout(() => void playSound("cheer"), 150);
-          setTimeout(finish, 1200);
+          void fadeOutLayer(layer, 300).then(finish); // clear the ship off the points screen
         }
       }
       ctx.clearRect(0, 0, W, H);

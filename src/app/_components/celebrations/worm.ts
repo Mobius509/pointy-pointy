@@ -11,7 +11,7 @@ import {
   runLoop,
   type Area,
 } from "./canvasGame";
-import { confettiStyle, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
+import { confettiStyle, fadeOutLayer, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
 import { TINTS } from "./balloons";
 import { playSound } from "./sounds";
 
@@ -174,6 +174,7 @@ export async function playWorm(opts: CelebrationOptions): Promise<void> {
   });
 
   let revealedAt = 0;
+  let faded = false;
   await new Promise<void>((done) => {
     runLoop(layer, (dt, time) => {
       // Follow the finger (let go: carry on straight). Before the first
@@ -195,13 +196,15 @@ export async function playWorm(opts: CelebrationOptions): Promise<void> {
         hint.remove();
         opts.onReveal?.();
         setTimeout(() => void playSound("cheer"), 150);
+        // Clear the worm off the points screen.
+        void fadeOutLayer(layer, 250).then(() => (faded = true));
       }
 
       ctx.clearRect(0, 0, W, H);
       treats.forEach((t) => drawTreat(ctx, t, time));
       drawWorm(ctx, worm, art);
-      // Slither off after the reveal.
-      if (revealedAt && (worm.head.x > W + 80 || time - revealedAt > 3)) {
+      // Slither off (fading out) after the reveal.
+      if (faded) {
         done();
         return false;
       }

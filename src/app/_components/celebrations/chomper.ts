@@ -9,7 +9,7 @@ import {
   pointChunks,
   runLoop,
 } from "./canvasGame";
-import { confettiStyle, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
+import { confettiStyle, fadeOutLayer, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
 import { TINTS } from "./balloons";
 import { playSound } from "./sounds";
 
@@ -314,11 +314,7 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
         opts.onReveal?.();
         void playSound("cheer");
         // Clear the maze off the points screen.
-        layer
-          .animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: "forwards" })
-          .finished.then(() => {
-            done();
-          });
+        void fadeOutLayer(layer).then(done);
       }
 
       // Corridor walls: a wide lavender stroke with the path cut out.

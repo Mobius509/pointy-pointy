@@ -102,6 +102,16 @@ export function stopAllCelebrations() {
   confetti.reset();
 }
 
+// Fades a canvas game's layer away as the points are revealed, so nothing
+// is left drawn over the points screen. Resolves when it's gone.
+export async function fadeOutLayer(layer: HTMLElement, delay = 0): Promise<void> {
+  try {
+    await layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, delay, fill: "forwards" }).finished;
+  } catch {
+    /* removed mid-fade */
+  }
+}
+
 // A full-screen layer for an effect. Non-interactive layers let every tap
 // through; interactive effects opt individual elements back in with
 // `pointer-events: auto`.
