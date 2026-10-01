@@ -116,6 +116,24 @@ export async function submitHighScore(
   return { best: { score, initials: initialsFor(holder.name) }, isNew: true };
 }
 
+// Wipes the family's high scores — one game, or all of them.
+export async function clearHighScores(householdId: string, game?: string): Promise<{ ok: boolean }> {
+  let q = supabaseV2Admin.from("high_scores").delete().eq("household_id", householdId);
+  if (game) q = q.eq("game", game);
+  const { error } = await q;
+  return { ok: !error || notSetUp(error.code) };
+}
+
+// Someone changed their initials: show the new ones on records they hold.
+export async function renameHighScoreHolder(
+  householdId: string,
+  holder: { kind: "kid"; kidProfileId: string } | { kind: "parent"; userId: string },
+  name: string,
+) {
+  const q = supabaseV2Admin.from("high_scores").update({ holder_name: name }).eq("household_id", householdId);
+  await (holder.kind === "kid" ? q.eq("kid_profile_id", holder.kidProfileId) : q.eq("user_id", holder.userId));
+}
+
 // ----- Parents playing ---------------------------------------------------------
 
 export async function getParentsPlay(householdId: string): Promise<boolean> {

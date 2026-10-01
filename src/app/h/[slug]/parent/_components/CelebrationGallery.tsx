@@ -6,6 +6,7 @@ import { CelebrationScreen, type HighScore } from "@/app/_components/Celebration
 import { avatarSrc } from "@/lib/avatar";
 import { SectionPill } from "./ui";
 import {
+  clearHighScoresAction,
   setParentsPlayAction,
   setScoreNameAction,
   submitParentHighScoreAction,
@@ -55,6 +56,15 @@ export function CelebrationGallery({
       const res = await setScoreNameAction(slug, name);
       setSaved(res.ok ? "Saved." : res.error ?? "Couldn't save.");
     });
+  // Clear one game's high score, or all of them (game left out).
+  const clearScores = (game?: string) => {
+    const what = game ? `the ${CELEBRATIONS.find((c) => c.id === game)?.name ?? game} high score` : "all the high scores";
+    if (!window.confirm(`Clear ${what}? This can't be undone.`)) return;
+    start(async () => {
+      await clearHighScoresAction(slug, game);
+    });
+  };
+  const hasScores = Object.values(highScores).some((s) => s.score > 0);
   const [kidId, setKidId] = useState(kids[0]?.id);
   // Which effect the preview screen should force ("" = random).
   const [preview, setPreview] = useState<string | null>(null);
@@ -109,6 +119,16 @@ export function CelebrationGallery({
             {saved && <span className="text-xs text-pp-muted">{saved}</span>}
           </div>
         )}
+        {hasScores && (
+          <button
+            type="button"
+            onClick={() => clearScores()}
+            disabled={pending}
+            className="mt-3 text-sm font-semibold text-rose-600 underline underline-offset-4"
+          >
+            Clear all high scores
+          </button>
+        )}
       </div>
 
       {kids.length > 1 && (
@@ -133,6 +153,14 @@ export function CelebrationGallery({
               {highScores[c.id] && highScores[c.id].score > 0 && (
                 <p className="mt-1 text-xs font-bold text-pp-primary tabular-nums">
                   🏆 High score: {highScores[c.id].score} · {highScores[c.id].initials}
+                  <button
+                    type="button"
+                    onClick={() => clearScores(c.id)}
+                    disabled={pending}
+                    className="ml-2 font-semibold text-pp-muted underline underline-offset-2"
+                  >
+                    Clear
+                  </button>
                 </p>
               )}
             </div>

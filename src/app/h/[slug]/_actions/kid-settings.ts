@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getKidSession } from "@/lib/v2/auth";
 import { AVATAR_IDS } from "@/lib/avatar";
+import { cleanInitials } from "@/lib/initials";
+import { getKidInitials, renameHighScoreHolder } from "@/lib/v2/high-scores";
 import { setKidReminderTime, type OpResult } from "@/lib/v2/kid-ops";
 
 // Kid-side action: update the signed-in kid's own avatar. Only the kid
@@ -71,4 +73,38 @@ export async function updateKidReminderAction(
   );
   if (res.ok) revalidatePath(`/h/${slug}/settings`);
   return res;
+}
+
+// Kid-side action: set their own high score initials (blank = back to the
+// default, first initial + family initial).
+export async function updateKidInitialsAction(
+  slug: string,
+  initials: string,
+): Promise<{ ok: true; initials: string } | { ok: false; error: string }> {
+  const session = await getKidSession();
+  if (!session) return { ok: false, error: "Sign in first." };
+
+  const { data: household } = await supabaseV2Admin
+    .from("households")
+    .select("id, slug")
+    .eq("id", session.householdId)
+    .maybeSingle();
+  if (!household || household.slug !== slug) {
+    return { ok: false, error: "Sign in first." };
+  }
+
+  const clean = cleanInitials(initials) || null;
+  const { error } = await supabaseV2Admin
+    .from("kid_profiles")
+    .update({ initials: clean })
+    .eq("id", session.kidProfileId)
+    .eq("household_id", session.householdId);
+  if (error) return { ok: false, error: error.message };
+  const shown = (await getKidInitials(session.householdId))[session.kidProfileId] ?? clean ?? "";
+  await renameHighScoreHolder(session.householdId, { kind: "kid", kidProfileId: session.kidProfileId }, shown);
+
+  revalidatePath(`/h/${slug}`);
+  revalidatePath(`/h/${slug}/settings`);
+  revalidatePath(`/h/${slug}/parent/settings`);
+  return { ok: true, initials: shown };
 }

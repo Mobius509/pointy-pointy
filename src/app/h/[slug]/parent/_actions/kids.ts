@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { cleanInitials } from "@/lib/initials";
+import { getKidInitials, renameHighScoreHolder } from "@/lib/v2/high-scores";
 import { hashPin, requireHouseholdAccess } from "@/lib/v2/auth";
 import { AVATAR_IDS, DEFAULT_AVATAR, avatarId } from "@/lib/avatar";
 
@@ -72,6 +73,8 @@ export async function updateKidAction(formData: FormData) {
     ({ error } = await update({ name, avatar_emoji: avatar }));
   }
   if (error) throw error;
+  const shown = (await getKidInitials(household.id))[id];
+  if (shown) await renameHighScoreHolder(household.id, { kind: "kid", kidProfileId: id }, shown);
 
   revalidatePath(`/h/${slug}/parent/kids`);
   revalidatePath(`/h/${slug}/parent`);

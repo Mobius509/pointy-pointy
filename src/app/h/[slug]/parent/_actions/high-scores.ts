@@ -3,7 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getCurrentUser, requireHouseholdAccess } from "@/lib/v2/auth";
-import { getParentScoreName, getParentsPlay, submitHighScore } from "@/lib/v2/high-scores";
+import {
+  clearHighScores,
+  getParentScoreName,
+  getParentsPlay,
+  renameHighScoreHolder,
+  submitHighScore,
+} from "@/lib/v2/high-scores";
 
 type Best = { score: number; initials: string };
 
@@ -47,6 +53,20 @@ export async function setScoreNameAction(slug: string, name: string): Promise<{ 
     .update({ score_name: clean || null })
     .eq("household_id", household.id)
     .eq("user_id", user.id);
+  if (!error) {
+    const shown = await getParentScoreName(household.id, user.id, user.email);
+    await renameHighScoreHolder(household.id, { kind: "parent", userId: user.id }, shown);
+  }
   revalidatePath(`/h/${slug}/parent/settings`);
   return error ? { ok: false, error: "Couldn't save — has the high scores update been run?" } : { ok: true };
+}
+
+// Clears the family's high scores: one game, or every game when `game` is
+// left out.
+export async function clearHighScoresAction(slug: string, game?: string): Promise<{ ok: boolean }> {
+  const household = await requireHouseholdAccess(slug);
+  const res = await clearHighScores(household.id, game);
+  revalidatePath(`/h/${slug}/parent/settings`);
+  revalidatePath(`/h/${slug}`);
+  return res;
 }

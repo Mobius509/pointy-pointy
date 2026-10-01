@@ -5,6 +5,7 @@ import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { clearKidSession, getKidSession } from "@/lib/v2/auth";
 import { getKidProfile } from "@/lib/v2/data";
 import { getKidReminderTime } from "@/lib/v2/kid-ops";
+import { getKidInitials } from "@/lib/v2/high-scores";
 import { KidSettingsPanel } from "./_components/KidSettingsPanel";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +63,7 @@ export default async function KidSettingsPage({
         slug={slug}
         initialAvatar={kid.avatar_emoji}
         initialReminderTime={reminderTime}
+        initialInitials={(await getKidInitials(household.id as string))[kid.id] ?? ""}
       />
     </ModalShell>
   );

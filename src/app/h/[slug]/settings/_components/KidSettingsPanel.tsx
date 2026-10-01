@@ -9,8 +9,10 @@ import { REMINDER_TIMES } from "@/lib/reminder-times";
 import { AvatarPicker } from "../../_components/AvatarPicker";
 import {
   updateKidAvatarAction,
+  updateKidInitialsAction,
   updateKidReminderAction,
 } from "../../_actions/kid-settings";
+import { cleanInitials } from "@/lib/initials";
 
 type NotifState = "loading" | "unsupported" | "blocked" | "off" | "on";
 
@@ -27,11 +29,31 @@ export function KidSettingsPanel({
   slug,
   initialAvatar,
   initialReminderTime,
+  initialInitials,
 }: {
   slug: string;
   initialAvatar: string;
   initialReminderTime: string | null;
+  initialInitials: string;
 }) {
+  // ---- High score initials --------------------------------------------------
+  const [initials, setInitials] = useState(initialInitials);
+  const [savedInitials, setSavedInitials] = useState(initialInitials);
+  const [initialsMsg, setInitialsMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [initialsPending, startInitials] = useTransition();
+
+  const saveInitials = () => {
+    setInitialsMsg(null);
+    startInitials(async () => {
+      const res = await updateKidInitialsAction(slug, initials);
+      if (res.ok) {
+        setInitialsMsg({ kind: "ok", text: "Saved!" });
+        setInitials(res.initials);
+        setSavedInitials(res.initials);
+      } else setInitialsMsg({ kind: "err", text: res.error });
+    });
+  };
+
   // ---- Avatar selection ----------------------------------------------------
   const [avatarMsg, setAvatarMsg] = useState<{
     kind: "ok" | "err";
@@ -188,6 +210,53 @@ export function KidSettingsPanel({
           )}
         </div>
       </div>
+
+      <div className="h-px bg-pp-line/70 my-6" />
+
+      {/* High score initials */}
+      <h2
+        className="text-pp-primary leading-tight"
+        style={{ fontSize: 21, fontWeight: 500 }}
+      >
+        Your initials
+      </h2>
+      <p className="mt-2 text-pp-primary text-[12px] font-medium leading-snug">
+        Shown beside your high scores in the games. Up to 3 letters.
+      </p>
+      <form
+        className="mt-4 flex flex-wrap items-center gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          saveInitials();
+        }}
+      >
+        <input
+          aria-label="Your initials"
+          value={initials}
+          onChange={(e) => setInitials(cleanInitials(e.target.value))}
+          maxLength={3}
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
+          className="w-24 rounded-full bg-pp-soft text-pp-primary font-black tracking-[0.3em] text-center px-4 py-2 text-[18px] uppercase focus:outline-none focus:ring-2 focus:ring-pp-primary"
+        />
+        <button
+          type="submit"
+          disabled={initialsPending || initials === savedInitials}
+          className="rounded-full bg-pp-tint text-pp-primary font-semibold px-5 py-2 text-[14px] transition hover:bg-pp-tint-hover disabled:opacity-50"
+        >
+          Save
+        </button>
+        <span className="min-h-[18px] text-xs">
+          {initialsPending && <span className="text-pp-muted">Saving…</span>}
+          {!initialsPending && initialsMsg?.kind === "ok" && (
+            <span className="text-emerald-700">{initialsMsg.text}</span>
+          )}
+          {!initialsPending && initialsMsg?.kind === "err" && (
+            <span className="text-rose-600">{initialsMsg.text}</span>
+          )}
+        </span>
+      </form>
 
       <div className="h-px bg-pp-line/70 my-6" />
 
