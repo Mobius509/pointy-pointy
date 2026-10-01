@@ -12,7 +12,7 @@ import {
   type Area,
 } from "./canvasGame";
 import { confettiStyle, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
-import { playOw, playSound } from "./sounds";
+import { playSound } from "./sounds";
 
 // Artwork: a few moles, straight on or turned. Each time one pops up it's
 // a random mole, and the turned ones are randomly mirrored so they face
@@ -151,7 +151,7 @@ function hit(h: Hole, m: Mole, x: number, y: number) {
 function bonk(h: Hole, m: Mole) {
   m.bonked = 0.35;
   void playSound("pop");
-  playOw();
+  void playSound("ow");
   if (navigator.vibrate) navigator.vibrate(20);
   confetti({
     ...confettiStyle(),

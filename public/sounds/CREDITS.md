@@ -23,3 +23,10 @@ some are CC BY-NC (no commercial use).
 | fanfare.m4a | Fanfare (RPG) | colorscrimsontears | https://freesound.org/s/566203/ |
 | power-up.m4a | Apply (RPG) | colorscrimsontears | https://freesound.org/s/577961/ |
 | blip-talk.m4a | Talking (RPG) 1 | colorscrimsontears | https://freesound.org/s/641903/ |
+| ow-1.m4a | oww | margo_heston | https://freesound.org/s/193308/ |
+| ow-2.m4a | Bunny oww | mrgreaper | https://freesound.org/s/223486/ |
+| ow-3.m4a | Bunny sword insert | mrgreaper | https://freesound.org/s/381830/ |
+| ow-4.m4a | short oww | xcallono | https://freesound.org/s/457280/ |
+| ow-5.m4a | hurt4 | (deleted user) | https://freesound.org/s/553285/ |
+| ow-6.m4a | ow voice 1 | alex36917 | https://freesound.org/s/585605/ |
+| ow-7.m4a | short oww | qubodup | https://freesound.org/s/743351/ |

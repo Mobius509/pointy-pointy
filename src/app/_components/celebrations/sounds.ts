@@ -17,11 +17,12 @@ const SOUNDS = {
   pop: ["/sounds/pop-cracker.m4a", "/sounds/pop-balloons.m4a"],
   boom: ["/sounds/boom.m4a"],
   laser: ["/sounds/laser.m4a", "/sounds/laser-2.m4a"],
-} as const;
+  ow: [1, 2, 3, 4, 5, 6, 7].map((n) => `/sounds/ow-${n}.m4a`),
+};
 
 export type SoundKind = keyof typeof SOUNDS;
 
-const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6, laser: 0.5 };
+const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6, laser: 0.5, ow: 0.9 };
 const MUTE_KEY = "pp:sound-muted";
 
 let ctx: AudioContext | null = null;
@@ -83,58 +84,4 @@ export async function playSound(kind: SoundKind): Promise<void> {
   source.buffer = buffer;
   source.connect(gain).connect(ctx.destination);
   source.start();
-}
-
-// A cartoon "oww!" (no recording: a buzzy voice through two vowel filters
-// sliding "ah" → "oo", with the pitch jumping up then falling). Every call
-// is a little different — squeaky to deep, short to long, sometimes a
-// double "ow-ow!" — so a run of bonks doesn't repeat itself.
-export function playOw(): void {
-  if (!ctx || ctx.state !== "running" || isMuted()) return;
-  const twice = Math.random() < 0.2;
-  const pitch = 200 + Math.random() * 380; // Hz
-  const length = twice ? 0.18 : 0.28 + Math.random() * 0.3; // seconds
-  const start = ctx.currentTime;
-  ow(ctx, start, pitch, length);
-  if (twice) ow(ctx, start + length + 0.05, pitch * 1.1, length * 1.2);
-}
-
-function ow(ac: AudioContext, at: number, pitch: number, length: number) {
-  const end = at + length;
-  const voice = ac.createOscillator();
-  voice.type = "sawtooth";
-  voice.frequency.setValueAtTime(pitch * 0.9, at);
-  voice.frequency.linearRampToValueAtTime(pitch * 1.3, at + length * 0.2);
-  voice.frequency.exponentialRampToValueAtTime(pitch * 0.6, end);
-  // A little wobble in the voice.
-  const wobble = ac.createOscillator();
-  const wobbleDepth = ac.createGain();
-  wobble.frequency.value = 6 + Math.random() * 3;
-  wobbleDepth.gain.value = pitch * 0.04;
-  wobble.connect(wobbleDepth).connect(voice.frequency);
-
-  // Two vowel formants: "ah" (750 / 1150 Hz) closing to "oo" (350 / 650 Hz).
-  const out = ac.createGain();
-  out.gain.setValueAtTime(0.0001, at);
-  out.gain.exponentialRampToValueAtTime(0.55, at + 0.02);
-  out.gain.setValueAtTime(0.55, end - length * 0.4);
-  out.gain.exponentialRampToValueAtTime(0.0001, end);
-  for (const [from, to, q, level] of [
-    [750, 350, 6, 1],
-    [1150, 650, 9, 0.6],
-  ]) {
-    const formant = ac.createBiquadFilter();
-    formant.type = "bandpass";
-    formant.Q.value = q;
-    formant.frequency.setValueAtTime(from, at);
-    formant.frequency.exponentialRampToValueAtTime(to, end);
-    const g = ac.createGain();
-    g.gain.value = level * 2.5;
-    voice.connect(formant).connect(g).connect(out);
-  }
-  out.connect(ac.destination);
-  voice.start(at);
-  wobble.start(at);
-  voice.stop(end + 0.05);
-  wobble.stop(end + 0.05);
 }
