@@ -18,6 +18,7 @@ const GAME_NAMES: Record<string, string> = {
   worm: "Worm",
   chomper: "Chomper",
   asteroids: "Asteroids",
+  mole: "Whack-a-mole",
 };
 const MAX_SCORE = 100_000; // sanity cap
 

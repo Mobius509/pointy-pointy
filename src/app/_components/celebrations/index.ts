@@ -6,6 +6,7 @@ import { playAsteroids, playAsteroidsGame } from "./asteroids";
 import { playBalloonGame, playBalloons } from "./balloons";
 import { playChomper, playChomperGame } from "./chomper";
 import { playJackpot } from "./jackpot";
+import { playMole, playMoleGame } from "./mole";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -147,6 +148,15 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Chomper",
     description: "A mini maze with two turns — tap to turn. Keep playing: dots, monsters, three lives.",
     play: playChomper,
+  },
+  {
+    id: "mole",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🔨", label: "bonks", seconds: 30, start: playMoleGame },
+    name: "Whack-a-mole",
+    description: "Bonk the moles holding the points. Keep playing: 30 seconds of moles — bonk as many as you can.",
+    play: playMole,
   },
   {
     id: "asteroids",

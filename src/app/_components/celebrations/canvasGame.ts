@@ -85,7 +85,7 @@ export function gameInput(handlers: {
   key?: (dir: "up" | "down" | "left" | "right") => void;
 }): () => void {
   let pressed = false;
-  const onButton = (e: Event) => !!(e.target as Element | null)?.closest("button");
+  const onButton = (e: Event) => e.target instanceof Element && !!e.target.closest("button");
   const down = (e: PointerEvent) => {
     if (onButton(e)) return;
     pressed = true;
