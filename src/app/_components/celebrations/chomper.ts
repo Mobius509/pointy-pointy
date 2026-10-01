@@ -15,8 +15,8 @@ import { TINTS } from "./balloons";
 import { playSound } from "./sounds";
 
 // Artwork slots. The chomper is drawn facing right, mouth open and mouth
-// closed (it flips to face where it's going). Until it exists, the kid's
-// avatar is cut into a pac-man shape. The monsters chasing it are drawn
+// closed (it flips to face where it's going). Until it exists, it's the
+// red orb recolored yellow with a pac-man mouth cut out. The monsters chasing it are drawn
 // facing forward.
 const CHOMPER_OPEN_SRC: string | undefined = undefined; // e.g. "/anims/chomper-open.webp"
 const CHOMPER_CLOSED_SRC: string | undefined = undefined; // e.g. "/anims/chomper-closed.webp"
@@ -54,11 +54,13 @@ function drawDot(ctx: CanvasRenderingContext2D, img: CanvasImageSource | null, x
 type ChomperArt = {
   open: HTMLImageElement | null;
   closed: HTMLImageElement | null;
-  avatar: HTMLImageElement | null;
+  ball: CanvasImageSource | null;
 };
-async function loadChomperArt(avatarSrc: string): Promise<ChomperArt> {
+async function loadChomperArt(): Promise<ChomperArt> {
   const [open, closed] = await Promise.all([loadImage(CHOMPER_OPEN_SRC), loadImage(CHOMPER_CLOSED_SRC)]);
-  return { open, closed, avatar: open ? null : await loadImage(avatarSrc) };
+  if (open) return { open, closed, ball: null };
+  const orb = await loadImage(BIG_DOT_SRC);
+  return { open, closed, ball: orb ? tinted(orb, "hue-rotate(48deg) saturate(1.8) brightness(1.4)") : null };
 }
 
 // # wall   . dot   o power dot   G monster house (no dots)   P start
@@ -123,7 +125,7 @@ function step(m: Mover, dt: number, choose: (m: Mover) => Dir | null) {
 const pos = (m: Mover) => ({ c: m.c + (m.tc - m.c) * m.t, r: m.r + (m.tr - m.r) * m.t });
 
 // Draws the chomper facing `angle`, chomping: the artwork if there is
-// some, else the avatar with a pac-man mouth.
+// some, else the yellow ball with a pac-man mouth.
 function drawChomper(
   ctx: CanvasRenderingContext2D,
   art: ChomperArt | null,
@@ -143,7 +145,7 @@ function drawChomper(
     ctx.restore();
     return;
   }
-  const avatar = art?.avatar ?? null;
+  const ball = art?.ball ?? null;
   const mouth = (Math.sin(time * 18) * 0.5 + 0.5) * 0.7 + 0.05; // radians, opening/closing
   const r = size / 2;
   ctx.save();
@@ -154,8 +156,8 @@ function drawChomper(
   ctx.arc(0, 0, r, mouth, Math.PI * 2 - mouth);
   ctx.closePath();
   ctx.clip();
-  ctx.rotate(-angle); // keep the avatar upright inside the mouth shape
-  if (avatar) ctx.drawImage(avatar, -r, -r, size, size);
+  ctx.rotate(-angle); // keep the ball's shine upright inside the mouth shape
+  if (ball) ctx.drawImage(ball, -r, -r, size, size);
   else {
     ctx.fillStyle = color("party-yellow");
     ctx.fillRect(-r, -r, size, size);
@@ -226,7 +228,7 @@ function crumbs(x: number, y: number, n = 14) {
 // points are revealed. If nobody taps, it turns by itself after a moment.
 export async function playChomper(opts: CelebrationOptions): Promise<void> {
   const { layer, ctx, W, H, area } = createCanvasGame("celebration");
-  const [art, dotArt] = await Promise.all([loadChomperArt(opts.avatarSrc), loadDotArt()]);
+  const [art, dotArt] = await Promise.all([loadChomperArt(), loadDotArt()]);
   const size = Math.min(W * 0.16, 64);
 
   // Right → down → right: start, corner 1, corner 2, exit.
@@ -370,7 +372,7 @@ export function playChomperGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, safe: area } = createCanvasGame("game"); // the maze stays fully in view
   let art: ChomperArt | null = null;
   let monsterArt: MonsterArt = [];
-  void loadChomperArt(opts.avatarSrc).then((a) => (art = a));
+  void loadChomperArt().then((a) => (art = a));
   void loadMonsterArt().then((a) => (monsterArt = a));
   let dotArt: DotArt = { dot: null, big: [] };
   void loadDotArt().then((a) => (dotArt = a));
