@@ -45,7 +45,7 @@ export function createCanvasGame(mode: "celebration" | "game"): CanvasGame {
     return { layer, ctx, W, H, area, safe: area };
   }
   const top = 76;
-  const bottom = 116;
+  const bottom = 160; // the Done button, lifted clear of the phone's bottom edge (pb-safe-bottom)
   return { layer, ctx, W, H, area: { x: 0, y: 0, w: W, h: H }, safe: { x: 12, y: top, w: W - 24, h: H - top - bottom } };
 }
 

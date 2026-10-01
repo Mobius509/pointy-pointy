@@ -88,6 +88,12 @@ body {
 
 /* ----- Gradients ------------------------------------------------------------ */
 @layer utilities {
+  /* Bottom padding that keeps buttons clear of the bottom edge on phones:
+     tapping there brings up Safari's toolbar instead of the button (and on
+     a home-screen app it's the home bar). */
+  .pb-safe-bottom {
+    padding-bottom: max(4rem, calc(env(safe-area-inset-bottom) + 1.5rem));
+  }
   /* Lavender page background used behind every screen. */
   .bg-page {
     background: linear-gradient(
@@ -180,7 +186,7 @@ body {
     @apply fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-pp-primary-strong/30 backdrop-blur-sm p-0 sm:p-4;
   }
   .modal-panel {
-    @apply w-full sm:max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] shadow-xl p-6 pb-8 sm:pb-6 max-h-[92vh] overflow-y-auto animate-celebrate-pop-in;
+    @apply w-full sm:max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] shadow-xl p-6 pb-safe-bottom sm:pb-6 max-h-[92vh] overflow-y-auto animate-celebrate-pop-in;
   }
 
   /* Form fields. */

@@ -270,7 +270,7 @@ export function CelebrationScreen({
         // While a game or a tap-to-unlock effect is going, swipes and drags
         // steer the game instead of scrolling the screen (phones cancel the
         // gesture otherwise).
-        className={`fixed inset-0 z-[60] flex flex-col items-center px-6 pb-8 pt-6 overflow-y-auto ${
+        className={`fixed inset-0 z-[60] flex flex-col items-center px-6 pb-safe-bottom pt-6 overflow-y-auto ${
           playing || (effect.revealsPoints && !revealed) ? "touch-none" : ""
         }`}
       >

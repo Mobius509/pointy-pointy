@@ -10,6 +10,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Lets env(safe-area-inset-*) report the home bar / notch (see
+  // .pb-safe-bottom in globals.css).
+  viewportFit: "cover",
   // Browser chrome color — matches --pp-bg-top in globals.css (meta tags
   // can't read CSS variables).
   themeColor: "#DCD9FB",
