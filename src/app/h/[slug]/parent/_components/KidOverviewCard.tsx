@@ -9,6 +9,7 @@ import type {
 import { frequencyLabel, humanizeDate, type Frequency } from "@/lib/time";
 import { avatarSrc } from "@/lib/avatar";
 import {
+  approveAllCompletionsAction,
   approveCompletionAction,
   denyCompletionAction,
 } from "../_actions/approvals";
@@ -69,6 +70,9 @@ export function KidOverviewCard({
   progress,
   milestones,
 }: Props) {
+  // Suggested bonuses need a points value, so "Approve all" skips them.
+  const approvable = pending.filter((c) => !(c.task_id === null && c.is_bonus));
+
   const goalPct = goal
     ? Math.min(
         100,
@@ -132,12 +136,26 @@ export function KidOverviewCard({
           <div className="space-y-6">
             {/* To Approve */}
             <div>
-              <h4
-                className="text-pp-primary-strong"
-                style={{ fontSize: 14, fontWeight: 600 }}
-              >
-                To Approve
-              </h4>
+              <div className="flex items-center justify-between gap-3">
+                <h4
+                  className="text-pp-primary-strong"
+                  style={{ fontSize: 14, fontWeight: 600 }}
+                >
+                  To Approve
+                </h4>
+                {approvable.length > 1 && (
+                  <form action={approveAllCompletionsAction}>
+                    <input type="hidden" name="slug" value={slug} />
+                    <input type="hidden" name="kidProfileId" value={kid.id} />
+                    <button
+                      type="submit"
+                      className="rounded-full bg-pp-primary text-white font-semibold px-4 py-1 text-[12px] transition hover:bg-pp-primary-strong active:scale-[0.99]"
+                    >
+                      Approve all ({approvable.length})
+                    </button>
+                  </form>
+                )}
+              </div>
               {pending.length === 0 ? (
                 <p className="mt-2 italic text-pp-muted" style={{ fontSize: 12 }}>
                   Nothing waiting on you.

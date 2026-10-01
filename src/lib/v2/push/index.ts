@@ -253,12 +253,27 @@ export function notifyCompletionApproved(
   taskName: string,
   points: number,
 ) {
+  notifyCompletionsApproved(householdId, kidProfileId, [{ name: taskName, points }]);
+}
+
+// Parent approved several at once ("Approve all") → one notification.
+export function notifyCompletionsApproved(
+  householdId: string,
+  kidProfileId: string,
+  items: { name: string; points: number }[],
+) {
+  if (items.length === 0) return;
+  const total = items.reduce((sum, i) => sum + i.points, 0);
+  const names = items.map((i) => i.name);
+  const listed = names.length > 3 ? `${names.slice(0, 3).join(", ")}…` : names.join(", ");
   inBackground(() =>
-    notifyKid(householdId, kidProfileId, {
-      title: `${taskName} approved!`,
-      body: `+${pts(points)}`,
-      tag: "approved",
-    }),
+    notifyKid(
+      householdId,
+      kidProfileId,
+      items.length === 1
+        ? { title: `${names[0]} approved!`, body: `+${pts(total)}`, tag: "approved" }
+        : { title: `${items.length} tasks approved!`, body: `+${pts(total)} · ${listed}`, tag: "approved" },
+    ),
   );
 }
 

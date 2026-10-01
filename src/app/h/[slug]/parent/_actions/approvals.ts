@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
-import { notifyCompletionApproved } from "@/lib/v2/push";
+import { notifyCompletionApproved, notifyCompletionsApproved } from "@/lib/v2/push";
 
 export async function approveCompletionAction(formData: FormData) {
   const slug = String(formData.get("slug") ?? "");
@@ -41,6 +41,39 @@ export async function approveCompletionAction(formData: FormData) {
       approved.points_snapshot as number,
     );
   }
+
+  revalidatePath(`/h/${slug}/parent`);
+  revalidatePath(`/h/${slug}/parent/activity`);
+  revalidatePath(`/h/${slug}`);
+}
+
+// "Approve all" for one kid: approves everything waiting except suggested
+// bonuses (those need a points value first), with a single notification.
+export async function approveAllCompletionsAction(formData: FormData) {
+  const slug = String(formData.get("slug") ?? "");
+  const household = await requireHouseholdAccess(slug);
+
+  const kidProfileId = String(formData.get("kidProfileId") ?? "");
+  if (!kidProfileId) throw new Error("Missing kid.");
+
+  const { data: approved, error } = await supabaseV2Admin
+    .from("completions")
+    .update({ status: "approved" })
+    .eq("household_id", household.id)
+    .eq("kid_profile_id", kidProfileId)
+    .eq("status", "pending")
+    .or("task_id.not.is.null,is_bonus.eq.false") // skip suggested bonuses
+    .select("task_name_snapshot, points_snapshot");
+  if (error) throw error;
+
+  notifyCompletionsApproved(
+    household.id,
+    kidProfileId,
+    (approved ?? []).map((c) => ({
+      name: c.task_name_snapshot as string,
+      points: c.points_snapshot as number,
+    })),
+  );
 
   revalidatePath(`/h/${slug}/parent`);
   revalidatePath(`/h/${slug}/parent/activity`);
