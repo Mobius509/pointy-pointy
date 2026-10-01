@@ -149,6 +149,41 @@ export function tinted(img: HTMLImageElement | HTMLCanvasElement, filter: string
   return c;
 }
 
+// A copy of `img` cropped to its visible pixels (drops the empty margin
+// around artwork like the avatars), so it can be sized and placed like art
+// that has none.
+export function trimmed(img: HTMLImageElement): HTMLCanvasElement | HTMLImageElement {
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  if (!g || !w || !h) return img;
+  g.drawImage(img, 0, 0);
+  let data: Uint8ClampedArray;
+  try {
+    data = g.getImageData(0, 0, w, h).data;
+  } catch {
+    return img; // cross-origin image: can't read pixels
+  }
+  let top = h, left = w, right = -1, bottom = -1;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++)
+      if (data[(y * w + x) * 4 + 3] > 16) {
+        if (x < left) left = x;
+        if (x > right) right = x;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+      }
+  if (right < 0) return img;
+  const out = document.createElement("canvas");
+  out.width = right - left + 1;
+  out.height = bottom - top + 1;
+  out.getContext("2d")?.drawImage(c, left, top, out.width, out.height, 0, 0, out.width, out.height);
+  return out;
+}
+
 // "rgb(r,g,b)" / "rgba(r,g,b,a)" for a --pp-* token.
 export function color(token: string, alpha = 1): string {
   const [r, g, b] = tokenRgb(token);

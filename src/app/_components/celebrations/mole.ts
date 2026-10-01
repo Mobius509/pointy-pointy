@@ -5,6 +5,7 @@ import {
   drawLabel,
   gameInput,
   loadImage,
+  trimmed,
   pointChunks,
   rand,
   runLoop,
@@ -92,7 +93,7 @@ function drawMole(
   h: Hole,
   m: Mole,
   time: number,
-  avatar: HTMLImageElement | null = null,
+  avatar: HTMLImageElement | HTMLCanvasElement | null = null,
 ) {
   if (m.pop <= 0) return;
   const { w, h: mh } = moleSize(h);
@@ -117,10 +118,9 @@ function drawMole(
   const img = m.avatar ? avatar : art[m.look.art];
   if (img) {
     // Keep each artwork's own proportions, standing on the same spot.
-    // (Avatars have space around them, so they're drawn a bit bigger.)
-    const iw = m.avatar ? w * 1.35 : w;
-    const ih = (iw * img.naturalHeight) / img.naturalWidth;
-    ctx.drawImage(img, -iw / 2, mh / 2 - ih, iw, ih);
+    const [nw, nh] = img instanceof HTMLImageElement ? [img.naturalWidth, img.naturalHeight] : [img.width, img.height];
+    const ih = (w * nh) / nw;
+    ctx.drawImage(img, -w / 2, mh / 2 - ih, w, ih);
   }
   else {
     ctx.fillStyle = color("muted");
@@ -291,8 +291,9 @@ export function playMoleGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, safe } = createCanvasGame("game");
   let art: MoleArt = [];
   void loadMoleArt().then((a) => (art = a));
-  let avatar: HTMLImageElement | null = null;
-  void loadImage(opts.avatarSrc).then((i) => (avatar = i));
+  // Cropped to the character itself, so it sits in the hole like a mole.
+  let avatar: HTMLImageElement | HTMLCanvasElement | null = null;
+  void loadImage(opts.avatarSrc).then((i) => (avatar = i && trimmed(i)));
   const holes = layoutHoles(safe);
   // "-3" pop-ups after bonking the avatar.
   const oops: { x: number; y: number; t: number }[] = [];
