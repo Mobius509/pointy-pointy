@@ -277,6 +277,23 @@ export function notifyCompletionsApproved(
   );
 }
 
+// A streak reached its goal → that kid: bonus points and an arcade ticket.
+export function notifyStreakReward(
+  householdId: string,
+  kidProfileId: string,
+  streakName: string,
+  days: number,
+  points: number,
+) {
+  inBackground(() =>
+    notifyKid(householdId, kidProfileId, {
+      title: `🔥 ${days}-day streak!`,
+      body: `${streakName}: ${points > 0 ? `+${pts(points)} and ` : ""}an arcade ticket 🎟️`,
+      tag: "streak",
+    }),
+  );
+}
+
 // Parent awarded a bonus → that kid.
 export function notifyBonusAwarded(
   householdId: string,

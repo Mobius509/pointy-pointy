@@ -4,6 +4,17 @@ import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
 import { notifyCompletionApproved, notifyCompletionsApproved } from "@/lib/v2/push";
+import { checkStreakRewards } from "@/lib/v2/streaks";
+
+// After approving: pay any streak rewards this completed. Never lets a
+// streak problem block the approval itself.
+async function payStreaks(householdId: string, timezone: string, kidProfileId: string) {
+  try {
+    await checkStreakRewards({ householdId, kidProfileId, timezone });
+  } catch (e) {
+    console.error("[streaks] reward check failed", e);
+  }
+}
 
 export async function approveCompletionAction(formData: FormData) {
   const slug = String(formData.get("slug") ?? "");
@@ -29,7 +40,7 @@ export async function approveCompletionAction(formData: FormData) {
     .update(update)
     .eq("id", id)
     .eq("household_id", household.id)
-    .select("kid_profile_id, task_name_snapshot, points_snapshot")
+    .select("kid_profile_id, task_id, task_name_snapshot, points_snapshot")
     .maybeSingle();
   if (error) throw error;
 
@@ -40,6 +51,7 @@ export async function approveCompletionAction(formData: FormData) {
       approved.task_name_snapshot as string,
       approved.points_snapshot as number,
     );
+    if (approved.task_id) await payStreaks(household.id, household.timezone, approved.kid_profile_id as string);
   }
 
   revalidatePath(`/h/${slug}/parent`);
@@ -74,6 +86,7 @@ export async function approveAllCompletionsAction(formData: FormData) {
       points: c.points_snapshot as number,
     })),
   );
+  if (approved?.length) await payStreaks(household.id, household.timezone, kidProfileId);
 
   revalidatePath(`/h/${slug}/parent`);
   revalidatePath(`/h/${slug}/parent/activity`);

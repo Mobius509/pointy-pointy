@@ -6,6 +6,9 @@ import { clearKidSession, getKidSession } from "@/lib/v2/auth";
 import { getKidProfiles } from "@/lib/v2/data";
 import { getKidTodayView } from "@/lib/v2/kid-ops";
 import { getHighScores } from "@/lib/v2/high-scores";
+import { getArcade, getKidStreaks } from "@/lib/v2/streaks";
+import { Arcade } from "./_components/Arcade";
+import { KidStreaks } from "./_components/KidStreaks";
 import { avatarSrc } from "@/lib/avatar";
 import { KidPicker } from "./_components/KidPicker";
 import { V2DailyChecklist } from "./_components/V2DailyChecklist";
@@ -78,7 +81,16 @@ export default async function KidViewPage({
   }
   const { kid, goal, progress, milestones, items, pendingProposals, recentApprovals } =
     view;
-  const highScores = await getHighScores(household.id as string);
+  const kidCtx = {
+    householdId: household.id as string,
+    kidProfileId: session.kidProfileId,
+    timezone: household.timezone as string,
+  };
+  const [highScores, streaks, arcade] = await Promise.all([
+    getHighScores(household.id as string),
+    getKidStreaks(kidCtx),
+    getArcade(kidCtx),
+  ]);
 
   // First name only on every screen — last name (= family name) takes up
   // too much room in the centered header and isn't needed by the kid.
@@ -197,6 +209,12 @@ export default async function KidViewPage({
 
           {/* Did something extra? */}
           <V2KidProposal slug={slug} pendingProposals={pendingProposals} />
+
+          {/* Streaks, and the games they unlock. */}
+          <KidStreaks streaks={streaks} items={items} />
+          {(streaks.length > 0 || arcade.unlocked.length > 0 || arcade.tickets.length > 0) && (
+            <Arcade slug={slug} avatarSrc={avatarSrc(kid.avatar_emoji)} arcade={arcade} highScores={highScores} />
+          )}
 
           {/* Celebrate approvals this device hasn't celebrated yet. */}
           <CelebrationOverlay

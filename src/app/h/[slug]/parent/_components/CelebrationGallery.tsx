@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { CELEBRATIONS, playCelebration, unlockAudio } from "@/app/_components/celebrations";
 import { CelebrationScreen, type HighScore } from "@/app/_components/CelebrationScreen";
 import { avatarSrc } from "@/lib/avatar";
+import { ConfirmDialog } from "@/app/_components/Dialog";
 import type { NextUp } from "@/lib/next-up";
 import { SectionPill } from "./ui";
 import {
@@ -65,14 +66,16 @@ export function CelebrationGallery({
       const res = await setScoreNameAction(slug, name);
       setSaved(res.ok ? "Saved." : res.error ?? "Couldn't save.");
     });
-  // Clearing a game's high score asks "Sure?" right on the tile (no browser
-  // pop-up — those don't show in every app).
+  // Clearing a game's high score asks first, in a dialog.
   const [confirmClear, setConfirmClear] = useState<string | null>(null);
+  const [clearing, startClear] = useTransition();
   const clearScore = (game: string) =>
-    start(async () => {
+    startClear(async () => {
       await clearHighScoresAction(slug, game);
       setConfirmClear(null);
     });
+  const clearName = CELEBRATIONS.find((c) => c.id === confirmClear)?.name ?? "";
+  const clearBest = confirmClear ? highScores[confirmClear] : undefined;
   const [kidId, setKidId] = useState(kids[0]?.id);
   // Which effect the preview screen should force ("" = random).
   const [preview, setPreview] = useState<string | null>(null);
@@ -82,6 +85,20 @@ export function CelebrationGallery({
 
   return (
     <section className="card">
+      <ConfirmDialog
+        open={confirmClear !== null}
+        title={`Clear the ${clearName} high score?`}
+        message={
+          clearBest
+            ? `🏆 ${clearBest.score} · ${clearBest.initials} will be wiped and the next game sets a new record. This can't be undone.`
+            : undefined
+        }
+        confirmLabel="Clear high score"
+        danger
+        pending={clearing}
+        onConfirm={() => confirmClear && clearScore(confirmClear)}
+        onCancel={() => setConfirmClear(null)}
+      />
       <SectionPill>Celebrations</SectionPill>
       <p className="text-pp-muted mt-2">
         When points get approved, your kid sees one of these at random the next
@@ -151,34 +168,13 @@ export function CelebrationGallery({
               {highScores[c.id] && highScores[c.id].score > 0 && (
                 <p className="mt-1 text-xs font-bold text-pp-primary tabular-nums">
                   🏆 High score: {highScores[c.id].score} · {highScores[c.id].initials}
-                  {confirmClear === c.id ? (
-                    <span className="ml-2 font-semibold">
-                      <span className="text-pp-muted">Sure?</span>
-                      <button
-                        type="button"
-                        onClick={() => clearScore(c.id)}
-                        disabled={pending}
-                        className="ml-1.5 text-rose-600 underline underline-offset-2"
-                      >
-                        {pending ? "Clearing…" : "Yes, clear"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmClear(null)}
-                        className="ml-1.5 text-pp-muted underline underline-offset-2"
-                      >
-                        No
-                      </button>
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setConfirmClear(c.id)}
-                      className="ml-2 font-semibold text-pp-muted underline underline-offset-2"
-                    >
-                      Clear
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setConfirmClear(c.id)}
+                    className="ml-2 font-semibold text-pp-muted underline underline-offset-2"
+                  >
+                    Clear
+                  </button>
                 </p>
               )}
             </div>

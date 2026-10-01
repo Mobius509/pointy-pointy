@@ -26,6 +26,8 @@ type Props = {
   goal: V2Goal | null;
   progress: number;
   milestones: V2GoalMilestone[];
+  // Their current streaks ("🔥 4 days Morning routine · reward in 3").
+  streaks?: { name: string; days: number; needed: number }[];
 };
 
 // Always shown in the Outstanding section (even when empty). Bi-weekly and
@@ -69,6 +71,7 @@ export function KidOverviewCard({
   goal,
   progress,
   milestones,
+  streaks = [],
 }: Props) {
   // Suggested bonuses need a points value, so "Approve all" skips them.
   const approvable = pending.filter((c) => !(c.task_id === null && c.is_bonus));
@@ -223,6 +226,14 @@ export function KidOverviewCard({
                 </ul>
               )}
             </div>
+
+            {streaks.length > 0 && (
+              <p className="text-pp-primary font-semibold" style={{ fontSize: 12 }}>
+                {streaks
+                  .map((s) => `🔥 ${s.days} day${s.days === 1 ? "" : "s"} ${s.name} · reward in ${s.needed - (s.days % s.needed)}`)
+                  .join("  ·  ")}
+              </p>
+            )}
 
             {/* Outstanding — always shows Daily / Weekly / Monthly. */}
             <div>

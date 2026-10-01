@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
-import { todayInTimezone } from "@/lib/time";
+import { insertBonusCompletion } from "@/lib/v2/bonus";
 import { notifyBonusAwarded } from "@/lib/v2/push";
 
 export async function awardCustomBonusAction(formData: FormData) {
@@ -21,21 +20,14 @@ export async function awardCustomBonusAction(formData: FormData) {
   }
   const note = String(formData.get("note") ?? "").trim() || null;
 
-  const today = todayInTimezone(household.timezone);
-
-  const { error } = await supabaseV2Admin.from("completions").insert({
-    household_id: household.id,
-    kid_profile_id: kidProfileId,
-    task_id: null,
-    task_name_snapshot: name,
-    points_snapshot: Math.round(points),
-    completed_on: today,
-    is_bonus: true,
-    status: "approved",
+  await insertBonusCompletion({
+    householdId: household.id,
+    kidProfileId,
+    timezone: household.timezone,
+    name,
+    points,
     note,
-    period_key: `D-${today}`,
   });
-  if (error) throw error;
 
   notifyBonusAwarded(household.id, kidProfileId, name, Math.round(points));
 

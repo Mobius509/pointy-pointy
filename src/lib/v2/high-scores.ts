@@ -1,6 +1,7 @@
 import "server-only";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { cleanInitials, defaultKidInitials } from "@/lib/initials";
+import { ARCADE_GAMES } from "@/lib/games";
 import { notifyHighScore, type ScoreHolder } from "@/lib/v2/push";
 
 // Family high scores for the celebration mini games (v2.high_scores): one
@@ -12,14 +13,7 @@ export type HighScores = Record<string, HighScore>;
 export type { ScoreHolder };
 
 // Games that keep a high score, with the names used in notifications.
-const GAME_NAMES: Record<string, string> = {
-  pinata: "Piñata",
-  balloons: "Balloon pop",
-  worm: "Worm",
-  chomper: "Chomper",
-  asteroids: "Asteroids",
-  mole: "Whack-a-mole",
-};
+const GAME_NAMES: Record<string, string> = Object.fromEntries(ARCADE_GAMES.map((g) => [g.id, g.name]));
 const MAX_SCORE = 100_000; // sanity cap
 
 // Arcade-style initials: first letter of each word, or the first three

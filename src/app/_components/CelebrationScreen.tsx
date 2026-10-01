@@ -63,6 +63,7 @@ export function CelebrationScreen({
   highScores,
   onSubmitHighScore,
   onClose,
+  mode = "celebration",
 }: {
   avatarSrc: string;
   total: number;
@@ -78,7 +79,11 @@ export function CelebrationScreen({
   // count). Resolves with the family best afterwards.
   onSubmitHighScore?: (game: string, score: number) => Promise<{ best: HighScore; isNew: boolean } | null>;
   onClose: () => void;
+  // "game": open straight into the mini game (the kid's Arcade) — no
+  // celebration, no points; Done closes it.
+  mode?: "celebration" | "game";
 }) {
+  const gameOnly = mode === "game";
   const [headline] = useState(() => pick(HEADLINES));
   const [button] = useState(() => pick(BUTTONS));
   // Chosen up front so we know whether to hide the points until the kid
@@ -102,10 +107,10 @@ export function CelebrationScreen({
   const counterRef = useRef<HTMLDivElement>(null);
 
   // "Keep playing" mini game (piñata, balloons, and tap-to-replay ones).
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(gameOnly);
   const [score, setScore] = useState(0);
   // Score games are timed rounds; `round` bumps to start another.
-  const [round, setRound] = useState(0);
+  const [round, setRound] = useState(gameOnly ? 1 : 0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [timesUp, setTimesUp] = useState(false);
   const [lives, setLives] = useState<number | null>(null);
@@ -197,6 +202,7 @@ export function CelebrationScreen({
   // Fire the effect once the avatar has landed. Reveal effects call back
   // when the kid finishes the mini game — no timeout, they have to play.
   useEffect(() => {
+    if (gameOnly) return;
     const timer = setTimeout(() => {
       void playCelebration(
         {
@@ -210,7 +216,7 @@ export function CelebrationScreen({
       );
     }, 350);
     return () => clearTimeout(timer);
-  }, [avatarSrc, effect.id, total]);
+  }, [avatarSrc, effect.id, total, gameOnly]);
 
   // Count the points up once they're revealed.
   useEffect(() => {
@@ -260,7 +266,7 @@ export function CelebrationScreen({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={`${headline} ${total} points approved`}
+        aria-label={gameOnly ? effect.name : `${headline} ${total} points approved`}
         // While a game or a tap-to-unlock effect is going, swipes and drags
         // steer the game instead of scrolling the screen (phones cancel the
         // gesture otherwise).

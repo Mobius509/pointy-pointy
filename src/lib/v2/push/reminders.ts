@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { localTimeInTimezone, todayInTimezone } from "@/lib/time";
 import { getKidTodayView } from "@/lib/v2/kid-ops";
+import { getKidStreaks } from "@/lib/v2/streaks";
 import { notifyKid } from "./index";
 
 // Sends each kid's daily "log your points" reminder once their reminder
@@ -58,10 +59,17 @@ export async function sendReminder(
   const open = view?.items.filter((i) => i.state === "open").length ?? 0;
   if (open === 0 && opts.skipIfCaughtUp) return { open, delivered: 0 };
 
-  const body =
+  let body =
     open === 0
       ? "You're all caught up today — nice work!"
       : `You have ${open} ${open === 1 ? "task" : "tasks"} left today.`;
+
+  // A streak going that today's open tasks would break? Say so.
+  const openIds = new Set(view?.items.filter((i) => i.state === "open").map((i) => i.id));
+  const atRisk = (await getKidStreaks(ctx).catch(() => []))
+    .filter(({ run, streak }) => run.length > 0 && !run.todayDone && !run.restDay && streak.taskIds.some((id) => openIds.has(id)))
+    .sort((a, b) => b.run.length - a.run.length)[0];
+  if (atRisk) body += ` Don't break your 🔥 ${atRisk.run.length}-day ${atRisk.streak.name} streak!`;
 
   const delivered = await notifyKid(ctx.householdId, ctx.kidProfileId, {
     title: opts.test ? "Test reminder ⭐" : "Time to log your points! ⭐",

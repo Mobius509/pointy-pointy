@@ -12,6 +12,14 @@ export function todayInTimezone(timezone: string, now: Date = new Date()): strin
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
 
+// Moves a YYYY-MM-DD date by whole days ("2026-03-01", -1 → "2026-02-28").
+// Calendar math only (UTC noon), so it never trips over DST.
+export function addDays(date: string, days: number): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 // Returns the current wall-clock time as "HH:MM" (24h) in the given timezone.
 export function localTimeInTimezone(timezone: string, now: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat("en-GB", {

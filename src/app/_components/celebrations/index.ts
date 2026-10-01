@@ -19,6 +19,7 @@ import {
   type GameOptions,
 } from "./shared";
 import { playWebglBurst } from "./webglBurst";
+import { ARCADE_GAMES } from "@/lib/games";
 
 export type { CelebrationOptions, GameOptions } from "./shared";
 export { isMuted, playSound, setMuted, unlockAudio } from "./sounds";
@@ -169,6 +170,13 @@ export const CELEBRATIONS: Celebration[] = [
   },
 
 ];
+
+// The "score" games here must be exactly the arcade games (src/lib/games.ts).
+if (process.env.NODE_ENV !== "production") {
+  const games = CELEBRATIONS.filter((c) => c.game?.kind === "score").map((c) => c.id).sort().join(",");
+  const arcade = ARCADE_GAMES.map((g) => g.id).sort().join(",");
+  if (games !== arcade) console.warn(`[celebrations] score games (${games}) don't match ARCADE_GAMES (${arcade})`);
+}
 
 export { prefersReducedMotion } from "./shared";
 

@@ -12,6 +12,7 @@ import {
 import { computePeriodKey, type Frequency } from "@/lib/time";
 import { KidOverviewCard } from "./_components/KidOverviewCard";
 import { PageTitle } from "./_components/ui";
+import { getKidStreaks } from "@/lib/v2/streaks";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +82,10 @@ export default async function ParentOverviewPage({
         .filter((c) => c.status === "approved")
         .slice(0, 8);
 
+      const streaks = (
+        await getKidStreaks({ householdId: household.id, kidProfileId: kid.id, timezone: household.timezone })
+      ).map(({ streak, run }) => ({ name: streak.name, days: run.length, needed: streak.days_required }));
+
       return {
         kid,
         goal,
@@ -89,6 +94,7 @@ export default async function ParentOverviewPage({
         pending,
         outstandingByFreq,
         recentApproved,
+        streaks,
       };
     }),
   );
@@ -113,6 +119,7 @@ export default async function ParentOverviewPage({
             pending,
             outstandingByFreq,
             recentApproved,
+            streaks,
           }) => (
             <KidOverviewCard
               key={kid.id}
@@ -125,6 +132,7 @@ export default async function ParentOverviewPage({
               goal={goal}
               progress={progress}
               milestones={milestones}
+              streaks={streaks}
             />
           ),
         )

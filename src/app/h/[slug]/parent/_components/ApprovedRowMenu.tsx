@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { deleteCompletionAction } from "../_actions/approvals";
+import { ConfirmDialog } from "@/app/_components/Dialog";
 
 // Row-level ⋯ menu on Previously Approved entries. Currently just exposes
 // Remove (subtracts the points and pulls the row out of history). Mirrors
@@ -16,6 +17,7 @@ export function ApprovedRowMenu({
   label: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [pending, start] = useTransition();
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -38,21 +40,30 @@ export function ApprovedRowMenu({
   }, [open]);
 
   const onRemove = () => {
-    const ok = window.confirm(
-      `Remove "${label}"? Points will be subtracted.`,
-    );
-    if (!ok) return;
     setOpen(false);
+    setConfirming(true);
+  };
+  const remove = () =>
     start(async () => {
       const fd = new FormData();
       fd.set("slug", slug);
       fd.set("id", id);
       await deleteCompletionAction(fd);
+      setConfirming(false);
     });
-  };
 
   return (
     <div ref={ref} className="relative">
+      <ConfirmDialog
+        open={confirming}
+        title={`Remove "${label}"?`}
+        message="It comes out of the history and its points are subtracted."
+        confirmLabel="Remove"
+        danger
+        pending={pending}
+        onConfirm={remove}
+        onCancel={() => setConfirming(false)}
+      />
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

@@ -174,6 +174,15 @@ body {
     @apply py-3 px-6 text-base font-bold;
   }
 
+  /* Dialogs (src/app/_components/Dialog.tsx): dimmed backdrop + a panel
+     that's a bottom sheet on phones and a centered card on bigger screens. */
+  .modal-backdrop {
+    @apply fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-pp-primary-strong/30 backdrop-blur-sm p-0 sm:p-4;
+  }
+  .modal-panel {
+    @apply w-full sm:max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] shadow-xl p-6 pb-8 sm:pb-6 max-h-[92vh] overflow-y-auto animate-celebrate-pop-in;
+  }
+
   /* Form fields. */
   .input {
     @apply w-full rounded-xl border-pp-line bg-white px-3 py-2 text-[14px] ring-1 ring-pp-line focus:outline-none focus:ring-2 focus:ring-pp-primary;
