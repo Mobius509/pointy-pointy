@@ -302,10 +302,9 @@ export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
 }
 
 // "Keep playing": tap (or drag) anywhere and the ship flies there, facing
-// the way it's going; it fires on its own, and when it stops it turns
-// toward the nearest rock. Rocks split big → medium → small (+1 each hit) and keep
-// coming, faster over time. Three lives: a rock hitting the ship costs
-// one, and the last one is game over.
+// the way it's going and firing straight ahead. Rocks split big → medium
+// → small (+1 each hit) and keep coming, faster over time. Three lives:
+// a rock hitting the ship costs one, and the last one is game over.
 export function playAsteroidsGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, area } = createCanvasGame("game");
   let shipArt: HTMLImageElement | null = null;
@@ -358,19 +357,11 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
   runLoop(layer, (dt) => {
     elapsed += dt;
     bonked = Math.max(0, bonked - dt);
-    // Flying: face the way it's going. Stopped: turn toward the nearest rock.
+    // Flying: face the way it's going. Stopped: keep facing that way.
     if (fly(ship, target, area, dt)) {
       turn(ship, Math.atan2(target!.y - ship.y, target!.x - ship.x), 12, dt);
-    } else {
-      target = null;
-      const nearest = rocks.reduce<Rock | null>(
-        (best, r) =>
-          !best || Math.hypot(r.x - ship.x, r.y - ship.y) < Math.hypot(best.x - ship.x, best.y - ship.y) ? r : best,
-        null,
-      );
-      if (nearest) turn(ship, Math.atan2(nearest.y - ship.y, nearest.x - ship.x), 5, dt);
-    }
-    // Always firing.
+    } else target = null;
+    // Always firing, straight ahead.
     autoFire -= dt;
     if (autoFire <= 0 && rocks.length) {
       fire(ship, bullets);
