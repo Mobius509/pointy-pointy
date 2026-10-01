@@ -164,7 +164,7 @@ export const CELEBRATIONS: Celebration[] = [
     hidesStage: true,
     game: { kind: "score", icon: "☄️", label: "rocks", lives: 3, start: playAsteroidsGame },
     name: "Asteroids",
-    description: "Tap the rocks to blast them. Keep playing: tap to fly, dodge and blast — three lives.",
+    description: "Tap the rocks to blast them. Keep playing: each tap fires and flies the ship — three lives.",
     play: playAsteroids,
   },
 

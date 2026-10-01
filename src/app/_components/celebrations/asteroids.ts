@@ -175,7 +175,7 @@ function fire(ship: { x: number; y: number; angle: number }, bullets: Bullet[]) 
     vy: Math.sin(ship.angle) * BULLET_SPEED,
     life: 1.4,
   });
-  void playSound("pop");
+  void playSound("laser");
 }
 
 // Glides the ship toward `target` (eased, capped speed), kept inside the
@@ -301,8 +301,8 @@ export async function playAsteroids(opts: CelebrationOptions): Promise<void> {
   layer.remove();
 }
 
-// "Keep playing": tap (or drag) anywhere and the ship flies there, facing
-// the way it's going and firing straight ahead. Rocks split big → medium
+// "Keep playing": each tap turns the ship toward it, fires one shot, and
+// flies the ship there (drag to keep steering). Rocks split big → medium
 // → small (+1 each hit) and keep coming, faster over time. Three lives:
 // a rock hitting the ship costs one, and the last one is game over.
 export function playAsteroidsGame(opts: GameOptions): () => void {
@@ -341,6 +341,8 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
   gameInput({
     down: (x, y) => {
       hint.remove();
+      ship.angle = Math.atan2(y - ship.y, x - ship.x);
+      fire(ship, bullets);
       target = { x, y };
     },
     move: (x, y, pressed) => {
@@ -349,11 +351,12 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
     key: (dir) => {
       hint.remove();
       const [dx, dy] = { right: [1, 0], down: [0, 1], left: [-1, 0], up: [0, -1] }[dir];
+      ship.angle = Math.atan2(dy, dx);
+      fire(ship, bullets);
       target = { x: ship.x + dx * 90, y: ship.y + dy * 90 };
     },
   });
 
-  let autoFire = 0;
   runLoop(layer, (dt) => {
     elapsed += dt;
     bonked = Math.max(0, bonked - dt);
@@ -361,13 +364,6 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
     if (fly(ship, target, safe, dt)) {
       turn(ship, Math.atan2(target!.y - ship.y, target!.x - ship.x), 12, dt);
     } else target = null;
-    // Always firing, straight ahead.
-    autoFire -= dt;
-    if (autoFire <= 0 && rocks.length) {
-      fire(ship, bullets);
-      autoFire = 0.3;
-    }
-
     spawnIn -= dt;
     if (spawnIn <= 0 && rocks.length < 9) {
       spawn();

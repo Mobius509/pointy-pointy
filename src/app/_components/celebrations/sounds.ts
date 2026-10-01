@@ -16,11 +16,12 @@ const SOUNDS = {
   ],
   pop: ["/sounds/pop-cracker.m4a", "/sounds/pop-balloons.m4a"],
   boom: ["/sounds/boom.m4a"],
+  laser: ["/sounds/laser.m4a", "/sounds/laser-2.m4a"],
 } as const;
 
 export type SoundKind = keyof typeof SOUNDS;
 
-const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6 };
+const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6, laser: 0.5 };
 const MUTE_KEY = "pp:sound-muted";
 
 let ctx: AudioContext | null = null;
