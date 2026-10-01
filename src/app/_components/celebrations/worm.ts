@@ -227,10 +227,11 @@ export function playWormGame(opts: GameOptions): () => void {
   let art: Awaited<ReturnType<typeof loadArt>> = { head: null, body: null, treats: [] };
   void loadArt().then((a) => (art = a));
 
+  const pickTreat = () => (art.treats.length ? art.treats[Math.floor(Math.random() * art.treats.length)] : null);
   const spawnTreat = (): Treat => ({
     x: rand(area.x + 30, area.x + area.w - 30),
     y: rand(area.y + 30, area.y + area.h - 30),
-    img: art.treats.length ? art.treats[Math.floor(Math.random() * art.treats.length)] : null,
+    img: pickTreat(),
     r: 20,
   });
   const treats: Treat[] = [];
@@ -248,6 +249,7 @@ export function playWormGame(opts: GameOptions): () => void {
 
   runLoop(layer, (dt, time) => {
     while (treats.length < 4) treats.push(spawnTreat());
+    for (const t of treats) t.img ??= pickTreat(); // spawned before the art loaded
     // Slowly speeds up as it grows.
     worm.speed = Math.min(260, 170 + worm.segments * 1.5);
     stepWorm(worm, dt, area, target);
