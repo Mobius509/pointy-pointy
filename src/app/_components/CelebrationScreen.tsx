@@ -261,7 +261,12 @@ export function CelebrationScreen({
       role="dialog"
       aria-modal="true"
       aria-label={`${headline} ${total} points approved`}
-      className="fixed inset-0 z-[60] bg-celebrate flex flex-col items-center px-6 pb-8 pt-6 overflow-y-auto"
+      // While a game or a tap-to-unlock effect is going, swipes and drags
+      // steer the game instead of scrolling the screen (phones cancel the
+      // gesture otherwise).
+      className={`fixed inset-0 z-[60] bg-celebrate flex flex-col items-center px-6 pb-8 pt-6 overflow-y-auto ${
+        playing || (effect.revealsPoints && !revealed) ? "touch-none" : ""
+      }`}
     >
       <button
         type="button"

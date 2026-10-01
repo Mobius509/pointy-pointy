@@ -12,9 +12,23 @@ import {
 import { confettiStyle, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
 import { playSound } from "./sounds";
 
-// Artwork slot — a ghost drawn facing forward (tinted per ghost). Until it
-// exists, ghosts are drawn with shapes. The chomper is the kid's avatar.
+// Artwork slots. The chomper is drawn facing right, mouth open and mouth
+// closed (it flips to face where it's going). Until it exists, the kid's
+// avatar is cut into a pac-man shape. The ghost is drawn facing forward
+// (tinted per ghost); until it exists, ghosts are drawn with shapes.
+const CHOMPER_OPEN_SRC: string | undefined = undefined; // e.g. "/anims/chomper-open.webp"
+const CHOMPER_CLOSED_SRC: string | undefined = undefined; // e.g. "/anims/chomper-closed.webp"
 const GHOST_SRC: string | undefined = undefined; // e.g. "/anims/ghost.webp"
+
+type ChomperArt = {
+  open: HTMLImageElement | null;
+  closed: HTMLImageElement | null;
+  avatar: HTMLImageElement | null;
+};
+async function loadChomperArt(avatarSrc: string): Promise<ChomperArt> {
+  const [open, closed] = await Promise.all([loadImage(CHOMPER_OPEN_SRC), loadImage(CHOMPER_CLOSED_SRC)]);
+  return { open, closed, avatar: open ? null : await loadImage(avatarSrc) };
+}
 
 // # wall   . dot   o power dot   G ghost house (no dots)   P start
 const MAZE = [
@@ -77,16 +91,28 @@ function step(m: Mover, dt: number, choose: (m: Mover) => Dir | null) {
 }
 const pos = (m: Mover) => ({ c: m.c + (m.tc - m.c) * m.t, r: m.r + (m.tr - m.r) * m.t });
 
-// Draws the avatar with a chomping pac-man mouth, facing `angle`.
+// Draws the chomper facing `angle`, chomping: the artwork if there is
+// some, else the avatar with a pac-man mouth.
 function drawChomper(
   ctx: CanvasRenderingContext2D,
-  avatar: HTMLImageElement | null,
+  art: ChomperArt | null,
   x: number,
   y: number,
   size: number,
   angle: number,
   time: number,
 ) {
+  if (art?.open) {
+    const frame = Math.sin(time * 18) > 0 || !art.closed ? art.open : art.closed;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    if (Math.cos(angle) < -0.1) ctx.scale(1, -1); // facing left: flip, don't go upside down
+    ctx.drawImage(frame, -size / 2, -size / 2, size, size);
+    ctx.restore();
+    return;
+  }
+  const avatar = art?.avatar ?? null;
   const mouth = (Math.sin(time * 18) * 0.5 + 0.5) * 0.7 + 0.05; // radians, opening/closing
   const r = size / 2;
   ctx.save();
@@ -166,7 +192,7 @@ function crumbs(x: number, y: number, n = 14) {
 // points are revealed. If nobody taps, it turns by itself after a moment.
 export async function playChomper(opts: CelebrationOptions): Promise<void> {
   const { layer, ctx, W, H, area } = createCanvasGame("celebration");
-  const avatar = await loadImage(opts.avatarSrc);
+  const art = await loadChomperArt(opts.avatarSrc);
   const size = Math.min(W * 0.16, 64);
 
   // Right → down → right: start, corner 1, corner 2, exit.
@@ -259,6 +285,12 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
         revealed = true;
         opts.onReveal?.();
         void playSound("cheer");
+        // Clear the maze off the points screen.
+        layer
+          .animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: "forwards" })
+          .finished.then(() => {
+            done();
+          });
       }
 
       // Corridor walls: a wide lavender stroke with the path cut out.
@@ -287,9 +319,9 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
 
       const p = pointAt(d);
       const angle = p.seg === 1 && waitingAt !== 0 ? Math.PI / 2 : 0; // facing down on the middle leg
-      drawChomper(ctx, avatar, p.x, p.y, size, angle, waitingAt === null ? time : 0);
+      drawChomper(ctx, art, p.x, p.y, size, angle, waitingAt === null ? time : 0);
 
-      if (d >= total) {
+      if (d >= total && !revealed) {
         done();
         return false;
       }
@@ -304,9 +336,9 @@ export async function playChomper(opts: CelebrationOptions): Promise<void> {
 // refills it.
 export function playChomperGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, area } = createCanvasGame("game");
-  let avatar: HTMLImageElement | null = null;
+  let art: ChomperArt | null = null;
   let ghostArt: HTMLImageElement | null = null;
-  void loadImage(opts.avatarSrc).then((i) => (avatar = i));
+  void loadChomperArt(opts.avatarSrc).then((a) => (art = a));
   void loadImage(GHOST_SRC).then((i) => (ghostArt = i));
 
   const S = Math.floor(Math.min(area.w / COLS, area.h / ROWS));
@@ -474,7 +506,7 @@ export function playChomperGame(opts: GameOptions): () => void {
     const p = pos(chomper);
     const angle = Math.atan2(chomper.dir.dr, chomper.dir.dc);
     if (safeFor === 0 || Math.floor(time * 10) % 2 === 0) {
-      drawChomper(ctx, avatar, px(p.c), py(p.r), S * 0.95, angle, time);
+      drawChomper(ctx, art, px(p.c), py(p.r), S * 0.95, angle, time);
     }
   });
 
