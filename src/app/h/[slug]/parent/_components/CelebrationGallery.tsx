@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { CELEBRATIONS, playCelebration, unlockAudio } from "@/app/_components/celebrations";
 import { CelebrationScreen, type HighScore } from "@/app/_components/CelebrationScreen";
 import { avatarSrc } from "@/lib/avatar";
+import type { NextUp } from "@/lib/next-up";
 import { SectionPill } from "./ui";
 import {
   clearHighScoresAction,
@@ -12,7 +13,15 @@ import {
   submitParentHighScoreAction,
 } from "../_actions/high-scores";
 
-type Kid = { id: string; name: string; avatar_emoji: string };
+// `nextUp` / `lastMilestone` are the kid's real ones, so the preview's
+// "Next up" pill matches what they'd actually see.
+type Kid = {
+  id: string;
+  name: string;
+  avatar_emoji: string;
+  nextUp: NextUp | null;
+  lastMilestone: string | null;
+};
 
 const SAMPLE_ITEMS = [
   { id: "s1", name: "Make lunch", points: 5, isBonus: false },
@@ -202,8 +211,8 @@ export function CelebrationGallery({
           avatarSrc={src}
           total={SAMPLE_TOTAL}
           items={SAMPLE_ITEMS}
-          milestonesUnlocked={[{ name: "Ice Cream Trip" }]}
-          nextUp={{ name: "Amazon $25", pointsToGo: 730 }}
+          milestonesUnlocked={kid?.lastMilestone ? [{ name: kid.lastMilestone }] : []}
+          nextUp={kid?.nextUp ?? null}
           effectId={preview || undefined}
           highScores={highScores}
           onSubmitHighScore={

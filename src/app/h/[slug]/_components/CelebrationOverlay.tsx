@@ -7,6 +7,7 @@ import {
   type HighScore,
 } from "@/app/_components/CelebrationScreen";
 import { submitHighScoreAction } from "../_actions/kid-completions";
+import { nextUpFor } from "@/lib/next-up";
 
 // Celebrates approvals this device hasn't celebrated yet. "Seen" approval
 // ids live in browser storage per kid, so there's no server state: the
@@ -67,14 +68,7 @@ export function CelebrationOverlay({
   const total = fresh.reduce((sum, i) => sum + i.points, 0);
   const from = progress - total;
   const unlocked = milestones.filter((m) => m.points > from && m.points <= progress);
-  const nextMilestone = milestones
-    .filter((m) => m.points > progress)
-    .sort((a, b) => a.points - b.points)[0];
-  const nextUp = nextMilestone
-    ? { name: nextMilestone.name, pointsToGo: nextMilestone.points - progress }
-    : goal
-      ? { name: goal.name, pointsToGo: goal.targetPoints - progress }
-      : null;
+  const nextUp = nextUpFor(progress, milestones, goal);
 
   return (
     <CelebrationScreen

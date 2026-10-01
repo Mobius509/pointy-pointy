@@ -359,6 +359,7 @@ export function playAsteroidsGame(opts: GameOptions): () => void {
     }
 
     for (const r of rocks) {
+      r.img ??= pick(r.size === 3 ? art.rocks : art.chunks); // spawned before the art loaded
       r.x += r.vx * dt;
       r.y += r.vy * dt;
       r.rot += r.spin * dt;

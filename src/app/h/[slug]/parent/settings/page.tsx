@@ -1,7 +1,8 @@
 import { PushToggle } from "@/app/_components/PushToggle";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getCurrentUser, requireHouseholdAccess } from "@/lib/v2/auth";
-import { getKidProfiles } from "@/lib/v2/data";
+import { getActiveGoalForKid, getKidGoalProgress, getKidProfiles, getMilestonesForGoal } from "@/lib/v2/data";
+import { nextUpFor } from "@/lib/next-up";
 import { getHighScores, getKidInitials, getParentScoreName, getParentsPlay } from "@/lib/v2/high-scores";
 import { getHouseholdMembers, getPendingInvites } from "@/lib/v2/members";
 import { updateHouseholdSettingsAction } from "../_actions/settings";
@@ -79,7 +80,21 @@ export default async function ParentSettingsPage({
 
       <CelebrationGallery
         slug={slug}
-        kids={kids.map((k) => ({ id: k.id, name: k.name, avatar_emoji: k.avatar_emoji }))}
+        kids={await Promise.all(
+          kids.map(async (k) => {
+            const goal = await getActiveGoalForKid(household.id, k.id);
+            const progress = goal ? await getKidGoalProgress(household.id, k.id, goal) : 0;
+            const milestones = goal ? await getMilestonesForGoal(household.id, goal.id) : [];
+            const reached = milestones.filter((m) => m.points <= progress).sort((a, b) => b.points - a.points);
+            return {
+              id: k.id,
+              name: k.name,
+              avatar_emoji: k.avatar_emoji,
+              nextUp: nextUpFor(progress, milestones, goal && { name: goal.name, targetPoints: goal.target_points }),
+              lastMilestone: reached[0]?.name ?? null,
+            };
+          }),
+        )}
         highScores={await getHighScores(household.id)}
         parentsPlay={await getParentsPlay(household.id)}
         scoreName={me ? await getParentScoreName(household.id, me.id, me.email) : ""}
