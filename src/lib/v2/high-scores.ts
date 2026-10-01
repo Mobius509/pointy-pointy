@@ -116,11 +116,13 @@ export async function submitHighScore(
   return { best: { score, initials: initialsFor(holder.name) }, isNew: true };
 }
 
-// Wipes the family's high scores — one game, or all of them.
-export async function clearHighScores(householdId: string, game?: string): Promise<{ ok: boolean }> {
-  let q = supabaseV2Admin.from("high_scores").delete().eq("household_id", householdId);
-  if (game) q = q.eq("game", game);
-  const { error } = await q;
+// Wipes the family's high score for one game.
+export async function clearHighScores(householdId: string, game: string): Promise<{ ok: boolean }> {
+  const { error } = await supabaseV2Admin
+    .from("high_scores")
+    .delete()
+    .eq("household_id", householdId)
+    .eq("game", game);
   return { ok: !error || notSetUp(error.code) };
 }
 

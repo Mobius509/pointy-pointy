@@ -61,10 +61,10 @@ export async function setScoreNameAction(slug: string, name: string): Promise<{ 
   return error ? { ok: false, error: "Couldn't save — has the high scores update been run?" } : { ok: true };
 }
 
-// Clears the family's high scores: one game, or every game when `game` is
-// left out.
-export async function clearHighScoresAction(slug: string, game?: string): Promise<{ ok: boolean }> {
+// Clears the family's high score for one game.
+export async function clearHighScoresAction(slug: string, game: string): Promise<{ ok: boolean }> {
   const household = await requireHouseholdAccess(slug);
+  if (!game) return { ok: false };
   const res = await clearHighScores(household.id, game);
   revalidatePath(`/h/${slug}/parent/settings`);
   revalidatePath(`/h/${slug}`);
