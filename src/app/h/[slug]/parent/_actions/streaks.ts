@@ -126,13 +126,14 @@ export async function deleteStreakAction(slug: string, id: string): Promise<{ ok
   return { ok: !error };
 }
 
-// "Count this day": approve a kid's streak day (today or yesterday) even
-// though its tasks weren't all done — or undo it (`counted: false`).
+// "Count this day": approve a kid's streak day (today, or a missed day in
+// the last two weeks) even though not enough of its tasks were done — or
+// undo it (`counted: false`). `day` is YYYY-MM-DD in the family's timezone.
 export async function countStreakDayAction(
   slug: string,
   kidProfileId: string,
   streakId: string,
-  which: "today" | "yesterday",
+  day: string,
   counted: boolean,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const household = await requireHouseholdAccess(slug);
@@ -149,7 +150,7 @@ export async function countStreakDayAction(
     await countStreakDay(
       { householdId: household.id, kidProfileId, timezone: household.timezone },
       streakId,
-      which === "yesterday" ? "yesterday" : "today",
+      String(day),
       user.id,
       counted,
     );
