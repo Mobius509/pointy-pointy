@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { KidChrome } from "../_components/KidChrome";
 import { RefreshOnFocus } from "../_components/RefreshOnFocus";
 import { isEmbedded, loadKidPage } from "../_lib/kid-page";
-import { getKidVersion } from "../_lib/kid-version";
+import { getKidVersion, kidVersionSwitchAllowed, wantsDefaultKidColor } from "../_lib/kid-version";
+import { KidDevBar } from "../_components/KidDevBar";
 
 // The signed-in kid app (Stats, Tasks, Arcade, Settings, Celebrate): their
 // color, font and bars. Signed out, the page shows the kid picker in the
@@ -22,6 +23,7 @@ export default async function KidLayout({ children, params }: { children: ReactN
     >
       {children}
       <RefreshOnFocus />
+      {kidVersionSwitchAllowed() && <KidDevBar slug={slug} version={2} defaultColor={await wantsDefaultKidColor()} />}
     </KidChrome>
   );
 }

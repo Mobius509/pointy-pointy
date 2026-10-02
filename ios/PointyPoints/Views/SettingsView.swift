@@ -12,6 +12,9 @@ struct SettingsView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     ColorCard()
+                    #if DEBUG
+                    devCard
+                    #endif
                     notificationsCard
                     reminderCard
 
@@ -76,6 +79,22 @@ struct SettingsView: View {
             }
         }
     }
+
+    #if DEBUG
+    /// Debug builds only: show the default palette whatever color is picked.
+    private var devCard: some View {
+        @Bindable var model = model
+        return Card {
+            Toggle(isOn: $model.devDefaultColors) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("🎨 Default colors (dev)").font(.rounded(16, .semibold))
+                    Text("Ignore the picked color, so colors match the designs.").font(.rounded(12)).foregroundStyle(Theme.sand)
+                }
+            }
+            .tint(Theme.orange)
+        }
+    }
+    #endif
 
     private var reminderCard: some View {
         Card {

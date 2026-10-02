@@ -24,6 +24,15 @@ final class AppModel {
     /// for now), e.g. after tapping an "approved!" notification.
     var webPage: WebPage?
 
+    /// Dev (debug builds): show the default palette instead of the kid's own
+    /// color, so colors match the designs. Same as the web's dev switch.
+    var devDefaultColors = UserDefaults.standard.bool(forKey: "devDefaultColors") {
+        didSet {
+            UserDefaults.standard.set(devDefaultColors, forKey: "devDefaultColors")
+            applyPalette()
+        }
+    }
+
     private(set) var notificationStatus: UNAuthorizationStatus = .notDetermined
     /// "HH:MM" (24h, household timezone) or nil when the reminder is off.
     private(set) var reminderTime: String?
@@ -125,13 +134,18 @@ final class AppModel {
     func refresh() async {
         guard let api, token != nil else { return }
         await run {
-            let today = try await api.today()
-            self.today = today
-            if let hue = today.hue { ThemeStore.shared.palette = KidPalette(hue: hue) }
+            self.today = try await api.today()
+            self.applyPalette()
         }
     }
 
     // MARK: - Color
+
+    /// The kid's color (or the default one, with the dev switch on).
+    private func applyPalette() {
+        let hue = devDefaultColors ? KidPalette.defaultHue : (today?.hue ?? KidPalette.defaultHue)
+        ThemeStore.shared.palette = KidPalette(hue: hue)
+    }
 
     /// Recolors the app while the kid slides the color picker (not saved).
     func previewHue(_ hue: Int) {

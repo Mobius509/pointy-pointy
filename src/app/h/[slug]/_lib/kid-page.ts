@@ -6,6 +6,8 @@ import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getKidSession } from "@/lib/v2/auth";
 import { getKidHome, type KidHome } from "@/lib/v2/kid-home";
 import type { KidContext } from "@/lib/v2/kid-ops";
+import { DEFAULT_HUE } from "@/lib/kid-palette";
+import { wantsDefaultKidColor } from "./kid-version";
 
 export type KidPage = {
   household: { id: string; name: string; slug: string; timezone: string };
@@ -32,6 +34,8 @@ export const loadKidPage = cache(async (slug: string): Promise<KidPage> => {
       ? { householdId: household.id as string, kidProfileId: session.kidProfileId, timezone: household.timezone as string }
       : null;
   const home = ctx ? await getKidHome(ctx) : null;
+  // Dev switch: show the default palette instead of the kid's own color.
+  if (home && (await wantsDefaultKidColor())) home.hue = DEFAULT_HUE;
   return { household: household as KidPage["household"], ctx: home ? ctx : null, home };
 });
 

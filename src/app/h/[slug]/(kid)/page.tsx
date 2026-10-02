@@ -5,10 +5,10 @@ import { KidPicker } from "../_components/KidPicker";
 import { KidStats } from "../_components/KidStats";
 import { kidSignOutAction } from "../_actions/kid-session";
 import { loadKidPage } from "../_lib/kid-page";
-import { getKidVersion } from "../_lib/kid-version";
+import { getKidVersion, kidVersionSwitchAllowed } from "../_lib/kid-version";
 import { getHighScores } from "@/lib/v2/high-scores";
 import { KidHome as KidHomeV1 } from "../_legacy/KidHome";
-import { KidVersionSwitch } from "../_components/KidVersionSwitch";
+import { KidDevBar } from "../_components/KidDevBar";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,7 @@ export default async function KidViewPage({
       // The old single page (dev switch, for comparing).
       return (
         <Shell slug={slug}>
-          <KidVersionSwitch slug={slug} version={1} />
+          {kidVersionSwitchAllowed() && <KidDevBar slug={slug} version={1} defaultColor={false} />}
           <KidHomeV1
             slug={slug}
             view={home.view}
@@ -39,12 +39,7 @@ export default async function KidViewPage({
         </Shell>
       );
     }
-    return (
-      <>
-        <KidVersionSwitch slug={slug} version={2} />
-        <KidStats slug={slug} home={home} />
-      </>
-    );
+    return <KidStats slug={slug} home={home} />;
   }
 
   // Not signed in — show kid picker + PIN.
