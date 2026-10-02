@@ -353,7 +353,7 @@ export function CelebrationScreen({
                 aria-label={`${lives} lives left`}
                 className="rounded-full bg-white px-3 py-2 text-lg shadow-sm tracking-tight"
               >
-                {Array.from({ length: effect.game.lives ?? 0 }, (_, i) => (i < lives ? "❤️" : "🤍")).join("")}
+                {Array.from({ length: Math.max(effect.game.lives ?? 0, lives) }, (_, i) => (i < lives ? "❤️" : "🤍")).join("")}
               </div>
             )}
             {!timesUp && best && best.score > 0 && (

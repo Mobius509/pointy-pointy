@@ -17,20 +17,22 @@ const ART = {
   roof: { src: "/anims/claw-roof.webp", w: 244, h: 115 },
   rod: { src: "/anims/claw-rod.webp", w: 48, h: 46 },
   hub: { src: "/anims/claw-hub.webp", w: 92, h: 93 },
-  left: { src: "/anims/claw-arm-left.webp", w: 107, h: 210 },
-  right: { src: "/anims/claw-arm-right.webp", w: 108, h: 194 },
+  arm: { src: "/anims/claw-arm-left.webp", w: 107, h: 210 },
 };
-// Where each arm hangs from the hub (fractions of the hub), and the joint
-// on the arm itself (fractions of the arm) it swings around.
-const LEFT_ON_HUB = { x: 0.25, y: 0.6 };
-const RIGHT_ON_HUB = { x: 0.75, y: 0.6 };
-const LEFT_JOINT = { x: 0.85, y: 0.1 };
-const RIGHT_JOINT = { x: 0.15, y: 0.12 };
-const GRAB_BELOW_HUB = 161; // where a held ball sits, below the hub's top (art px)
+// The arm swings around the middle of its cut end (fractions of the arm
+// art), which sits well inside the round hub (fractions of the hub) so the
+// joint stays covered however far it opens. The right arm is the left one
+// mirrored, so the two always match.
+const ARM_JOINT = { x: 0.82, y: 0.2 };
+const ARM_ON_HUB = { x: 0.32, y: 0.55 }; // left arm; the right is mirrored
+const GRAB_BELOW_HUB = 140; // where a held ball sits, below the hub's top (art px)
 const BALL_RADIUS = 40; // art px — fits inside the closed claw
 const BALL_SRCS = ["/anims/orb-red.webp", "/anims/orb-pearl.webp"];
 
 type Ball = { body: MatterNS.Body; look: number; emoji: number };
+// What a won ball turns out to be: points (an emoji prize), a bomb that
+// knocks points off, or an extra try.
+export type Prize = { kind: "points"; points: number } | { kind: "bomb"; points: number } | { kind: "try" };
 type State = "roam" | "down" | "grab" | "up" | "carry" | "release" | "prize";
 type Images = {
   parts: Record<keyof typeof ART, HTMLImageElement | null>;
@@ -63,14 +65,14 @@ const sparkle = (x: number, y: number) =>
   });
 
 // The machine, shared by the celebration and the game. `prize()` is asked
-// for each ball won and returns its points (null = keep it empty).
+// what each ball won turns out to be (null = nothing more to win).
 async function createClaw(
   ctx: CanvasRenderingContext2D,
   W: number,
   H: number,
   area: Area,
-  prize: () => number | null,
-  onWon: (points: number, x: number, y: number) => void,
+  prize: () => Prize | null,
+  onWon: (prize: Prize) => void,
 ) {
   const M = await loadMatter();
   const img = await loadImages();
@@ -120,16 +122,17 @@ async function createClaw(
   let held: Ball | null = null;
   let slipAt = -1; // rod length at which a loose grab lets go
   let dropping: { y: number; vy: number; ball: Ball } | null = null;
-  let shown: { ball: Ball; points: number; t: number } | null = null;
+  let shown: { ball: Ball; prize: Prize; t: number } | null = null;
   let roamSpeed = 120;
 
   const hubTop = () => railY + roofH + rod;
   const grabPoint = () => ({ x, y: hubTop() + GRAB_BELOW_HUB * k });
 
   const drop = () => {
-    if (state !== "roam") return;
+    if (state !== "roam") return false;
     state = "down";
     void playSound("waka", 1);
+    return true;
   };
 
   const step = (dt: number, speedUp = 0) => {
@@ -222,14 +225,17 @@ async function createClaw(
           dropping.vy += 1600 * dt;
           dropping.y += dropping.vy * dt;
           if (dropping.y > floorY - r) {
-            const points = prize();
+            const won = prize();
             const ball = dropping.ball;
             dropping = null;
-            if (points !== null) {
-              shown = { ball, points, t: 0 };
-              sparkle(chuteX, floorY - r * 2);
-              void playSound("powerUp");
-              onWon(points, chuteX, floorY - r * 3);
+            if (won) {
+              shown = { ball, prize: won, t: 0 };
+              if (won.kind === "bomb") void playSound("boom");
+              else {
+                sparkle(chuteX, floorY - r * 2);
+                void playSound("powerUp");
+              }
+              onWon(won);
             }
             state = "prize";
             timer = 0;
@@ -303,28 +309,37 @@ async function createClaw(
     const g = grabPoint();
     if (held) drawBall(held, g.x, g.y);
     const hubLeft = x - (ART.hub.w * k) / 2;
-    const arm = (key: "left" | "right", onHub: { x: number; y: number }, joint: { x: number; y: number }, swing: number) => {
-      ctx.save();
-      ctx.translate(hubLeft + ART.hub.w * k * onHub.x, top + ART.hub.h * k * onHub.y);
-      ctx.rotate(swing);
-      part(key, -ART[key].w * k * joint.x, -ART[key].h * k * joint.y);
-      ctx.restore();
-    };
     const wobble = state === "roam" ? Math.sin(time * 4) * 0.03 : 0;
-    arm("left", LEFT_ON_HUB, LEFT_JOINT, open + wobble);
-    arm("right", RIGHT_ON_HUB, RIGHT_JOINT, -open - wobble);
+    // side -1 = left arm, 1 = right arm (the left art mirrored).
+    for (const side of [-1, 1]) {
+      ctx.save();
+      ctx.translate(x + side * (0.5 - ARM_ON_HUB.x) * ART.hub.w * k, top + ART.hub.h * k * ARM_ON_HUB.y);
+      ctx.scale(-side, 1); // mirrors the right one
+      ctx.rotate(open + wobble);
+      part("arm", -ART.arm.w * k * ARM_JOINT.x, -ART.arm.h * k * ARM_JOINT.y);
+      ctx.restore();
+    }
     part("hub", hubLeft, top);
 
     // A won ball pops open: its emoji and the points.
     if (shown) {
       const p = Math.min(1, shown.t / 0.3);
       const y = floorY - r * 3.5 - shown.t * 40;
-      const e = img.emojis[shown.ball.emoji];
       const size = r * 3.6 * (0.4 + p * 0.6);
       ctx.save();
       ctx.globalAlpha = shown.t > 1.2 ? Math.max(0, 1 - (shown.t - 1.2) / 0.4) : 1;
-      if (e) ctx.drawImage(e, chuteX - size / 2, y - size, size, size);
-      drawLabel(ctx, `+${shown.points}`, chuteX + size * 0.6, y - size * 0.85, 28);
+      const won = shown.prize;
+      if (won.kind === "points") {
+        const e = img.emojis[shown.ball.emoji];
+        if (e) ctx.drawImage(e, chuteX - size / 2, y - size, size, size);
+      } else {
+        ctx.font = `${Math.round(size * 0.8)}px system-ui, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillText(won.kind === "bomb" ? "💣" : "❤️", chuteX, y - size * 0.15);
+      }
+      const text = won.kind === "try" ? "+1 try" : won.kind === "bomb" ? `−${won.points}` : `+${won.points}`;
+      drawLabel(ctx, text, chuteX + size * 0.6, y - size * 0.85, 28);
       ctx.restore();
     }
   };
@@ -357,7 +372,7 @@ export async function playClaw(opts: CelebrationOptions): Promise<void> {
     W,
     H,
     { ...area, y: area.y + 50, h: area.h - 60 },
-    () => (prizes.length ? prizes.shift()! : null),
+    () => (prizes.length ? { kind: "points", points: prizes.shift()! } : null),
     () => {
       if (!prizes.length && !revealed) {
         revealed = true;
@@ -387,29 +402,50 @@ export async function playClaw(opts: CelebrationOptions): Promise<void> {
   layer.remove();
 }
 
-// "Keep playing": 45 seconds of grabbing — each ball won is worth 1–5
-// points (bigger ones are rarer). The claw speeds up as time goes on.
+// "Keep playing": five tries. Each ball won pops open into points (1–5,
+// bigger ones rarer), a bomb (−3 points), or an extra try. The claw speeds
+// up as you go; the game's over when the tries run out.
+const TRIES = 5;
 export function playClawGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, safe } = createCanvasGame("game");
   let score = 0;
-  let elapsed = 0;
+  let tries = TRIES;
+  let drops = 0;
+  let over = false;
+  opts.onLives?.(tries);
   let stop = () => layer.remove();
   const hint = hintBubble(layer, "Tap to drop the claw!", safe.y + safe.h * 0.42);
-  const value = () => {
+  const prize = (): Prize => {
     const roll = Math.random();
-    return roll < 0.5 ? 1 : roll < 0.75 ? 2 : roll < 0.9 ? 3 : 5;
+    if (roll < 0.15) return { kind: "bomb", points: 3 };
+    if (roll < 0.3) return { kind: "try" };
+    const p = Math.random();
+    return { kind: "points", points: p < 0.5 ? 1 : p < 0.75 ? 2 : p < 0.9 ? 3 : 5 };
   };
-  void createClaw(ctx, W, H, safe, value, (points) => opts.onScore((score += points))).then((machine) => {
+  const onWon = (won: Prize) => {
+    if (won.kind === "points") opts.onScore((score += won.points));
+    if (won.kind === "bomb") opts.onScore((score = Math.max(0, score - won.points)));
+    if (won.kind === "try") opts.onLives?.(++tries);
+  };
+  void createClaw(ctx, W, H, safe, prize, onWon).then((machine) => {
     gameInput({
       down: () => {
         hint.remove();
-        machine.drop();
+        if (over || tries <= 0) return;
+        if (machine.drop()) {
+          drops++;
+          opts.onLives?.(--tries);
+        }
       },
     });
     runLoop(layer, (dt, time) => {
-      elapsed += dt;
-      machine.step(dt, Math.min(80, elapsed * 2));
+      machine.step(dt, Math.min(80, drops * 10));
       machine.draw(time);
+      // Out of tries once the last one has played out.
+      if (!over && tries <= 0 && !machine.busy()) {
+        over = true;
+        opts.onGameOver?.();
+      }
     });
     const prev = stop;
     stop = () => {
