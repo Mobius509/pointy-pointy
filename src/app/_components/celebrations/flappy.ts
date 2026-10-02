@@ -4,30 +4,73 @@ import { confettiStyle, fadeOutLayer, hintBubble, onStop, type CelebrationOption
 import { playSound } from "./sounds";
 
 // Artwork: the bird (facing left, flipped to fly right) and its wing, which
-// is drawn separately so it can flap. Pipes are placeholder blocks until
-// there's pipe artwork.
+// is drawn separately so it can flap; the pipe (cap on top, body fading
+// out below — flipped for the top pipes); background clouds.
 const BIRD_SRC = "/anims/bird.webp";
 const WING_SRC = "/anims/bird-wing.webp";
+const PIPE_SRC = "/anims/pipe.webp";
+const CLOUD_SRCS = ["/anims/cloud-1.webp", "/anims/cloud-2.webp"];
 const BIRD_ASPECT = 217 / 240; // height / width
 const WING_ASPECT = 162 / 140;
-// Where the wing joins the body: its base (in the wing art) sits on the
-// bird's back (in the bird art), as fractions of each image's size.
-const WING_BASE = { x: 0.1, y: 0.86 };
-const WING_ON_BACK = { x: 0.6, y: 0.46 };
+// The wing, as in the reference art: 54% of the bird's width, its base (the
+// shoulder, in the wing art) just behind the head (in the bird art) — as
+// fractions of each image's size. It flaps around that point.
+const WING_WIDTH = 335 / 616; // the two artworks are drawn at the same scale
+const WING_BASE = { x: 0.11, y: 0.87 };
+const WING_ON_BACK = { x: 0.39, y: 0.52 };
+// The pipe art: the cap is the top 19%; the body is 75% of the cap's width.
+const PIPE_ASPECT = 429 / 240;
+const PIPE_CAP = 0.19;
+const PIPE_BODY_WIDTH = 0.75;
 
 const PIPE_W = 72;
 const GRAVITY = 1500; // px/s²
 const FLAP = -440; // px/s
 const MAX_FALL = 620;
 
-type Art = { bird: HTMLImageElement | null; wing: HTMLImageElement | null };
+type Art = {
+  bird: HTMLImageElement | null;
+  wing: HTMLImageElement | null;
+  pipe: HTMLImageElement | null;
+  clouds: HTMLImageElement[];
+};
+type Cloud = { x: number; y: number; w: number; speed: number; img: number };
 type Bird = { x: number; y: number; vy: number; flapAt: number; hurt: number };
 type Pipe = { x: number; gapY: number; gap: number; passed: boolean; label?: number };
 
 const loadArt = async (): Promise<Art> => {
-  const [bird, wing] = await Promise.all([loadImage(BIRD_SRC), loadImage(WING_SRC)]);
-  return { bird, wing };
+  const [bird, wing, pipe, ...clouds] = await Promise.all(
+    [BIRD_SRC, WING_SRC, PIPE_SRC, ...CLOUD_SRCS].map((s) => loadImage(s)),
+  );
+  return { bird, wing, pipe, clouds: clouds.filter(Boolean) as HTMLImageElement[] };
 };
+const noArt: Art = { bird: null, wing: null, pipe: null, clouds: [] };
+
+// A few clouds drifting slowly behind everything (a little parallax).
+function makeClouds(area: Area): Cloud[] {
+  return Array.from({ length: 4 }, (_, i) => ({
+    x: rand(area.x, area.x + area.w),
+    y: rand(area.y, area.y + area.h * 0.75),
+    w: rand(90, 170),
+    speed: rand(14, 32),
+    img: i,
+  }));
+}
+function driftClouds(ctx: CanvasRenderingContext2D, art: Art, clouds: Cloud[], area: Area, dt: number) {
+  if (!art.clouds.length) return;
+  for (const c of clouds) {
+    c.x -= c.speed * dt;
+    if (c.x < area.x - c.w) {
+      c.x = area.x + area.w + rand(0, 120);
+      c.y = rand(area.y, area.y + area.h * 0.75);
+    }
+    const img = art.clouds[c.img % art.clouds.length];
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+    ctx.drawImage(img, c.x, c.y, c.w, (c.w * img.naturalHeight) / img.naturalWidth);
+    ctx.restore();
+  }
+}
 
 function drawBird(ctx: CanvasRenderingContext2D, art: Art, b: Bird, size: number, time: number) {
   const w = size;
@@ -48,7 +91,7 @@ function drawBird(ctx: CanvasRenderingContext2D, art: Art, b: Bird, size: number
     // A big down-stroke right after each flap, a gentle flutter otherwise.
     const since = time - b.flapAt;
     const angle = since < 0.28 ? Math.sin((since / 0.28) * Math.PI) * 1.1 : Math.sin(time * 7) * 0.15;
-    const ww = w * 0.45;
+    const ww = w * WING_WIDTH;
     const wh = ww * WING_ASPECT;
     ctx.translate(-w / 2 + w * WING_ON_BACK.x, -h / 2 + h * WING_ON_BACK.y);
     ctx.rotate(angle);
@@ -57,10 +100,33 @@ function drawBird(ctx: CanvasRenderingContext2D, art: Art, b: Bird, size: number
   ctx.restore();
 }
 
-// Placeholder pipes: rounded columns with a cap, above and below the gap.
-function drawPipe(ctx: CanvasRenderingContext2D, p: Pipe, top: number, bottom: number) {
+// The pipes above and below the gap: the cap at the gap, the body stretched
+// away from it to the edge of the screen, fading out as it goes.
+function drawPipe(ctx: CanvasRenderingContext2D, art: Art, p: Pipe, top: number, bottom: number) {
   const gapTop = p.gapY - p.gap / 2;
   const gapBottom = p.gapY + p.gap / 2;
+  const img = art.pipe;
+  if (img) {
+    const capW = PIPE_W / PIPE_BODY_WIDTH;
+    const capH = capW * PIPE_ASPECT * PIPE_CAP;
+    const sw = img.naturalWidth;
+    const sh = img.naturalHeight;
+    const capSrc = sh * PIPE_CAP;
+    // One pipe drawn from the gap edge outward (`dir` 1 = down, -1 = up).
+    const one = (edge: number, length: number, dir: 1 | -1) => {
+      const body = Math.max(capW * PIPE_ASPECT * (1 - PIPE_CAP), (length - capH) / 0.85);
+      ctx.save();
+      ctx.translate(p.x + PIPE_W / 2, edge);
+      ctx.scale(1, dir);
+      ctx.drawImage(img, 0, 0, sw, capSrc, -capW / 2, 0, capW, capH);
+      ctx.drawImage(img, 0, capSrc, sw, sh - capSrc, -capW / 2, capH - 1, capW, body);
+      ctx.restore();
+    };
+    one(gapBottom, bottom - gapBottom, 1);
+    one(gapTop, gapTop - top, -1);
+    if (p.label && !p.passed) drawLabel(ctx, `+${p.label}`, p.x + PIPE_W / 2, p.gapY, 24);
+    return;
+  }
   const cap = 18;
   ctx.fillStyle = color("primary", 0.22);
   ctx.beginPath();
@@ -129,6 +195,7 @@ export async function playFlappy(opts: CelebrationOptions): Promise<void> {
   let collected = 0;
   const total = waiting.length;
   const pipes: Pipe[] = [];
+  const clouds = makeClouds(area);
   const gap = Math.min(240, area.h * 0.34);
   const hint = hintBubble(layer, "Tap to flap!", area.y + 16);
   let started = false;
@@ -192,7 +259,8 @@ export async function playFlappy(opts: CelebrationOptions): Promise<void> {
         return false;
       }
       ctx.clearRect(0, 0, W, H);
-      pipes.forEach((p) => drawPipe(ctx, p, area.y, area.y + area.h));
+      driftClouds(ctx, art, clouds, area, dt);
+      pipes.forEach((p) => drawPipe(ctx, art, p, area.y, area.y + area.h));
       drawBird(ctx, art, bird, size, time);
     });
   });
@@ -204,12 +272,13 @@ export async function playFlappy(opts: CelebrationOptions): Promise<void> {
 // pipe or the ground costs one (then a moment to recover).
 export function playFlappyGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, area, safe } = createCanvasGame("game");
-  let art: Art = { bird: null, wing: null };
+  let art: Art = noArt;
   void loadArt().then((a) => (art = a));
   const size = Math.min(W * 0.16, 70);
   const r = size * 0.36;
   const bird: Bird = { x: W * 0.28, y: safe.y + safe.h * 0.45, vy: 0, flapAt: -1, hurt: 0 };
   const pipes: Pipe[] = [];
+  const clouds = makeClouds(area);
   const hint = hintBubble(layer, "Tap to flap!", safe.y + 16);
   let started = false;
   let elapsed = 0;
@@ -262,7 +331,8 @@ export function playFlappyGame(opts: GameOptions): () => void {
       while (pipes.length && pipes[0].x < -PIPE_W - 20) pipes.shift();
     }
     ctx.clearRect(0, 0, W, H);
-    pipes.forEach((p) => drawPipe(ctx, p, area.y, area.y + area.h));
+    driftClouds(ctx, art, clouds, area, dt);
+    pipes.forEach((p) => drawPipe(ctx, art, p, area.y, area.y + area.h));
     drawBird(ctx, art, bird, size, time);
   });
 
