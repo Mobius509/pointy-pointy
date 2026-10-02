@@ -42,3 +42,4 @@ some are CC BY-NC (no commercial use).
 | fanfare-3.m4a | Fanfare 4 (RPG) | colorscrimsontears | https://freesound.org/s/609028/ |
 | waka-1.m4a | Sqr beep (freesounds doesn't play it right) C | etheraudio | https://freesound.org/s/752670/ |
 | waka-2.m4a | 000101_0580s3 (trimmed to 1.00–1.16s) | gerent | https://freesound.org/s/669150/ |
+| flap.m4a | Cloth flap (trimmed) | ssierra1202 | https://freesound.org/s/391945/ |

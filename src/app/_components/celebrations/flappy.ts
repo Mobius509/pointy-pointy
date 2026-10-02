@@ -208,7 +208,7 @@ export async function playFlappy(opts: CelebrationOptions): Promise<void> {
       started = true;
       bird.vy = FLAP;
       bird.flapAt = performance.now() / 1000;
-      void playSound("waka", 0);
+      void playSound("flap");
     },
   });
 
@@ -291,7 +291,7 @@ export function playFlappyGame(opts: GameOptions): () => void {
     started = true;
     bird.vy = FLAP;
     bird.flapAt = performance.now() / 1000;
-    void playSound("waka", 0);
+    void playSound("flap");
   };
   gameInput({ down: flap, key: (dir) => dir === "up" && flap() });
 
