@@ -11,6 +11,7 @@ import { playFlappy, playFlappyGame } from "./flappy";
 import { playStack, playStackGame } from "./stack";
 import { playMarble, playMarbleGame } from "./marble";
 import { playClaw, playClawGame } from "./claw";
+import { playBubbles, playBubblesGame } from "./bubbles";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -198,6 +199,16 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Claw machine",
     description: "Tap to drop the claw and grab prize balls — each pops open with an emoji and points. Keep playing: five tries — prizes, bombs, extra tries and rare specials (golden, magnet, iron claw, sticky claw, slow-mo, jackpot, shake-up, sneaky, mystery, skull, super bonus).",
     play: playClaw,
+  },
+  {
+    id: "bubbles",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🫧", label: "points", lives: 3, start: playBubblesGame },
+    name: "Bubble shooter",
+    description:
+      "Aim the shooter and let go to fire — three or more bubbles of a color pop, and anything hanging from them drops. The points are on the \"+N\" bubbles. Keep playing: +1 a pop, +2 a drop; misses push a new row down — three lives.",
+    play: playBubbles,
   },
   {
     id: "asteroids",
