@@ -9,7 +9,7 @@ import {
   getKidRecentCompletions,
   getMilestonesForGoal,
 } from "@/lib/v2/data";
-import { computePeriodKey, type Frequency } from "@/lib/time";
+import { computePeriodKey, todayInTimezone, type Frequency } from "@/lib/time";
 import { KidOverviewCard } from "./_components/KidOverviewCard";
 import { PageTitle } from "./_components/ui";
 import { getKidStreaks } from "@/lib/v2/streaks";
@@ -84,7 +84,17 @@ export default async function ParentOverviewPage({
 
       const streaks = (
         await getKidStreaks({ householdId: household.id, kidProfileId: kid.id, timezone: household.timezone })
-      ).map(({ streak, run }) => ({ name: streak.name, days: run.length, needed: streak.days_required }));
+      ).map((ks) => ({
+        id: ks.streak.id,
+        name: ks.streak.name,
+        days: ks.run.length,
+        needed: ks.streak.days_required,
+        today: todayInTimezone(household.timezone),
+        excusedToday: ks.excusedToday,
+        canCountToday: ks.canCountToday,
+        missedDay: ks.missedDay,
+        lastExcused: ks.lastExcused,
+      }));
 
       return {
         kid,

@@ -259,7 +259,7 @@ export default async function ParentTasksPage({
         summary={streaks.length ? `${streaks.length} streak${streaks.length === 1 ? "" : "s"}` : "Bonus points + game unlocks"}
       >
         <p className="text-pp-muted">
-          Pick daily tasks to do every day. Each time a kid keeps it up for the number of days you set, they get the
+          Pick daily tasks to do every day — all of them, or any few of them. Each time a kid keeps it up for the number of days you set, they get the
           bonus points and an arcade ticket. Tickets save up; each one plays a mini game while a streak is going — a
           surprise game, or one they pick once a streak has run two weeks. Missing a day starts it over.
         </p>
@@ -323,8 +323,8 @@ export default async function ParentTasksPage({
   );
 }
 
-// Name, which daily tasks, days in a row, bonus points — for adding and
-// editing a streak.
+// Name, which daily tasks (and how many of them a day needs), days in a
+// row, bonus points — for adding and editing a streak.
 function StreakFields({
   streak,
   dailyTasks,
@@ -350,7 +350,7 @@ function StreakFields({
         />
       </div>
       <fieldset className="sm:col-span-2">
-        <legend className="label">Tasks to do every day</legend>
+        <legend className="label">Tasks in this streak</legend>
         <div className="flex flex-wrap gap-2">
           {dailyTasks.map((t) => (
             <label
@@ -369,6 +369,25 @@ function StreakFields({
           ))}
         </div>
       </fieldset>
+      <div className="sm:col-span-2">
+        <label className="label" htmlFor={`${idPrefix}-needed`}>
+          How many of these each day
+        </label>
+        <input
+          id={`${idPrefix}-needed`}
+          name="tasks_needed"
+          type="number"
+          min={1}
+          max={50}
+          defaultValue={streak?.tasks_needed ?? ""}
+          placeholder="All of them"
+          className="input max-w-[12rem]"
+        />
+        <p className="mt-1 text-[12px] text-pp-muted">
+          Leave blank to need every task. Pick 3 of 4 and any three count (no lunch on Fridays? reading instead
+          is fine).
+        </p>
+      </div>
       <div>
         <label className="label" htmlFor={`${idPrefix}-days`}>
           Days in a row for a reward

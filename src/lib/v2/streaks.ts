@@ -2,7 +2,7 @@ import "server-only";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { addDays, todayInTimezone } from "@/lib/time";
 import { ARCADE_GAMES, isArcadeGame, type ArcadeGameId } from "@/lib/games";
-import { arcadeMode, brokeRecently, nextReward, rewardSteps, streakRun, streakWeek, type ArcadeMode, type StreakRun, type WeekDay } from "@/lib/streak-math";
+import { arcadeMode, brokeRecently, nextReward, rewardSteps, streakDay, streakRun, streakWeek, type ArcadeMode, type StreakRun, type WeekDay } from "@/lib/streak-math";
 import { insertBonusCompletion } from "@/lib/v2/bonus";
 import { notifyStreakReward } from "@/lib/v2/push";
 import type { KidContext } from "@/lib/v2/kid-ops";
@@ -20,6 +20,9 @@ export type Streak = {
   sort_order: number;
   created_at: string;
   taskIds: string[];
+  // How many of its tasks make a day count (null: all of them — see
+  // v2_0010_streak_days.sql).
+  tasks_needed: number | null;
 };
 
 export type KidStreak = {
@@ -28,7 +31,19 @@ export type KidStreak = {
   next: { at: number; daysToGo: number };
   week: WeekDay[]; // this week's days, for the streak card's dots
   broken: boolean; // no run now, but there was one in the last few days
+  // "Count this day" (a parent approving a streak day anyway): what's been
+  // counted, and what could be.
+  excusedToday: boolean;
+  canCountToday: boolean; // today isn't done yet
+  // The latest missed day (in the last COUNT_BACK days) — counting it mends
+  // the streak; then the one before it (if any) shows up, and so on.
+  missedDay: string | null;
+  // The latest day a parent counted, so it can be undone.
+  lastExcused: string | null;
 };
+
+// How far back a parent can count a missed day.
+export const COUNT_BACK = 14;
 
 // Before the streaks migration is run there are no tables — no streaks,
 // rather than a broken page.
@@ -52,8 +67,32 @@ export async function getStreaks(householdId: string, { activeOnly = false } = {
   return ((data ?? []) as Row[]).map(({ streak_tasks, ...rest }) => ({
     ...rest,
     skip_weekends: !!rest.skip_weekends,
+    tasks_needed: rest.tasks_needed ?? null, // (missing before v2_0010)
     taskIds: (streak_tasks ?? []).map((t) => t.task_id),
   }));
+}
+
+// Days a parent counted for a kid anyway, per streak.
+async function excusedDays(ctx: KidContext, streakIds: string[], today: string) {
+  const out = new Map<string, Set<string>>();
+  if (!streakIds.length) return out;
+  const { data, error } = await supabaseV2Admin
+    .from("streak_excused_days")
+    .select("streak_id, day")
+    .eq("household_id", ctx.householdId)
+    .eq("kid_profile_id", ctx.kidProfileId)
+    .in("streak_id", streakIds)
+    .gte("day", addDays(today, -HISTORY_DAYS));
+  if (error) {
+    if (notSetUp(error.code)) return out;
+    throw error;
+  }
+  for (const r of data ?? []) {
+    const id = r.streak_id as string;
+    if (!out.has(id)) out.set(id, new Set());
+    out.get(id)!.add(r.day as string);
+  }
+  return out;
 }
 
 // Days each task was done (approved), from the daily period keys.
@@ -84,16 +123,44 @@ export async function getKidStreaks(ctx: KidContext): Promise<KidStreak[]> {
   const streaks = (await getStreaks(ctx.householdId, { activeOnly: true })).filter((s) => s.taskIds.length);
   if (!streaks.length) return [];
   const today = todayInTimezone(ctx.timezone);
-  const days = await doneDays(ctx, [...new Set(streaks.flatMap((s) => s.taskIds))], today);
+  const [days, excused] = await Promise.all([
+    doneDays(ctx, [...new Set(streaks.flatMap((s) => s.taskIds))], today),
+    excusedDays(
+      ctx,
+      streaks.map((s) => s.id),
+      today,
+    ),
+  ]);
   return streaks.map((streak) => {
-    const skipWeekends = !!streak.skip_weekends;
-    const run = streakRun(streak.taskIds, days, today, { skipWeekends });
+    const rules = {
+      skipWeekends: !!streak.skip_weekends,
+      tasksNeeded: streak.tasks_needed,
+      excused: excused.get(streak.id) ?? new Set<string>(),
+    };
+    const run = streakRun(streak.taskIds, days, today, rules);
+    const day = streakDay(streak.taskIds, days, rules);
+    // Not before the streak was set up.
+    const created = todayInTimezone(ctx.timezone, new Date(streak.created_at));
+    let missedDay: string | null = null;
+    for (let i = 1; i <= COUNT_BACK; i++) {
+      const d = addDays(today, -i);
+      if (d < created) break;
+      if (!day.rest(d) && !day.done(d)) {
+        missedDay = d;
+        break;
+      }
+    }
+    const lastExcused = [...rules.excused].filter((d) => d >= addDays(today, -COUNT_BACK)).sort().pop() ?? null;
     return {
       streak,
       run,
       next: nextReward(run, streak.days_required),
-      week: streakWeek(streak.taskIds, days, today, { skipWeekends }),
-      broken: run.length === 0 && brokeRecently(streak.taskIds, days, today, { skipWeekends }),
+      week: streakWeek(streak.taskIds, days, today, rules),
+      broken: run.length === 0 && brokeRecently(streak.taskIds, days, today, rules),
+      excusedToday: rules.excused.has(today),
+      canCountToday: !day.rest(today) && !day.done(today),
+      missedDay,
+      lastExcused,
     };
   });
 }
@@ -145,6 +212,47 @@ export async function checkStreakRewards(ctx: KidContext): Promise<void> {
       });
       notifyStreakReward(ctx.householdId, ctx.kidProfileId, streak.name, days, streak.bonus_points);
     }
+  }
+}
+
+// "Count this day": a parent approves a kid's streak day (today, or a missed
+// day in the last COUNT_BACK days) even though not enough of its tasks were
+// done — then any reward it brings in is paid. Undoing it doesn't take back
+// a reward already paid.
+export async function countStreakDay(
+  ctx: KidContext,
+  streakId: string,
+  day: string,
+  userId: string,
+  counted: boolean,
+): Promise<void> {
+  const { data: streak, error } = await supabaseV2Admin
+    .from("streaks")
+    .select("id")
+    .eq("id", streakId)
+    .eq("household_id", ctx.householdId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!streak) throw new Error("Streak not found.");
+  const today = todayInTimezone(ctx.timezone);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day > today || day < addDays(today, -COUNT_BACK))
+    throw new Error(`Only today or the last ${COUNT_BACK} days can be counted.`);
+  if (counted) {
+    const { error: e } = await supabaseV2Admin.from("streak_excused_days").upsert(
+      { streak_id: streakId, kid_profile_id: ctx.kidProfileId, household_id: ctx.householdId, day, created_by: userId },
+      { onConflict: "streak_id,kid_profile_id,day", ignoreDuplicates: true },
+    );
+    if (e) throw e;
+    await checkStreakRewards(ctx);
+  } else {
+    const { error: e } = await supabaseV2Admin
+      .from("streak_excused_days")
+      .delete()
+      .eq("streak_id", streakId)
+      .eq("kid_profile_id", ctx.kidProfileId)
+      .eq("household_id", ctx.householdId)
+      .eq("day", day);
+    if (e) throw e;
   }
 }
 

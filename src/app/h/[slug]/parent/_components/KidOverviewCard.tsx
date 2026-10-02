@@ -10,6 +10,7 @@ import type {
 import { frequencyLabel, humanizeDate, type Frequency } from "@/lib/time";
 import { avatarSrc } from "@/lib/avatar";
 import { ApproveAllButton } from "./ApproveAllButton";
+import { CountStreakDay, type StreakLine } from "./CountStreakDay";
 import {
   approveCompletionAction,
   denyCompletionAction,
@@ -27,8 +28,9 @@ type Props = {
   goal: V2Goal | null;
   progress: number;
   milestones: V2GoalMilestone[];
-  // Their current streaks ("🔥 4 days Morning routine · reward in 3").
-  streaks?: { name: string; days: number; needed: number }[];
+  // Their current streaks ("🔥 4 days Morning routine · reward in 3"), and
+  // the "count this day" state for each.
+  streaks?: StreakLine[];
 };
 
 // Always shown in the Outstanding section (even when empty). Bi-weekly and
@@ -222,11 +224,16 @@ export function KidOverviewCard({
             </div>
 
             {streaks.length > 0 && (
-              <p className="text-pp-primary font-semibold" style={{ fontSize: 12 }}>
-                {streaks
-                  .map((s) => `🔥 ${s.days} day${s.days === 1 ? "" : "s"} ${s.name} · reward in ${s.needed - (s.days % s.needed)}`)
-                  .join("  ·  ")}
-              </p>
+              <ul className="space-y-1">
+                {streaks.map((s) => (
+                  <li key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="text-pp-primary font-semibold" style={{ fontSize: 12 }}>
+                      🔥 {s.days} day{s.days === 1 ? "" : "s"} {s.name} · reward in {s.needed - (s.days % s.needed)}
+                    </span>
+                    <CountStreakDay slug={slug} kidId={kid.id} streak={s} />
+                  </li>
+                ))}
+              </ul>
             )}
 
             {/* Outstanding — always shows Daily / Weekly / Monthly. */}

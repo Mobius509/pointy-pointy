@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
-import { requireHouseholdAccess } from "@/lib/v2/auth";
+import { getCurrentUser, requireHouseholdAccess } from "@/lib/v2/auth";
+import { countStreakDay } from "@/lib/v2/streaks";
 
 // Parent-side streak setup (Tasks → Streaks). A streak is a set of daily
 // tasks to do every day; every `days_required` days in a row pays
@@ -30,6 +31,27 @@ async function readTaskIds(formData: FormData, householdId: string): Promise<str
   return ok;
 }
 
+// "How many of these each day": blank (or every one of them) = all.
+function readTasksNeeded(formData: FormData, taskCount: number): number | null {
+  const raw = String(formData.get("tasks_needed") ?? "").trim();
+  if (!raw) return null;
+  const n = parseWhole(raw, 1, 50, "Tasks needed each day");
+  if (n > taskCount) throw new Error(`There are only ${taskCount} tasks in this streak — pick ${taskCount} or fewer.`);
+  return n >= taskCount ? null : n;
+}
+
+// Saves the streak row. Before migration v2_0010 there's no tasks_needed
+// column — then it's left out (all tasks needed).
+async function saveStreak<T>(write: (row: Record<string, unknown>) => PromiseLike<T & { error: { code?: string } | null }>, row: Record<string, unknown>) {
+  let res = await write(row);
+  if (res.error && (res.error.code === "PGRST204" || res.error.code === "42703") && row.tasks_needed == null) {
+    const { tasks_needed: _skip, ...rest } = row;
+    void _skip;
+    res = await write(rest);
+  }
+  return res;
+}
+
 function readFields(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Name required.");
@@ -52,6 +74,7 @@ export async function createStreakAction(formData: FormData) {
   const household = await requireHouseholdAccess(slug);
   const fields = readFields(formData);
   const taskIds = await readTaskIds(formData, household.id);
+  const tasks_needed = readTasksNeeded(formData, taskIds.length);
 
   const { data: last } = await supabaseV2Admin
     .from("streaks")
@@ -60,12 +83,11 @@ export async function createStreakAction(formData: FormData) {
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const { data: streak, error } = await supabaseV2Admin
-    .from("streaks")
-    .insert({ household_id: household.id, ...fields, sort_order: (last?.sort_order ?? 0) + 10 })
-    .select("id")
-    .single();
-  if (error) throw error;
+  const { data: streak, error } = await saveStreak(
+    (row) => supabaseV2Admin.from("streaks").insert(row).select("id").single(),
+    { household_id: household.id, ...fields, tasks_needed, sort_order: (last?.sort_order ?? 0) + 10 },
+  );
+  if (error || !streak) throw error ?? new Error("Couldn't add the streak.");
   const { error: linkError } = await supabaseV2Admin
     .from("streak_tasks")
     .insert(taskIds.map((task_id) => ({ streak_id: streak.id, task_id })));
@@ -80,13 +102,12 @@ export async function updateStreakAction(formData: FormData) {
   if (!id) throw new Error("Missing streak.");
   const fields = readFields(formData);
   const taskIds = await readTaskIds(formData, household.id);
+  const tasks_needed = readTasksNeeded(formData, taskIds.length);
 
-  const { data: updated, error } = await supabaseV2Admin
-    .from("streaks")
-    .update({ ...fields, active: formData.get("active") === "on" })
-    .eq("id", id)
-    .eq("household_id", household.id)
-    .select("id");
+  const { data: updated, error } = await saveStreak(
+    (row) => supabaseV2Admin.from("streaks").update(row).eq("id", id).eq("household_id", household.id).select("id"),
+    { ...fields, tasks_needed, active: formData.get("active") === "on" },
+  );
   if (error) throw error;
   if (!updated?.length) throw new Error("Streak not found.");
   // Replace its task list.
@@ -103,4 +124,39 @@ export async function deleteStreakAction(slug: string, id: string): Promise<{ ok
   const { error } = await supabaseV2Admin.from("streaks").delete().eq("id", id).eq("household_id", household.id);
   revalidate(slug);
   return { ok: !error };
+}
+
+// "Count this day": approve a kid's streak day (today, or a missed day in
+// the last two weeks) even though not enough of its tasks were done — or
+// undo it (`counted: false`). `day` is YYYY-MM-DD in the family's timezone.
+export async function countStreakDayAction(
+  slug: string,
+  kidProfileId: string,
+  streakId: string,
+  day: string,
+  counted: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const household = await requireHouseholdAccess(slug);
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: "Sign in first." };
+  const { data: kid } = await supabaseV2Admin
+    .from("kid_profiles")
+    .select("id")
+    .eq("id", kidProfileId)
+    .eq("household_id", household.id)
+    .maybeSingle();
+  if (!kid) return { ok: false, error: "Kid not found." };
+  try {
+    await countStreakDay(
+      { householdId: household.id, kidProfileId, timezone: household.timezone },
+      streakId,
+      String(day),
+      user.id,
+      counted,
+    );
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+  revalidate(slug);
+  return { ok: true };
 }

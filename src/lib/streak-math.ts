@@ -8,33 +8,52 @@ export type StreakRun = {
   start: string | null; // first day of the run
   todayDone: boolean;
   restDay: boolean; // today is a weekend and the streak skips weekends
-  todayLeft: string[]; // task ids still to do today
+  todayLeft: string[]; // task ids not done today (any of them can count)
+  todayToGo: number; // how many more of them today needs
 };
 
 // Saturday or Sunday (dates are calendar days, so UTC noon is safe).
 export const isWeekend = (day: string) => [0, 6].includes(new Date(`${day}T12:00:00Z`).getUTCDay());
 
-// A day counts when every task in the streak has an approved completion
-// for it. The run is counted back from today when today is done, otherwise
-// from yesterday — so the streak stays alive until midnight. With
-// `skipWeekends`, Saturdays and Sundays are passed over: they neither
-// count nor break the run (Friday then Monday is two in a row).
-export function streakRun(
+export type StreakDayRules = {
+  skipWeekends?: boolean;
+  tasksNeeded?: number | null; // how many of the tasks make a day (null: all of them)
+  excused?: Set<string>; // days a parent counted anyway
+};
+
+// The streak's rule for a day: whether it's a rest day (a weekend with "skip
+// weekends" — neither counts nor breaks the run), how many of its tasks
+// were done, and whether that's enough (or a parent counted it).
+export function streakDay(
   taskIds: string[],
   doneDays: Map<string, Set<string>>, // task id → days it was done (approved)
+  { skipWeekends = false, tasksNeeded = null, excused = new Set() }: StreakDayRules = {},
+) {
+  const need = taskIds.length ? Math.min(tasksNeeded ?? taskIds.length, taskIds.length) : 0;
+  const doneCount = (day: string) => taskIds.filter((t) => doneDays.get(t)?.has(day)).length;
+  const rest = (day: string) => skipWeekends && isWeekend(day);
+  const done = (day: string) => excused.has(day) || (need > 0 && doneCount(day) >= need);
+  return { need, doneCount, rest, done };
+}
+
+// A day counts when enough of its tasks are done (above). The run is
+// counted back from today when today is done, otherwise from yesterday — so
+// the streak stays alive until midnight. Rest days are passed over: Friday
+// then Monday is two in a row with "skip weekends".
+export function streakRun(
+  taskIds: string[],
+  doneDays: Map<string, Set<string>>,
   today: string,
-  { skipWeekends = false, maxDays = 400 } = {},
+  { maxDays = 400, ...rules }: StreakDayRules & { maxDays?: number } = {},
 ): StreakRun {
-  const done = (task: string, day: string) => doneDays.get(task)?.has(day) ?? false;
-  const dayComplete = (day: string) => taskIds.length > 0 && taskIds.every((t) => done(t, day));
-  const skipped = (day: string) => skipWeekends && isWeekend(day);
-  const restDay = skipped(today);
-  const todayDone = !restDay && dayComplete(today);
+  const day0 = streakDay(taskIds, doneDays, rules);
+  const restDay = day0.rest(today);
+  const todayDone = !restDay && day0.done(today);
   const counted: string[] = [];
   let day = todayDone ? today : addDays(today, -1);
   for (let looked = 0; looked < maxDays; looked++, day = addDays(day, -1)) {
-    if (skipped(day)) continue;
-    if (!dayComplete(day)) break;
+    if (day0.rest(day)) continue;
+    if (!day0.done(day)) break;
     counted.push(day);
   }
   counted.reverse();
@@ -44,7 +63,8 @@ export function streakRun(
     start: counted[0] ?? null,
     todayDone,
     restDay,
-    todayLeft: restDay ? [] : taskIds.filter((t) => !done(t, today)),
+    todayLeft: restDay || todayDone ? [] : taskIds.filter((t) => !doneDays.get(t)?.has(today)),
+    todayToGo: restDay || todayDone ? 0 : Math.max(0, day0.need - day0.doneCount(today)),
   };
 }
 
@@ -97,18 +117,18 @@ export function streakWeek(
   taskIds: string[],
   doneDays: Map<string, Set<string>>,
   today: string,
-  { skipWeekends = false } = {},
+  rules: StreakDayRules = {},
 ): WeekDay[] {
-  const done = (day: string) => taskIds.length > 0 && taskIds.every((t) => doneDays.get(t)?.has(day));
+  const day0 = streakDay(taskIds, doneDays, rules);
   const dow = (new Date(`${today}T12:00:00Z`).getUTCDay() + 6) % 7; // Monday = 0
   const monday = addDays(today, -dow);
   const week: WeekDay[] = [];
   for (let i = 0; i < 7; i++) {
     const day = addDays(monday, i);
-    if (skipWeekends && isWeekend(day)) continue;
+    if (day0.rest(day)) continue;
     week.push({
       day,
-      state: done(day) ? "done" : day < today ? "missed" : day === today ? "today" : "upcoming",
+      state: day0.done(day) ? "done" : day < today ? "missed" : day === today ? "today" : "upcoming",
     });
   }
   return week;
@@ -120,13 +140,14 @@ export function brokeRecently(
   taskIds: string[],
   doneDays: Map<string, Set<string>>,
   today: string,
-  { skipWeekends = false, within = 3 } = {},
+  { within = 3, ...rules }: StreakDayRules & { within?: number } = {},
 ): boolean {
+  const day0 = streakDay(taskIds, doneDays, rules);
   let day = addDays(today, -1);
   for (let counted = 0; counted < within; day = addDays(day, -1)) {
-    if (skipWeekends && isWeekend(day)) continue;
+    if (day0.rest(day)) continue;
     counted++;
-    if (taskIds.length > 0 && taskIds.every((t) => doneDays.get(t)?.has(day))) return true;
+    if (day0.done(day)) return true;
   }
   return false;
 }
