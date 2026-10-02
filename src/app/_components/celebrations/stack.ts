@@ -13,6 +13,19 @@ const BLOCK_SRC = "/anims/block.webp"; // a rounded square, stretched into shape
 const PLATFORM_SRC = "/anims/platform.webp";
 const PLATFORM_ASPECT = 73 / 480;
 
+// Tuning knobs (play with these): how grippy the blocks are, how gently
+// they fall, and how closely the platform follows your finger.
+const TUNE = {
+  grip: 1, // block + platform friction while sliding (0–1)
+  stick: 2, // friction before anything starts sliding (higher = blocks stay put)
+  bounce: 0, // 0 = blocks land dead, no bounce
+  airDrag: 0.035, // slows falling blocks so there's time to get under them
+  gravity: 0.0008,
+  follow: 110, // how hard the platform chases the finger
+  settle: 15, // how quickly that chase settles (higher = less overshoot/momentum)
+  platformWidth: 6, // in block units
+};
+
 // Block shapes in grid units (w × h) and their colors.
 const SHAPES: [number, number][] = [[1, 1], [2, 1], [1, 2], [3, 1], [2, 2], [1, 1], [2, 1]];
 const COLORS = ["party-pink", "party-yellow", "party-cyan", "party-red", "accent", "primary"];
@@ -109,17 +122,17 @@ async function createStack(
   const M = await loadMatter();
   let art: Art = { platform: null, blocks: [] };
   void loadArt().then((a) => (art = a));
-  const engine = M.Engine.create({ gravity: { x: 0, y: 1, scale: 0.0009 } });
+  const engine = M.Engine.create({ gravity: { x: 0, y: 1, scale: TUNE.gravity } });
   const unit = Math.round(Math.min(safe.w / 8, 44));
-  const platW = Math.min(safe.w * 0.5, unit * 5);
+  const platW = Math.min(safe.w * 0.62, unit * TUNE.platformWidth);
   const platH = platW * PLATFORM_ASPECT;
   const platY = safe.y + safe.h - platH; // its center
   // Moved by hand each frame, with its velocity filled in so whatever is
   // stacked on it gets carried along (and thrown about by fast moves).
   const platform = M.Bodies.rectangle(W / 2, platY, platW, platH * 0.8, {
     isStatic: true,
-    friction: 1,
-    frictionStatic: 1,
+    friction: TUNE.grip,
+    frictionStatic: TUNE.stick,
     chamfer: { radius: platH * 0.3 },
   });
   M.Composite.add(engine.world, platform);
@@ -141,9 +154,10 @@ async function createStack(
     const x = rand(safe.x + w / 2 + 10, safe.x + safe.w - w / 2 - 10);
     const body = M.Bodies.rectangle(x, safe.y - h, w, h, {
       chamfer: { radius: unit * 0.18 },
-      friction: 0.8,
-      frictionStatic: 0.9,
-      restitution: 0.02,
+      friction: TUNE.grip,
+      frictionStatic: TUNE.stick,
+      frictionAir: TUNE.airDrag,
+      restitution: TUNE.bounce,
       density: 0.0015,
       angle: rand(-0.15, 0.15),
     });
@@ -160,8 +174,8 @@ async function createStack(
       nextIn = 0.5;
     }
     // The platform chases the finger with a little lag.
-    platVx += (target - platX) * 60 * dt;
-    platVx *= Math.exp(-9 * dt);
+    platVx += (target - platX) * TUNE.follow * dt;
+    platVx *= Math.exp(-TUNE.settle * dt);
     const half = platW / 2;
     const ms = Math.min(dt, 1 / 20) * 1000;
     for (let i = 0; i < 2; i++) {
