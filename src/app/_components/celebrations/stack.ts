@@ -31,7 +31,7 @@ const SHAPES: [number, number][] = [[1, 1], [2, 1], [1, 2], [3, 1], [2, 2], [1, 
 const COLORS = ["party-pink", "party-yellow", "party-cyan", "party-red", "accent", "primary"];
 
 let matter: typeof MatterNS | null = null;
-const loadMatter = async () =>
+export const loadMatter = async () =>
   (matter ??= ((await import("matter-js")) as unknown as { default: typeof MatterNS }).default);
 
 type Art = { platform: HTMLImageElement | null; blocks: HTMLCanvasElement[] }; // one block per color
@@ -45,29 +45,27 @@ type Block = {
   state: "falling" | "settled";
 };
 
-// The block art tinted each color (multiply, keeping its shading).
+// The block art tinted a color token (multiply, keeping its shading).
+export function tintBlock(block: HTMLImageElement, token: string, strength = 1): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = block.naturalWidth;
+  c.height = block.naturalHeight;
+  const g = c.getContext("2d")!;
+  g.drawImage(block, 0, 0);
+  g.globalCompositeOperation = "multiply";
+  g.fillStyle = color(token, strength);
+  g.fillRect(0, 0, c.width, c.height);
+  g.globalCompositeOperation = "destination-in";
+  g.drawImage(block, 0, 0);
+  return c;
+}
+export const loadBlockArt = () => loadImage(BLOCK_SRC);
+
 async function loadArt(): Promise<Art> {
   const [block, platform] = await Promise.all([loadImage(BLOCK_SRC), loadImage(PLATFORM_SRC)]);
-  const blocks = block
-    ? COLORS.map((token) => {
-        const c = document.createElement("canvas");
-        c.width = block.naturalWidth;
-        c.height = block.naturalHeight;
-        const g = c.getContext("2d")!;
-        g.drawImage(block, 0, 0);
-        g.globalCompositeOperation = "multiply";
-        g.fillStyle = color(token);
-        g.fillRect(0, 0, c.width, c.height);
-        g.globalCompositeOperation = "destination-in";
-        g.drawImage(block, 0, 0);
-        return c;
-      })
-    : [];
-  return { platform, blocks };
+  return { platform, blocks: block ? COLORS.map((token) => tintBlock(block, token)) : [] };
 }
 
-// Draws a block of any size from the square art without squashing its
-// rounded corners (a 9-slice: corners as-is, edges and middle stretched).
 function drawBlock(ctx: CanvasRenderingContext2D, art: Art, look: number, w: number, h: number, unit: number) {
   const src = art.blocks[look % Math.max(1, art.blocks.length)];
   if (!src) {
@@ -77,10 +75,17 @@ function drawBlock(ctx: CanvasRenderingContext2D, art: Art, look: number, w: num
     ctx.fill();
     return;
   }
+  drawNineSlice(ctx, src, w, h, unit * 0.3);
+}
+
+// Draws a rounded-square image at any size (centered on the origin)
+// without squashing its corners: a 9-slice — corners as-is, edges and
+// middle stretched.
+export function drawNineSlice(ctx: CanvasRenderingContext2D, src: HTMLCanvasElement, w: number, h: number, corner: number) {
   const sw = src.width;
   const sh = src.height;
   const sc = sw * 0.3; // corner size in the art
-  const dc = Math.min(unit * 0.3, w / 2, h / 2); // corner size on screen
+  const dc = Math.min(corner, w / 2, h / 2); // corner size on screen
   const xs = [0, sc, sw - sc, sw];
   const ys = [0, sc, sh - sc, sh];
   const xd = [-w / 2, -w / 2 + dc, w / 2 - dc, w / 2];

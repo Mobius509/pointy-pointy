@@ -255,10 +255,14 @@ export function hintBubble(layer: HTMLElement, text: string, top: number): HTMLE
   const outer = document.createElement("div");
   outer.className = "absolute left-1/2 -translate-x-1/2";
   outer.style.top = `${top}px`;
+  // Narrow enough to stay clear of the sound button in the top corner; a
+  // long hint wraps instead.
+  outer.style.width = "max-content";
+  outer.style.maxWidth = "calc(100vw - 144px)";
   const inner = document.createElement("div");
   inner.textContent = text;
   inner.className =
-    "rounded-full bg-white px-4 py-2 font-bold text-pp-primary shadow-sm whitespace-nowrap animate-bounce";
+    "rounded-3xl bg-white px-4 py-2 font-bold text-pp-primary text-center leading-snug shadow-sm animate-bounce";
   outer.appendChild(inner);
   layer.appendChild(outer);
   return outer;

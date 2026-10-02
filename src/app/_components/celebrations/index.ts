@@ -9,6 +9,7 @@ import { playJackpot } from "./jackpot";
 import { playMole, playMoleGame } from "./mole";
 import { playFlappy, playFlappyGame } from "./flappy";
 import { playStack, playStackGame } from "./stack";
+import { playMarble, playMarbleGame } from "./marble";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -178,6 +179,15 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Block stack",
     description: "Slide the platform to catch the falling blocks and stack the points. Keep playing: build it tall — every block that falls costs a life.",
     play: playStack,
+  },
+  {
+    id: "marble",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🔮", label: "coins", seconds: 45, start: playMarbleGame },
+    name: "Marble tilt",
+    description: "Tilt the phone (or hold a finger) to roll a marble over the point coins. Keep playing: 45 seconds of coins.",
+    play: playMarble,
   },
   {
     id: "asteroids",

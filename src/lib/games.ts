@@ -11,6 +11,7 @@ export const ARCADE_GAMES = [
   { id: "asteroids", name: "Asteroids", icon: "☄️" },
   { id: "flappy", name: "Flappy bird", icon: "🐦" },
   { id: "stack", name: "Block stack", icon: "🧱" },
+  { id: "marble", name: "Marble tilt", icon: "🔮" },
 ] as const;
 
 export type ArcadeGameId = (typeof ARCADE_GAMES)[number]["id"];
