@@ -160,12 +160,47 @@ async function createClaw(
       special: Math.random() < PEARL_CHANCE,
     });
   };
-  const fill = (count: number, fromY: number) => {
-    for (let i = 0; i < count; i++) addBall(rand(pileLeft + r + 10, area.x + area.w - r - 4), fromY - i * r * 2.2);
+  // Balls never start overlapping (overlaps make the physics shove them
+  // apart — balls flying everywhere).
+  const left = pileLeft + r + 4;
+  const right = area.x + area.w - r - 4;
+  // The starting pile: neat staggered rows from the floor up, a little
+  // jitter, then let it settle before anyone sees it.
+  const startPile = (count: number) => {
+    const across = Math.max(1, Math.floor((right - left) / (r * 2.1)) + 1);
+    for (let i = 0; i < count; i++) {
+      const row = Math.floor(i / across);
+      const col = i % across;
+      const bx = Math.min(right, left + col * r * 2.1 + (row % 2) * r + rand(-2, 2));
+      addBall(bx, floorY - r - 2 - row * r * 1.95);
+    }
   };
-  // Start with a settled pile.
-  fill(18, floorY - r * 3);
-  for (let i = 0; i < 180; i++) M.Engine.update(engine, 1000 / 60);
+  // A refill drops in at a free spot near the top (none free: try later).
+  const dropIn = () => {
+    const y = area.y + area.h * 0.35;
+    for (let tries = 0; tries < 6; tries++) {
+      const bx = rand(left, right);
+      if (balls.every((b) => Math.hypot(b.body.position.x - bx, b.body.position.y - y) > r * 2.3)) {
+        addBall(bx, y);
+        return;
+      }
+    }
+  };
+  // Safety net: nothing ever moves faster than this.
+  const MAX_SPEED = 18;
+  const calm = () => {
+    for (const b of balls)
+      if (b.body.speed > MAX_SPEED) {
+        const v = b.body.velocity;
+        const f = MAX_SPEED / b.body.speed;
+        M.Body.setVelocity(b.body, { x: v.x * f, y: v.y * f });
+      }
+  };
+  startPile(18);
+  for (let i = 0; i < 360; i++) {
+    M.Engine.update(engine, 1000 / 60);
+    calm();
+  }
 
   // The claw.
   let state: State = "roam";
@@ -281,7 +316,9 @@ async function createClaw(
     if (ms > 0) {
       placeTips();
       M.Engine.update(engine, ms / 2);
+      calm();
       M.Engine.update(engine, ms / 2);
+      calm();
     }
     // Swing: the claw lags behind the way it's moving, then swings back.
     if (dt > 0) {
@@ -424,7 +461,7 @@ async function createClaw(
       }
     }
     // Keep the pile topped up.
-    if (balls.length + (held ? 1 : 0) < 14) fill(1, area.y + area.h * 0.35);
+    if (balls.length + (held ? 1 : 0) < 14) dropIn();
   };
 
   const drawBall = (b: Ball, bx: number, by: number, angle = 0) => {
