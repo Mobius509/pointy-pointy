@@ -780,6 +780,82 @@ export async function playClaw(opts: CelebrationOptions): Promise<void> {
   layer.remove();
 }
 
+// Dev panel for trying out the specials without hunting for them: add
+// ?dev to the page URL (it's remembered on this device; ?dev=0 turns it off).
+function devMode(): boolean {
+  try {
+    const q = new URLSearchParams(window.location.search).get("dev");
+    if (q !== null) localStorage.setItem("pp:dev", q === "0" ? "" : "1");
+    return localStorage.getItem("pp:dev") === "1";
+  } catch {
+    return false;
+  }
+}
+
+// On the page itself, above the score bar (which would swallow the taps).
+function devPanel(safe: { x: number; y: number }, now: (p: Prize) => void, next: (p: Prize) => void): HTMLElement {
+  const panel = document.createElement("div");
+  panel.className = "fixed z-[90] flex flex-col gap-1 rounded-2xl bg-white/90 p-2 text-xs font-bold text-pp-primary shadow-sm";
+  panel.style.left = `${safe.x + 8}px`;
+  panel.style.top = `${safe.y + 8}px`;
+  panel.style.pointerEvents = "auto";
+  panel.style.maxWidth = "calc(100vw - 160px)";
+  const status = document.createElement("div");
+  const row = (label: string, items: [string, Prize][], act: (p: Prize) => void, say: (icon: string) => string) => {
+    const wrap = document.createElement("div");
+    wrap.className = "flex flex-wrap items-center gap-1";
+    const title = document.createElement("span");
+    title.textContent = label;
+    title.className = "mr-1";
+    wrap.appendChild(title);
+    for (const [icon, p] of items) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = icon;
+      b.title = prizeLook(p).text;
+      b.className = "h-8 w-8 rounded-full bg-pp-soft text-base";
+      b.onclick = () => {
+        act(p);
+        status.textContent = say(icon);
+      };
+      wrap.appendChild(b);
+    }
+    panel.appendChild(wrap);
+  };
+  row(
+    "Now",
+    [
+      ["🍯", { kind: "sticky" }],
+      ["🦾", { kind: "iron" }],
+      ["🧲", { kind: "magnet" }],
+      ["⭐", { kind: "golden" }],
+      ["🐌", { kind: "slow" }],
+      ["❤️", { kind: "try" }],
+    ],
+    now,
+    (icon) => `${icon} on for the next drop`,
+  );
+  row(
+    "Next ball",
+    [
+      ["💣", { kind: "bomb", points: 3 }],
+      ["💀", { kind: "death" }],
+      ["🌪️", { kind: "shake" }],
+      ["💥", { kind: "blast", count: 3, points: 6 }],
+      ["🎰", { kind: "jackpot", points: 15 }],
+      ["🎁", { kind: "mystery", inside: [{ kind: "points", points: 2 }, { kind: "sticky" }] }],
+      ["👻", { kind: "sneaky" }],
+    ],
+    next,
+    (icon) => `Next ball you win: ${icon}`,
+  );
+  status.className = "text-pp-muted";
+  status.textContent = "Dev mode";
+  panel.appendChild(status);
+  document.body.appendChild(panel);
+  return panel;
+}
+
 // "Keep playing": five tries. Each ball won pops open into something — see
 // `Prize`. Colored balls are mostly points (1–5, bigger ones rarer) with
 // bombs, sneaky decoys, shake-ups and the odd skull mixed in; the shiny
@@ -854,7 +930,12 @@ export function playClawGame(opts: GameOptions): () => void {
         return { kind: "mystery", inside: [basic(), powerUps[Math.floor(Math.random() * powerUps.length)]] };
       },
     );
-  const roll = (special: boolean) => (special ? bonus() : regular());
+  let forced: Prize | null = null; // dev panel: what the next ball turns out to be
+  const roll = (special: boolean) => {
+    const next = forced;
+    forced = null;
+    return next ?? (special ? bonus() : regular());
+  };
   // ⭐ doubles the next points prize (shown doubled when it pops open).
   const prize = (special: boolean): Prize => {
     const won = roll(special);
@@ -916,6 +997,7 @@ export function playClawGame(opts: GameOptions): () => void {
 
   void createClaw(ctx, W, H, safe, prize, apply).then((m) => {
     machine = m;
+    const dev = devMode() ? devPanel(safe, apply, (p) => (forced = p)) : null;
     gameInput({
       down: () => {
         hint.remove();
@@ -944,6 +1026,7 @@ export function playClawGame(opts: GameOptions): () => void {
     const prev = stop;
     stop = () => {
       m.stop();
+      dev?.remove();
       prev();
     };
   });
