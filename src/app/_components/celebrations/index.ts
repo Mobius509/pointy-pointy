@@ -8,6 +8,7 @@ import { playChomper, playChomperGame } from "./chomper";
 import { playJackpot } from "./jackpot";
 import { playMole, playMoleGame } from "./mole";
 import { playFlappy, playFlappyGame } from "./flappy";
+import { playStack, playStackGame } from "./stack";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -168,6 +169,15 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Flappy bird",
     description: "Tap to flap through the gaps to grab the points. Keep playing: clear pipes and grab coins (+1 each). Three lives.",
     play: playFlappy,
+  },
+  {
+    id: "stack",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🧱", label: "blocks", lives: 3, start: playStackGame },
+    name: "Block stack",
+    description: "Drag the hanging block, let go to drop — stack the points. Keep playing: build it tall; every block that falls costs a life.",
+    play: playStack,
   },
   {
     id: "asteroids",
