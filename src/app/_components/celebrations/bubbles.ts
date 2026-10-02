@@ -20,9 +20,10 @@ import { playSound } from "./sounds";
 // three or more of a color touching pop, and anything left hanging from
 // them drops. Tap the "next" bubble to swap it in.
 //
-// Keep playing goes in rounds (bubbleLevels.ts): each one brings a new
-// shape, more colors, a shorter aim line and a new kind of special bubble.
-// Shiny pearls earn power shots.
+// Keep playing is one game against rows coming down faster and faster;
+// each cleared board is a new level (bubbleLevels.ts): a new shape, more
+// colors, a shorter aim line and a new kind of special bubble. Shiny pearls
+// earn power shots.
 
 const COLS = 8; // bubbles across a full row
 const ORB_SRC = "/anims/orb-red.webp"; // recolored for each bubble color
@@ -94,7 +95,9 @@ async function createBubbles(
 
   // Settings for the current board.
   let colors = 3;
-  let newRowEvery = 0;
+  let newRowEvery = 0; // misses before a row pushes down (0: not by misses)
+  let rowEvery = 0; // …or seconds between rows (0: not on a clock)
+  let rowClock = 0;
   let aimFrac = 1;
 
   // The honeycomb: row i is short (COLS − 1, shifted half a bubble) when
@@ -202,6 +205,7 @@ async function createBubbles(
     pending = [];
     paused = false;
     missesLeft = newRowEvery;
+    rowClock = 0;
     loaded = { look: randomLook() };
     next = { look: randomLook() };
   };
@@ -457,6 +461,11 @@ async function createBubbles(
 
   const step = (dt: number) => {
     clock += dt;
+    if (rowEvery > 0 && !paused && (rowClock += dt) >= rowEvery) {
+      rowClock = 0;
+      pushRow();
+      if (lowest() >= maxRows) opts.onReachedBottom();
+    }
     for (const f of [...flying]) {
       // Small steps so it can't tunnel through a bubble.
       const steps = Math.ceil((SPEED * dt) / (R * 0.4));
@@ -680,6 +689,21 @@ async function createBubbles(
     drawShot(next, nextAt.x, nextAt.y, 0.7);
     drawLabel(ctx, "swap", nextAt.x, nextAt.y - R * 1.35, 11);
     if (pending.length) drawLabel(ctx, `+${pending.length}`, nextAt.x - R * 1.3, nextAt.y + R * 0.6, 11);
+    if (rowEvery > 0) {
+      // Time until the next row comes down.
+      const w = R * 3.2;
+      const x0 = shooter.x + R * 2.2;
+      const y0 = shooter.y + R * 0.25;
+      ctx.fillStyle = color("primary", 0.15);
+      ctx.beginPath();
+      ctx.roundRect(x0, y0, w, R * 0.35, R * 0.18);
+      ctx.fill();
+      ctx.fillStyle = color(rowEvery - rowClock < 2 ? "party-red" : "primary", 0.75);
+      ctx.beginPath();
+      ctx.roundRect(x0, y0, w * Math.max(0.05, 1 - rowClock / rowEvery), R * 0.35, R * 0.18);
+      ctx.fill();
+      drawLabel(ctx, "next row", x0 + w / 2, y0 - R * 0.45, 11);
+    }
     if (newRowEvery) {
       // How many more misses before a row pushes down.
       for (let k = 0; k < newRowEvery; k++) {
@@ -717,12 +741,14 @@ async function createBubbles(
     shooter,
     float,
     pause: () => (paused = true),
+    setRowEvery: (seconds: number) => (rowEvery = seconds),
     center: { x: (left + right) / 2, y: top + (dangerY - top) * 0.45 },
     // A round of Keep playing.
-    startRound: (round: number) => {
+    // `clocked`: rows come on a timer (setRowEvery) instead of after misses.
+    startRound: (round: number, clocked = false) => {
       const spec = roundSpec(round);
       colors = spec.colors;
-      newRowEvery = spec.misses;
+      newRowEvery = clocked ? 0 : spec.misses;
       aimFrac = spec.aim;
       const others = spec.unlocked.filter((k) => k !== "pearl");
       const specials: SpecialKind[] = Array.from({ length: spec.pearls }, (): SpecialKind => "pearl");
@@ -841,16 +867,24 @@ export async function playBubbles(opts: CelebrationOptions): Promise<void> {
   layer.remove();
 }
 
-// "Keep playing": 90 seconds (the screen's timer), in rounds
-// (bubbleLevels.ts). +1 a bubble popped, +2 for each one dropped, prizes
-// and stones extra; clearing the board is +10 × the round, and on to the
-// next. Misses push a new row down; let the bubbles reach the line and the
-// round starts over (the time's gone).
+// "Keep playing": one game that ends when the bubbles reach the line. Rows
+// come down on a clock that keeps speeding up. Clear the board for a bonus
+// (+10 × the level) and the next level's board (bubbleLevels.ts: new shape,
+// more colors, new specials) — its rows start at half the speed the last
+// one got to (never slower than the last one started), so it gets faster
+// and faster. +1 a bubble popped, +2 a drop, prizes and stones extra.
+const START_ROW_SECONDS = 8; // first board: a row every 8 s…
+const DOUBLE_AFTER = 45; // …twice as fast after this many seconds…
+const RAMP_PER_SECOND = 1 / (START_ROW_SECONDS * DOUBLE_AFTER); // (rows/s gained each second)
+const NEXT_START_MIN = 1.25; // …and each board starts at least this much faster than the last
 export function playBubblesGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, safe } = createCanvasGame("game");
   let score = 0;
   let round = 1;
-  let between = false; // the gap between rounds
+  let over = false;
+  let between = false; // the gap between boards
+  let rate = 1 / START_ROW_SECONDS; // rows per second
+  let startRate = rate; // what this board started at
   const explained = new Set<SpecialKind>();
   let stop = () => layer.remove();
   let hint: HTMLElement | null = hintBubble(layer, "Aim, let go to shoot!", safe.y + safe.h * 0.55);
@@ -860,8 +894,9 @@ export function playBubblesGame(opts: GameOptions): () => void {
     if (!game) return;
     round = n;
     between = false;
-    const spec = game.startRound(round);
-    game.float(`Round ${round}`, game.center.x, game.center.y, 34, 1.6);
+    const spec = game.startRound(round, true);
+    game.setRowEvery(1 / rate);
+    game.float(`Level ${round}`, game.center.x, game.center.y, 34, 1.6);
     const intro = spec.introduces;
     if (intro && !explained.has(intro)) {
       explained.add(intro);
@@ -880,20 +915,24 @@ export function playBubblesGame(opts: GameOptions): () => void {
       game?.float(`+${r.points}`, r.x, r.y);
     },
     onCleared: () => {
-      if (between) return;
+      if (between || over) return;
       between = true;
+      game?.setRowEvery(0);
       const bonus = 10 * round;
       opts.onScore((score += bonus));
       void playSound("fanfare");
-      game?.float(`Round ${round} cleared! +${bonus}`, game.center.x, game.center.y, 22, 1.4);
-      setTimeout(() => begin(round + 1), 1400);
+      game?.float(`Cleared! +${bonus}`, game.center.x, game.center.y, 24, 1.4);
+      // Next board: half the speed this one reached, but always quicker
+      // than this one started.
+      startRate = rate = Math.max(rate / 2, startRate * NEXT_START_MIN);
+      setTimeout(() => !over && begin(round + 1), 1400);
     },
     onReachedBottom: () => {
-      if (between) return;
-      between = true;
+      if (over) return;
+      over = true;
+      game?.pause();
       void playSound("boom");
-      game?.float("Too low! Start again", game.center.x, game.center.y, 22, 1.2);
-      setTimeout(() => begin(round), 900); // same round, fresh board
+      opts.onGameOver?.();
     },
   }).then((g) => {
     game = g;
@@ -905,12 +944,12 @@ export function playBubblesGame(opts: GameOptions): () => void {
       process.env.NODE_ENV === "development" && devMode()
         ? devPanel(safe, [
             {
-              label: "Round",
+              label: "Level",
               buttons: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((n) => ({
                 icon: String(n),
                 run: () => {
                   begin(n);
-                  return `Round ${n}`;
+                  return `Level ${n}`;
                 },
               })),
             },
@@ -939,6 +978,11 @@ export function playBubblesGame(opts: GameOptions): () => void {
           ])
         : null;
     runLoop(layer, (dt, time) => {
+      // The rows keep coming faster.
+      if (!between && !over) {
+        rate += RAMP_PER_SECOND * dt;
+        g.setRowEvery(1 / rate);
+      }
       g.step(dt);
       g.draw(time);
     });
