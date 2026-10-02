@@ -4,7 +4,6 @@ import { getKidProfiles } from "@/lib/v2/data";
 import { getHighScores } from "@/lib/v2/high-scores";
 import { getKidHome } from "@/lib/v2/kid-home";
 import { avatarSrc } from "@/lib/avatar";
-import { avatarShift } from "@/lib/kid-palette";
 import { Arcade } from "../../_components/Arcade";
 import { KidChrome } from "../../_components/KidChrome";
 import { KidStats } from "../../_components/KidStats";
@@ -86,7 +85,6 @@ export default async function KidViewPreviewPage({
               <Arcade
                 slug={slug}
                 avatarSrc={avatarSrc(home.view.kid.avatar_emoji)}
-                avatarShift={avatarShift(home.hue)}
                 arcade={home.arcade}
                 highScores={highScores}
                 preview

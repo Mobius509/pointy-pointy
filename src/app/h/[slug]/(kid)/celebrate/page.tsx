@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { avatarSrc } from "@/lib/avatar";
-import { avatarShift } from "@/lib/kid-palette";
 import { getHighScores } from "@/lib/v2/high-scores";
 import { CelebratePlayer } from "../../_components/CelebratePlayer";
 import { loadKidPage } from "../../_lib/kid-page";
@@ -19,7 +18,6 @@ export default async function KidCelebratePage({ params }: { params: Promise<{ s
     <CelebratePlayer
       slug={slug}
       avatarSrc={avatarSrc(view.kid.avatar_emoji)}
-      avatarShift={avatarShift(home.hue)}
       approvals={home.pendingCelebration}
       progress={view.progress}
       milestones={view.milestones.map((m) => ({ name: m.name, points: m.points }))}

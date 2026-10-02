@@ -36,12 +36,6 @@ export function normalizeHue(hue: number | null | undefined): number {
   return ((Math.round(hue) % 360) + 360) % 360;
 }
 
-// How far to turn the avatar's colors (CSS hue-rotate / SwiftUI
-// hueRotation) so it matches the palette. 0 for the default.
-export function avatarShift(hue: number | null | undefined): number {
-  return normalizeHue(hue) - BASE_HUE;
-}
-
 export function kidPalette(hue: number | null | undefined): KidPalette {
   const h = normalizeHue(hue);
   const out = {} as KidPalette;
@@ -84,7 +78,6 @@ export function kidThemeVars(hue: number | null | undefined): Record<string, str
   const vars = kidCssVars(hue);
   for (const [pp, token] of Object.entries(PP_FROM_KID))
     vars[`--pp-${pp}`] = token === "white" ? "255 255 255" : vars[`--kid-${kebab(token)}`];
-  vars["--kid-avatar-shift"] = `${avatarShift(hue)}deg`;
   return vars;
 }
 

@@ -131,7 +131,7 @@ private struct ColorCard: View {
                 Text("My color")
                     .font(.rounded(20, .medium))
                     .foregroundStyle(Theme.orange)
-                Text("Slide to pick your color. Everything changes to match — even you!")
+                Text("Slide to pick your color. Everything changes to match!")
                     .font(.rounded(13))
                     .foregroundStyle(Theme.sand)
                 Slider(value: $hue, in: 0...359, step: 1) { editing in

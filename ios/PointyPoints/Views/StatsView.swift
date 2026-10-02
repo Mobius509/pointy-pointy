@@ -57,10 +57,8 @@ private struct CelebrateCard: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
-                Image("Fire3D")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 54, height: 54)
+                AnimatedFire()
+                    .frame(width: 58, height: 58)
                     .frame(width: 75, height: 75)
                     .background(Theme.palette.strongDeep, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 Text("Your points have been approved! Nice work. Let's celebrate!")

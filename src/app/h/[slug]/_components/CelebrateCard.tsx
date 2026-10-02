@@ -12,7 +12,11 @@ export function CelebrateCard({ slug, disabled = false }: { slug: string; disabl
   const inner = (
     <>
       <span className="grid size-[75px] shrink-0 place-items-center rounded-[22px] bg-kid-strong-deep" aria-hidden>
-        <img src="/icons/3dIcon_Fire.png" alt="" className="size-[54px] object-contain" />
+        {/* The animated fire (a still one if the device asks for less motion). */}
+        <picture>
+          <source srcSet="/icons/3dIcon_Fire.png" media="(prefers-reduced-motion: reduce)" />
+          <img src="/anims/fire.webp" alt="" className="size-[58px] object-contain" />
+        </picture>
       </span>
       <span className="flex-1 text-[17px] font-medium leading-snug text-white">
         Your points have been approved! Nice work. Let&apos;s celebrate!

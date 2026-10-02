@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { avatarSrc } from "@/lib/avatar";
-import { avatarShift } from "@/lib/kid-palette";
 import { getHighScores } from "@/lib/v2/high-scores";
 import { Arcade } from "../../_components/Arcade";
 import { loadKidPage } from "../../_lib/kid-page";
@@ -19,7 +18,6 @@ export default async function KidArcadePage({ params }: { params: Promise<{ slug
       <Arcade
         slug={slug}
         avatarSrc={avatarSrc(home.view.kid.avatar_emoji)}
-        avatarShift={avatarShift(home.hue)}
         arcade={home.arcade}
         highScores={highScores}
         kidName={home.view.kid.name}

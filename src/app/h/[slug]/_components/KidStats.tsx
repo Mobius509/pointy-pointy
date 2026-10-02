@@ -19,7 +19,7 @@ export function KidStats({ slug, home, preview = false }: { slug: string; home: 
           src={avatarSrc(view.kid.avatar_emoji)}
           alt=""
           aria-hidden
-          className="kid-avatar absolute -top-[96px] left-5 size-[150px] object-contain"
+          className="absolute -top-[96px] left-5 size-[150px] object-contain"
         />
         <h1 className="text-[33px] font-medium leading-[1.06] tracking-[-0.01em] text-kid-strong">{greeting}</h1>
       </section>

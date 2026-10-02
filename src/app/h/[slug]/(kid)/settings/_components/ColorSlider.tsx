@@ -43,7 +43,7 @@ export function ColorSlider({ slug, initialHue }: { slug: string; initialHue: nu
   return (
     <section className="rounded-[32px] bg-kid-card p-6">
       <h2 className="text-[20px] font-medium text-kid-strong">My color</h2>
-      <p className="mt-1 text-[14px] text-kid-text">Slide to pick your color. Everything changes to match — even you!</p>
+      <p className="mt-1 text-[14px] text-kid-text">Slide to pick your color. Everything changes to match!</p>
       <input
         type="range"
         min={0}

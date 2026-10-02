@@ -93,7 +93,7 @@ export function AvatarPicker({
                   src={`/avatars/${id}.png`}
                   alt=""
                   aria-hidden
-                  className="kid-avatar absolute inset-0 w-full h-full object-contain p-3"
+                  className="absolute inset-0 w-full h-full object-contain p-3"
                 />
                 <span
                   aria-hidden

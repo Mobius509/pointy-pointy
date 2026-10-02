@@ -47,8 +47,6 @@ struct KidPalette: Equatable {
         textStrong = make("textStrong")
     }
 
-    /// How far to turn the avatar's colors to match (0 for the default).
-    var avatarShift: Double { Double(hue) - Self.baseHue }
 
     // OKLCH → sRGB. A color screens can't show gets its chroma reduced until
     // it fits (keeping lightness and hue) — as on the web.
@@ -162,8 +160,7 @@ struct Card<Content: View>: View {
     }
 }
 
-/// Server-hosted avatar image with a soft placeholder, turned to the kid's
-/// color (like the web's .kid-avatar).
+/// Server-hosted avatar image with a soft placeholder.
 struct AvatarImage: View {
     let url: URL?
     var size: CGFloat = 96
@@ -175,7 +172,6 @@ struct AvatarImage: View {
             Circle().fill(Theme.peach.opacity(0.5))
         }
         .frame(width: size, height: size)
-        .hueRotation(.degrees(Theme.palette.avatarShift))
         .accessibilityHidden(true)
     }
 }

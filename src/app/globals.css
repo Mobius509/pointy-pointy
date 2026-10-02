@@ -51,7 +51,6 @@
   --kid-track: 227 201 249; /* #E3C9F9 soft accents */
   --kid-text: 118 55 184; /* #7637B8 body text, filled dots */
   --kid-text-strong: 105 25 185; /* #6919B9 big numbers */
-  --kid-avatar-shift: 0deg; /* turns the avatar's colors to match */
 }
 
 html,
@@ -169,10 +168,6 @@ body {
 
 /* ----- Kid app --------------------------------------------------------------- */
 @layer components {
-  /* The kid's avatar, recolored to match their palette. */
-  .kid-avatar {
-    filter: hue-rotate(var(--kid-avatar-shift));
-  }
   /* The "My color" slider: a rainbow track and a big white knob. */
   .kid-hue-slider {
     @apply h-10 cursor-pointer appearance-none rounded-full;

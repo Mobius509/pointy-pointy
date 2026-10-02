@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CelebrationScreen, type HighScore } from "@/app/_components/CelebrationScreen";
 import { nextUpFor } from "@/lib/next-up";
 import { markCelebratedAction, submitHighScoreAction } from "../_actions/kid-completions";
-import { useShiftedAvatar } from "./useShiftedAvatar";
 
 type Approval = { id: string; name: string; points: number; isBonus: boolean };
 type IosBridge = { webkit?: { messageHandlers?: { pointy?: { postMessage: (m: unknown) => void } } } };
@@ -17,7 +16,6 @@ type IosBridge = { webkit?: { messageHandlers?: { pointy?: { postMessage: (m: un
 export function CelebratePlayer({
   slug,
   avatarSrc,
-  avatarShift,
   approvals,
   progress,
   milestones,
@@ -26,7 +24,6 @@ export function CelebratePlayer({
 }: {
   slug: string;
   avatarSrc: string;
-  avatarShift: number;
   approvals: Approval[];
   progress: number;
   milestones: { name: string; points: number }[];
@@ -34,7 +31,9 @@ export function CelebratePlayer({
   highScores: Record<string, HighScore>;
 }) {
   const router = useRouter();
-  const avatar = useShiftedAvatar(avatarSrc, avatarShift);
+  // The celebration only runs in the browser (it plays on the page itself).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const leave = useCallback(() => {
     const ios = (window as unknown as IosBridge).webkit?.messageHandlers?.pointy;
     if (ios) ios.postMessage({ type: "close" });
@@ -59,11 +58,12 @@ export function CelebratePlayer({
     );
   }
 
+  if (!mounted) return null;
   const total = approvals.reduce((sum, a) => sum + a.points, 0);
   const from = progress - total;
   return (
     <CelebrationScreen
-      avatarSrc={avatar}
+      avatarSrc={avatarSrc}
       total={total}
       items={approvals}
       milestonesUnlocked={milestones.filter((m) => m.points > from && m.points <= progress)}
