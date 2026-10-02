@@ -1,5 +1,16 @@
 import confetti from "canvas-confetti";
-import { color, createCanvasGame, drawLabel, gameInput, loadImage, pointChunks, rand, runLoop, type Area } from "./canvasGame";
+import {
+  color,
+  createCanvasGame,
+  drawLabel,
+  gameInput,
+  loadImage,
+  pointChunks,
+  rand,
+  runLoop,
+  tinted,
+  type Area,
+} from "./canvasGame";
 import { confettiStyle, fadeOutLayer, hintBubble, onStop, type CelebrationOptions, type GameOptions } from "./shared";
 import { playSound } from "./sounds";
 
@@ -51,14 +62,30 @@ const loadArt = async (): Promise<Art> => {
 };
 const noArt: Art = { bird: null, wing: null, pipe: null, coin: null, clouds: [] };
 
-// A spinning coin (it flips side to side).
+// A spinning coin with some thickness: darker copies stacked behind the
+// face make its rim, spreading sideways as it turns side-on.
+const coinEdges = new WeakMap<HTMLImageElement, CanvasImageSource>();
 function drawCoin(ctx: CanvasRenderingContext2D, art: Art, c: Coin, size: number, time: number) {
-  const flip = Math.max(0.15, Math.abs(Math.cos(time * 3 + c.x * 0.01)));
+  const turn = time * 3 + c.x * 0.01;
+  const face = Math.max(0.12, Math.abs(Math.cos(turn)));
+  const depth = Math.sin(turn) * size * 0.14; // how far the rim shows, and which side
+  const h = art.coin ? size * COIN_ASPECT : size;
   ctx.save();
   ctx.translate(c.x, c.y);
-  ctx.scale(flip, 1);
-  if (art.coin) ctx.drawImage(art.coin, -size / 2, (-size * COIN_ASPECT) / 2, size, size * COIN_ASPECT);
-  else {
+  if (art.coin) {
+    let edge = coinEdges.get(art.coin);
+    if (!edge) coinEdges.set(art.coin, (edge = tinted(art.coin, "brightness(0.72) saturate(1.2)")));
+    for (let i = 8; i >= 1; i--) {
+      ctx.save();
+      ctx.translate((depth * i) / 8, 0);
+      ctx.scale(face, 1);
+      ctx.drawImage(edge, -size / 2, -h / 2, size, h);
+      ctx.restore();
+    }
+    ctx.scale(face, 1);
+    ctx.drawImage(art.coin, -size / 2, -h / 2, size, h);
+  } else {
+    ctx.scale(face, 1);
     ctx.fillStyle = color("party-yellow");
     ctx.beginPath();
     ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
@@ -344,10 +371,12 @@ export function playFlappyGame(opts: GameOptions): () => void {
       const last = pipes[pipes.length - 1];
       if (!last || last.x < W - PIPE_SPACING) {
         const next: Pipe = { x: W + 20, gapY: randomGap(safe, gap), gap, passed: false };
-        // A coin in the open space between this pipe and the last one — up
-        // or down from the line between the gaps, so some take a swoop.
+        // A coin in the open space between this pipe and the last one —
+        // always well above or below the line between the gaps, so it takes
+        // a swoop up or a dive down (and then a recovery) to grab.
         if (last) {
-          const y = (last.gapY + next.gapY) / 2 + rand(-1, 1) * gap * 0.7;
+          const away = rand(0.6, 1.1) * gap * (Math.random() < 0.5 ? -1 : 1);
+          const y = (last.gapY + next.gapY) / 2 + away;
           coins.push({
             x: (last.x + PIPE_W + next.x) / 2,
             y: Math.max(safe.y + coinSize, Math.min(safe.y + safe.h - coinSize, y)),
