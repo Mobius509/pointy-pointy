@@ -832,7 +832,9 @@ export function playClawGame(opts: GameOptions): () => void {
         opts.onScore((score = Math.max(0, score - won.points)));
         break;
       case "try":
-        opts.onLives?.(++tries);
+        // The try that won it comes back, plus one more — so you end up
+        // with a heart more than before you dropped.
+        opts.onLives?.((tries += 2));
         break;
       case "death":
         opts.onLives?.((tries = 0));
