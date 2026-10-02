@@ -8,13 +8,21 @@ import { Ring } from "./KidRing";
 // just its row. Scrolling down hands over from the milestone to the goal;
 // tapping the closed one opens it. The two always add up to the same height,
 // so nothing jumps. Mirrors GoalModule in the iOS StatsView.
+//
+// The hand-over only starts once the whole module is in view (above the tab
+// bar). Then it holds still while the kid scrolls through HANDOVER px of room
+// below it, the cards swapping as they go — and the page ends.
 const RING_AREA = 300; // px above the row when a card is fully open
+const HANDOVER = 260; // px of scrolling the hand-over takes
+const TAB_BAR_ZONE = 110; // px at the bottom of the screen the tab bar covers
 
 type Card = { pct: number; caption: string; points: number; label: string };
 
 export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card }) {
-  const box = useRef<HTMLElement>(null);
+  const box = useRef<HTMLDivElement>(null); // the module plus the room below it
+  const card = useRef<HTMLElement>(null);
   const [p, setP] = useState(0); // 0: milestone open … 1: goal open
+  const [hold, setHold] = useState(0); // px the module is held down by, while handing over
   const pRef = useRef(0);
   const manual = useRef<number | null>(null); // scrollY when a card was tapped
   const anim = useRef(0);
@@ -23,25 +31,28 @@ export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card })
     pRef.current = v;
     setP(v);
   };
-  // Where the scroll puts the hand-over: as the module's top climbs from
-  // 75% of the screen to 35%.
-  const fromScroll = useCallback(() => {
+  // How far into the hand-over the scroll is: 0 until the module's bottom
+  // is in view above the tab bar, then on through HANDOVER px.
+  const scrolledIn = useCallback(() => {
     const el = box.current;
-    if (!el) return 0;
-    const vh = window.innerHeight;
-    return Math.max(0, Math.min(1, (vh * 0.75 - el.getBoundingClientRect().top) / (vh * 0.4)));
+    const mod = card.current;
+    if (!el || !mod) return 0;
+    const bottom = el.getBoundingClientRect().top + mod.offsetHeight; // where it'd be, not held
+    return Math.max(0, Math.min(HANDOVER, window.innerHeight - TAB_BAR_ZONE - bottom));
   }, []);
 
   useEffect(() => {
     let raf = 0;
     const update = () => {
       raf = 0;
+      const s = scrolledIn();
+      setHold(s);
       if (manual.current !== null) {
         if (Math.abs(window.scrollY - manual.current) < 40) return; // a tap's choice holds until they scroll on
         manual.current = null;
       }
       cancelAnimationFrame(anim.current);
-      set(fromScroll());
+      set(s / HANDOVER);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -55,7 +66,7 @@ export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card })
       cancelAnimationFrame(raf);
       cancelAnimationFrame(anim.current);
     };
-  }, [fromScroll]);
+  }, [scrolledIn]);
 
   // Tap a card to open it (a quick ease, then it stays until they scroll).
   const open = (target: 0 | 1) => {
@@ -74,10 +85,16 @@ export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card })
 
   const e = p * p * (3 - 2 * p); // smoothstep
   return (
-    <section ref={box} className="space-y-3.5 rounded-[36px] bg-kid-card p-[18px]">
-      <Panel card={milestone} openness={1 - e} closedBg="var(--kid-card-inner)" onOpen={() => open(0)} />
-      <Panel card={goal} openness={e} closedBg="var(--kid-card-soft)" onOpen={() => open(1)} />
-    </section>
+    <div ref={box} style={{ paddingBottom: HANDOVER }}>
+      <section
+        ref={card}
+        style={{ transform: `translateY(${hold}px)` }}
+        className="space-y-3.5 rounded-[36px] bg-kid-card p-[18px]"
+      >
+        <Panel card={milestone} openness={1 - e} closedBg="var(--kid-card-inner)" onOpen={() => open(0)} />
+        <Panel card={goal} openness={e} closedBg="var(--kid-card-soft)" onOpen={() => open(1)} />
+      </section>
+    </div>
   );
 }
 

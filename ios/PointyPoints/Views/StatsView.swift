@@ -192,6 +192,10 @@ private struct GoalRow: View {
 /// Scrolling down hands over from the milestone to the goal; tapping the
 /// closed one opens it. They always add up to the same height, so nothing
 /// jumps. Same as the web's GoalModule.
+///
+/// The hand-over only starts once the whole module is in view (above the tab
+/// bar). Then it holds still while the kid scrolls through `handover` points
+/// of room below it, the cards swapping as they go — and the page ends.
 private struct GoalModule: View {
     struct Card {
         let pct: Int
@@ -204,31 +208,42 @@ private struct GoalModule: View {
     let goal: Card
     @State private var p: Double = 0 // 0: milestone open … 1: goal open
     @State private var top: CGFloat = 0
+    @State private var height: CGFloat = 0 // the module's own height
+    @State private var hold: CGFloat = 0 // points it's held down by, while handing over
     @State private var tappedAt: CGFloat? // where the module was when a card was tapped
 
     private static let ringArea: CGFloat = 300
+    private static let handover: CGFloat = 260 // points of scrolling the hand-over takes
+    private static let tabBarZone: CGFloat = 110 // the bottom of the screen the tab bar covers
     private static var screenHeight: CGFloat {
         (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.screen.bounds.height ?? 874
     }
 
     var body: some View {
         let e = p * p * (3 - 2 * p) // smoothstep
-        VStack(spacing: 14) {
-            panel(milestone, openness: 1 - e, closed: Theme.palette.cardInner) { open(0) }
-            panel(goal, openness: e, closed: Theme.palette.cardSoft) { open(1) }
+        VStack(spacing: 0) {
+            VStack(spacing: 14) {
+                panel(milestone, openness: 1 - e, closed: Theme.palette.cardInner) { open(0) }
+                panel(goal, openness: e, closed: Theme.palette.cardSoft) { open(1) }
+            }
+            .padding(18)
+            .background(Theme.palette.card, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+            .offset(y: hold)
+            // The room the hand-over scrolls through.
+            Color.clear.frame(height: Self.handover)
         }
-        .padding(18)
-        .background(Theme.palette.card, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { y in
             top = y
+            // How far into the hand-over: 0 until the module's bottom is in
+            // view above the tab bar, then on through `handover` points.
+            let s = max(0, min(Self.handover, Self.screenHeight - Self.tabBarZone - (y + height)))
+            hold = s
             if let tapped = tappedAt {
                 if abs(y - tapped) < 40 { return } // a tap's choice holds until they scroll on
                 tappedAt = nil
             }
-            // The hand-over: as the module's top climbs from 75% of the
-            // screen to 35%.
-            let vh = Self.screenHeight
-            p = max(0, min(1, (vh * 0.75 - y) / (vh * 0.4)))
+            p = s / Self.handover
         }
     }
 
