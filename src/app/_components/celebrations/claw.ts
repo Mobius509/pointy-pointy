@@ -311,24 +311,29 @@ async function createClaw(
     );
   };
 
-  // Bomb: it takes out one of the pearls in the pile too.
+  // Bomb: it takes out one of the pearls in the pile and the blast throws
+  // the whole pile around — which can bury good balls or dig them out.
   const bombPearl = () => {
     const pearls = balls.filter((b) => b.special);
-    if (!pearls.length) return;
-    const b = pearls[Math.floor(Math.random() * pearls.length)];
+    const b = pearls.length ? pearls[Math.floor(Math.random() * pearls.length)] : null;
     setTimeout(() => {
-      const at = balls.indexOf(b);
-      if (at < 0) return;
-      balls.splice(at, 1);
-      M.Composite.remove(engine.world, b.body);
-      // Knock its neighbours away from the blast.
-      for (const o of balls) {
-        const dx = o.body.position.x - b.body.position.x;
-        const dy = o.body.position.y - b.body.position.y;
-        const d = Math.hypot(dx, dy);
-        if (d < r * 4 && d > 0) M.Body.setVelocity(o.body, { x: (dx / d) * 9, y: (dy / d) * 9 - 4 });
+      // Blast from the pearl, or from the middle of the pile if none are left.
+      const at = b ? { ...b.body.position } : { x: pileLeft + (W - pileLeft) / 2, y: floorY - r };
+      if (b && balls.includes(b)) {
+        balls.splice(balls.indexOf(b), 1);
+        M.Composite.remove(engine.world, b.body);
+        sparkle(at.x, at.y);
       }
-      sparkle(b.body.position.x, b.body.position.y);
+      for (const o of balls) {
+        const dx = o.body.position.x - at.x;
+        const dy = o.body.position.y - at.y;
+        const d = Math.max(1, Math.hypot(dx, dy));
+        const push = 6 + 10 * Math.max(0, 1 - d / (r * 8)); // harder up close
+        M.Body.setVelocity(o.body, {
+          x: (dx / d) * push + rand(-3, 3),
+          y: Math.min(-4, (dy / d) * push) - rand(4, 9), // everything goes up
+        });
+      }
       void playSound("explode");
     }, 450);
   };
