@@ -36,10 +36,47 @@ type Ball = { body: MatterNS.Body; look: number; emoji: number };
 // their points.
 export type Prize =
   | { kind: "points"; points: number }
+  | { kind: "jackpot"; points: number }
   | { kind: "bomb"; points: number }
   | { kind: "try" }
   | { kind: "death" }
-  | { kind: "blast"; count: number; points: number };
+  | { kind: "blast"; count: number; points: number }
+  | { kind: "golden" } // next points prize doubled
+  | { kind: "magnet" } // next grab can't miss or slip
+  | { kind: "slow" } // claw slows down for the next 2 drops
+  | { kind: "shake" } // the pile jumps and reshuffles
+  | { kind: "sneaky" } // a decoy — nothing inside
+  | { kind: "mystery"; inside: Prize[] }; // two prizes at once
+
+// The icon and words a prize pops open with.
+function prizeLook(p: Prize): { icon: string; text: string } {
+  switch (p.kind) {
+    case "points":
+      return { icon: "", text: `+${p.points}` };
+    case "jackpot":
+      return { icon: "🎰", text: `+${p.points}!` };
+    case "bomb":
+      return { icon: "💣", text: `−${p.points}` };
+    case "try":
+      return { icon: "❤️", text: "+1 try" };
+    case "death":
+      return { icon: "💀", text: "Game over!" };
+    case "blast":
+      return { icon: "💥", text: `+${p.points}` };
+    case "golden":
+      return { icon: "⭐", text: "Next one ×2!" };
+    case "magnet":
+      return { icon: "🧲", text: "Can't miss next!" };
+    case "slow":
+      return { icon: "🐌", text: "Slow-mo!" };
+    case "shake":
+      return { icon: "🌪️", text: "Shake-up!" };
+    case "sneaky":
+      return { icon: "👻", text: "Sneaky! Nothing!" };
+    case "mystery":
+      return { icon: "🎁", text: p.inside.map((q) => prizeLook(q).text).join(" & ") };
+  }
+}
 type State = "roam" | "down" | "grab" | "up" | "carry" | "release" | "prize";
 type Images = {
   parts: Record<keyof typeof ART, HTMLImageElement | null>;
@@ -135,6 +172,14 @@ async function createClaw(
   const hubTop = () => railY + roofH + rod;
   const grabPoint = () => ({ x, y: hubTop() + GRAB_BELOW_HUB * k });
 
+  // Shake-up: the whole pile jumps and lands somewhere new.
+  const shake = () => {
+    void playSound("thud");
+    for (const b of balls) M.Body.setVelocity(b.body, { x: rand(-6, 6), y: rand(-14, -8) });
+  };
+  let magnet = false; // the next grab can't miss or slip
+  let badges: string[] = []; // little icons for what's active (⭐ 🧲 🐌)
+
   // Super bonus: a few balls in the pile burst, one after another.
   const blast = (count: number) => {
     void playSound("boom");
@@ -195,21 +240,22 @@ async function createClaw(
         if (timer >= 0.35) {
           const near = balls
             .map((b) => ({ b, d: Math.hypot(b.body.position.x - g.x, b.body.position.y - g.y) }))
-            .filter((n) => n.d < r * 1.6)
+            .filter((n) => n.d < r * 1.3)
             .sort((a, b) => a.d - b.d)[0];
           if (near) {
             // How far off center it is (0 = dead center, 1 = a ball's width
             // over). Near the middle always holds; well off to the side
             // might miss, or slip out on the way up.
-            const off = Math.abs(near.b.body.position.x - x) / r;
-            if (off < 0.6 || Math.random() > (off - 0.6) * 1.5) {
+            const off = magnet ? 0 : Math.abs(near.b.body.position.x - x) / r;
+            if (off < 0.48 || Math.random() > (off - 0.48) * 1.8) {
               held = near.b;
               M.Composite.remove(engine.world, held.body);
               balls.splice(balls.indexOf(held), 1);
               void playSound("thud");
-              slipAt = Math.random() < Math.max(0, off - 0.55) * 1.2 ? rod * 0.5 : -1;
+              slipAt = Math.random() < Math.max(0, off - 0.44) * 1.4 ? rod * 0.5 : -1;
             }
           }
+          magnet = false;
           state = "up";
         }
         break;
@@ -255,6 +301,8 @@ async function createClaw(
               shown = { ball, prize: won, t: 0 };
               if (won.kind === "bomb" || won.kind === "death") void playSound("boom");
               else if (won.kind === "blast") blast(won.count);
+              else if (won.kind === "shake") shake();
+              else if (won.kind === "sneaky") void playSound("pop");
               else {
                 sparkle(chuteX, floorY - r * 2);
                 void playSound("powerUp");
@@ -363,23 +411,38 @@ async function createClaw(
         ctx.font = `${Math.round(size * 0.8)}px system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "alphabetic";
-        const icon = { bomb: "💣", try: "❤️", death: "💀", blast: "💥" }[won.kind];
-        ctx.fillText(icon, chuteX, y - size * 0.15);
+        ctx.fillText(prizeLook(won).icon, chuteX, y - size * 0.15);
       }
-      const text =
-        won.kind === "try"
-          ? "+1 try"
-          : won.kind === "bomb"
-            ? `−${won.points}`
-            : won.kind === "death"
-              ? "Game over!"
-              : `+${won.points}`;
-      drawLabel(ctx, text, chuteX + size * 0.6, y - size * 0.85, 28);
+      // Words can be long ("Can't miss next!"), so keep them on screen.
+      ctx.save();
+      ctx.font = "900 26px system-ui, sans-serif";
+      const text = prizeLook(won).text;
+      const half = ctx.measureText(text).width / 2 + 8;
+      ctx.restore();
+      const tx = Math.max(area.x + half, Math.min(area.x + area.w - half, chuteX + size * 0.6));
+      drawLabel(ctx, text, tx, y - size * 0.85, 26);
+      ctx.restore();
+    }
+    // What's active, by the rail's right end.
+    if (badges.length) {
+      ctx.save();
+      ctx.font = "22px system-ui, sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "top";
+      ctx.fillText(badges.join(" "), area.x + area.w, railY + 12);
       ctx.restore();
     }
   };
 
-  return { step, draw, drop, busy: () => state !== "roam", stop: () => M.Engine.clear(engine) };
+  return {
+    step,
+    draw,
+    drop,
+    busy: () => state !== "roam",
+    setMagnet: () => (magnet = true),
+    setBadges: (b: string[]) => (badges = b),
+    stop: () => M.Engine.clear(engine),
+  };
 }
 
 // The celebration's points as 3–4 prizes of different sizes (e.g. 25 →
@@ -437,11 +500,10 @@ export async function playClaw(opts: CelebrationOptions): Promise<void> {
   layer.remove();
 }
 
-// "Keep playing": five tries. Each ball won pops open into points (1–5,
-// bigger ones rarer), a bomb (−3 points), an extra try — or, rarely, a
-// skull (game over on the spot) or a super bonus (blasts 3 balls out of
-// the pile, 1–4 points each). The claw speeds up as you go; the game's
-// over when the tries run out.
+// "Keep playing": five tries. Each ball won pops open into something — see
+// `Prize`: mostly points (1–5, bigger ones rarer), sometimes a bomb or an
+// extra try, and rarely one of the specials. The claw speeds up as you
+// go; the game's over when the tries run out (or a skull turns up).
 const TRIES = 5;
 export function playClawGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, safe } = createCanvasGame("game");
@@ -449,50 +511,121 @@ export function playClawGame(opts: GameOptions): () => void {
   let tries = TRIES;
   let drops = 0;
   let over = false;
+  // Specials waiting for later grabs.
+  let golden = false;
+  let slowDrops = 0;
+  let magnetOn = false;
   opts.onLives?.(tries);
   let stop = () => layer.remove();
   const hint = hintBubble(layer, "Tap to drop the claw!", safe.y + safe.h * 0.42);
-  const prize = (): Prize => {
-    const roll = Math.random();
-    if (roll < 0.04) return { kind: "death" };
-    if (roll < 0.1) {
-      const each = Array.from({ length: 3 }, () => 1 + Math.floor(Math.random() * 4));
-      return { kind: "blast", count: 3, points: each.reduce((a, b) => a + b, 0) };
-    }
-    if (roll < 0.25) return { kind: "bomb", points: 3 };
-    if (roll < 0.38) return { kind: "try" };
+
+  const basic = (): Prize => {
     const p = Math.random();
     return { kind: "points", points: p < 0.5 ? 1 : p < 0.75 ? 2 : p < 0.9 ? 3 : 5 };
   };
-  const onWon = (won: Prize) => {
-    if (won.kind === "points" || won.kind === "blast") opts.onScore((score += won.points));
-    if (won.kind === "death") opts.onLives?.((tries = 0));
-    if (won.kind === "bomb") opts.onScore((score = Math.max(0, score - won.points)));
-    if (won.kind === "try") opts.onLives?.(++tries);
+  const roll = (): Prize => {
+    const r = Math.random();
+    const table: [number, () => Prize][] = [
+      [0.03, () => ({ kind: "death" })],
+      [0.05, () => {
+        const each = Array.from({ length: 3 }, () => 1 + Math.floor(Math.random() * 4));
+        return { kind: "blast", count: 3, points: each.reduce((a, b) => a + b, 0) };
+      }],
+      [0.02, () => ({ kind: "jackpot", points: 15 })],
+      [0.04, () => ({ kind: "golden" })],
+      [0.04, () => ({ kind: "magnet" })],
+      [0.04, () => ({ kind: "slow" })],
+      [0.04, () => ({ kind: "shake" })],
+      [0.04, () => ({ kind: "sneaky" })],
+      [0.04, () => {
+        const pick = (): Prize => {
+          const q = Math.random();
+          return q < 0.55 ? basic() : q < 0.8 ? { kind: "bomb", points: 3 } : { kind: "try" };
+        };
+        return { kind: "mystery", inside: [pick(), pick()] };
+      }],
+      [0.13, () => ({ kind: "bomb", points: 3 })],
+      [0.11, () => ({ kind: "try" })],
+    ];
+    let acc = 0;
+    for (const [chance, make] of table) if (r < (acc += chance)) return make();
+    return basic();
   };
-  void createClaw(ctx, W, H, safe, prize, onWon).then((machine) => {
+  // ⭐ doubles the next points prize (shown doubled when it pops open).
+  const prize = (): Prize => {
+    const won = roll();
+    const double = (p: Prize): Prize => (p.kind === "points" || p.kind === "jackpot" ? { ...p, points: p.points * 2 } : p);
+    if (golden && (won.kind === "points" || won.kind === "jackpot")) {
+      golden = false;
+      return double(won);
+    }
+    return won;
+  };
+
+  let machine: Awaited<ReturnType<typeof createClaw>> | null = null;
+  const badges = () =>
+    machine?.setBadges([golden ? "⭐" : "", magnetOn ? "🧲" : "", slowDrops > 0 ? `🐌${slowDrops}` : ""].filter(Boolean));
+  const apply = (won: Prize) => {
+    switch (won.kind) {
+      case "points":
+      case "jackpot":
+      case "blast":
+        opts.onScore((score += won.points));
+        break;
+      case "bomb":
+        opts.onScore((score = Math.max(0, score - won.points)));
+        break;
+      case "try":
+        opts.onLives?.(++tries);
+        break;
+      case "death":
+        opts.onLives?.((tries = 0));
+        break;
+      case "golden":
+        golden = true;
+        break;
+      case "magnet":
+        magnetOn = true;
+        machine?.setMagnet();
+        break;
+      case "slow":
+        slowDrops = 2;
+        break;
+      case "mystery":
+        won.inside.forEach(apply);
+        break;
+    }
+    badges();
+  };
+
+  void createClaw(ctx, W, H, safe, prize, apply).then((m) => {
+    machine = m;
     gameInput({
       down: () => {
         hint.remove();
         if (over || tries <= 0) return;
-        if (machine.drop()) {
+        if (m.drop()) {
           drops++;
           opts.onLives?.(--tries);
+          magnetOn = false; // used up by this grab
+          if (slowDrops > 0) slowDrops--;
+          badges();
         }
       },
     });
     runLoop(layer, (dt, time) => {
-      machine.step(dt, Math.min(80, drops * 10));
-      machine.draw(time);
+      // 🐌 slows the claw right down while it lasts (counted per drop).
+      m.step(dt, slowDrops > 0 ? -70 : Math.min(80, drops * 10));
+      m.draw(time);
       // Out of tries once the last one has played out.
-      if (!over && tries <= 0 && !machine.busy()) {
+      if (!over && tries <= 0 && !m.busy()) {
         over = true;
         opts.onGameOver?.();
       }
     });
     const prev = stop;
     stop = () => {
-      machine.stop();
+      m.stop();
       prev();
     };
   });
