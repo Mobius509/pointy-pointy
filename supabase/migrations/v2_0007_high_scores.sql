@@ -4,7 +4,7 @@
 -- has set. A new score only replaces it if higher. The holder is a kid
 -- (kid_profile_id) or, when parents play too, a parent (user_id);
 -- holder_name is the name/initials shown beside it ("FRE", "DAD").
--- Games: pinata, balloons, worm, chomper, asteroids, mole, flappy, stack, marble (and future ones).
+-- Games: pinata, balloons, worm, chomper, asteroids, mole, flappy, stack, marble, claw (and future ones).
 --
 -- Written to be safe to run more than once.
 

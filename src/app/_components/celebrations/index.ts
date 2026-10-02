@@ -10,6 +10,7 @@ import { playMole, playMoleGame } from "./mole";
 import { playFlappy, playFlappyGame } from "./flappy";
 import { playStack, playStackGame } from "./stack";
 import { playMarble, playMarbleGame } from "./marble";
+import { playClaw, playClawGame } from "./claw";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -188,6 +189,15 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Marble tilt",
     description: "Tilt the phone (or hold a finger) to roll a marble over the point coins. Keep playing: 45 seconds of coins.",
     play: playMarble,
+  },
+  {
+    id: "claw",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🎁", label: "points", seconds: 45, start: playClawGame },
+    name: "Claw machine",
+    description: "Tap to drop the claw and grab prize balls — each pops open with an emoji and points. Keep playing: 45 seconds of grabbing.",
+    play: playClaw,
   },
   {
     id: "asteroids",
