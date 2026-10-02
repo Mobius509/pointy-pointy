@@ -26,6 +26,7 @@ const PIPE_CAP = 0.19;
 const PIPE_BODY_WIDTH = 0.75;
 
 const PIPE_W = 72;
+const PIPE_SPACING = 320; // between pipes in the "Keep playing" game
 const GRAVITY = 1500; // px/s²
 const FLAP = -440; // px/s
 const MAX_FALL = 620;
@@ -288,8 +289,8 @@ export async function playFlappy(opts: CelebrationOptions): Promise<void> {
 }
 
 // "Keep playing": classic flappy — tap to flap through the gaps, +1 per
-// pipe and +1 per coin (one floats between each pair of pipes, on the way
-// from one gap to the next). Gaps narrow and pipes speed up as it goes. Three lives: hitting a
+// pipe and +1 per coin (one floats between each pair of pipes, up or down
+// from the way through). Gaps narrow and pipes speed up as it goes. Three lives: hitting a
 // pipe or the ground costs one (then a moment to recover).
 export function playFlappyGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, area, safe } = createCanvasGame("game");
@@ -341,10 +342,17 @@ export function playFlappyGame(opts: GameOptions): () => void {
       const gap = Math.max(160, 230 - elapsed * 2);
       if (fall(bird, dt, area.y, area.y + area.h, r) && bird.hurt === 0 && hurt()) return false;
       const last = pipes[pipes.length - 1];
-      if (!last || last.x < W - 260) {
+      if (!last || last.x < W - PIPE_SPACING) {
         const next: Pipe = { x: W + 20, gapY: randomGap(safe, gap), gap, passed: false };
-        // A coin in the open space between this pipe and the last one.
-        if (last) coins.push({ x: (last.x + PIPE_W + next.x) / 2, y: (last.gapY + next.gapY) / 2 });
+        // A coin in the open space between this pipe and the last one — up
+        // or down from the line between the gaps, so some take a swoop.
+        if (last) {
+          const y = (last.gapY + next.gapY) / 2 + rand(-1, 1) * gap * 0.7;
+          coins.push({
+            x: (last.x + PIPE_W + next.x) / 2,
+            y: Math.max(safe.y + coinSize, Math.min(safe.y + safe.h - coinSize, y)),
+          });
+        }
         pipes.push(next);
       }
       for (let i = coins.length - 1; i >= 0; i--) {
