@@ -424,34 +424,43 @@ async function createClaw(
           // Only a ball lined up under the claw gets caught: within about
           // half a ball's width of center (wider with the 🧲 magnet). Off to
           // the side is just a miss — and once caught, it stays caught.
-          const reach = r * (magnet ? 1.1 : 0.55);
+          // A 🍯 sticky claw catches whatever it's touching.
+          const reach = sticky ? clawHalf * 0.6 : r * (magnet ? 1.1 : 0.55);
           const near = balls
             .filter((b) => Math.abs(b.body.position.x - g.x) < reach && Math.abs(b.body.position.y - g.y) < r * 1.2)
             .sort((a, b) => Math.abs(a.body.position.x - g.x) - Math.abs(b.body.position.x - g.x))[0];
+          const take = (b: Ball) => {
+            M.Composite.remove(engine.world, b.body);
+            balls.splice(balls.indexOf(b), 1);
+          };
           if (near) {
             held = near;
             heldFrom = { x: near.body.position.x - g.x, y: near.body.position.y - g.y };
-            M.Composite.remove(engine.world, near.body);
-            balls.splice(balls.indexOf(near), 1);
+            take(near);
             // It can still slip out on the way up — more likely if it was
             // caught off-center — unless it's an iron (or sticky) claw.
             const off = Math.abs(heldFrom.x) / r;
             slipAt = !iron && !sticky && Math.random() < 0.12 + off * 0.45 ? rod * rand(0.3, 0.75) : -1;
-            // Sticky: up to two more balls touching the claw come along,
-            // stuck to the outside of the arms.
-            if (sticky) {
-              const extra = balls
-                .map((b) => ({ b, d: Math.hypot(b.body.position.x - g.x, b.body.position.y - g.y) }))
-                .filter((n) => n.d < r * 2.2)
-                .sort((a, b) => a.d - b.d)
-                .slice(0, 2);
-              for (const { b } of extra) {
-                const dx = b.body.position.x - g.x;
-                const side = dx < 0 ? -1 : dx > 0 ? 1 : stuck.length ? 1 : -1;
-                stuck.push({ ball: b, ox: side * r * 1.7, oy: r * (0.3 + stuck.length * 0.5) });
-                M.Composite.remove(engine.world, b.body);
-                balls.splice(balls.indexOf(b), 1);
-              }
+          }
+          // Sticky: the two closest other balls around the claw (beside the
+          // arms, or a row or two down the pile) come along stuck to the outside of
+          // the arms — one each side when it can.
+          if (sticky && held) {
+            const touching = balls
+              .map((b) => ({ b, dx: b.body.position.x - g.x, dy: b.body.position.y - g.y }))
+              .filter((n) => Math.abs(n.dx) < clawHalf + r && n.dy > -r * 2.5 && n.dy < r * 4.5)
+              .sort((a, b) => Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy));
+            const first = touching[0];
+            const second = first && (touching.find((n) => n !== first && Math.sign(n.dx) !== Math.sign(first.dx)) ?? touching[1]);
+            const sides: number[] = [];
+            for (const n of [first, second]) {
+              if (!n) continue;
+              let side = n.dx < 0 ? -1 : 1;
+              if (sides.includes(side) && !sides.includes(-side)) side = -side; // keep it balanced
+              const below = sides.filter((s2) => s2 === side).length; // stack if both one side
+              sides.push(side);
+              stuck.push({ ball: n.b, ox: side * r * 1.75, oy: r * (0.25 + below * 1.1) });
+              take(n.b);
             }
           }
           magnet = false;
