@@ -1,7 +1,6 @@
 // Streak arithmetic, kept free of the database so it's easy to reason
 // about (and test). Dates are YYYY-MM-DD in the family's timezone.
 import { addDays } from "./time";
-import { ARCADE_GAMES } from "./games";
 
 export type StreakRun = {
   length: number; // days in a row, counting today if today is done
@@ -50,7 +49,7 @@ export function streakRun(
 }
 
 // Every reward the run has reached: at N, 2N, 3N… counted days. `number` is
-// also the arcade ticket's tier (so a broken run starts back at tier 1).
+// stored as the arcade ticket's tier (no longer used for anything).
 export function rewardSteps(run: StreakRun, daysRequired: number): { number: number; reachedOn: string }[] {
   if (daysRequired < 1) return [];
   const steps = [];
@@ -66,9 +65,26 @@ export function nextReward(run: StreakRun, daysRequired: number) {
   return { at, daysToGo: at - run.length };
 }
 
-// What a ticket of a given tier unlocks: tier 1 is one random game; tier
-// k ≥ 2 lets the kid choose k − 1 games, up to all of them.
-export function ticketSlots(tier: number): { random: boolean; picks: number } {
-  if (tier <= 1) return { random: true, picks: 1 };
-  return { random: false, picks: Math.min(tier - 1, ARCADE_GAMES.length) };
+// What using an arcade ticket does right now, from the kid's best current
+// streak: nothing without a streak going, a random game once there is one,
+// and their pick of game after two weeks in a row (two school weeks — 10
+// days — for a streak that skips weekends).
+export type ArcadeMode = "locked" | "random" | "pick";
+export function arcadeMode(runs: { length: number; skipWeekends: boolean }[]): {
+  mode: ArcadeMode;
+  streakDays: number;
+  pickAt: number;
+} {
+  let best = 0;
+  let pickAt = 14;
+  let pick = false;
+  for (const r of runs) {
+    const need = r.skipWeekends ? 10 : 14;
+    if (r.length >= need) pick = true;
+    if (r.length > best) {
+      best = r.length;
+      pickAt = need;
+    }
+  }
+  return { mode: pick ? "pick" : best > 0 ? "random" : "locked", streakDays: best, pickAt };
 }

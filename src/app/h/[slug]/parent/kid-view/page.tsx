@@ -34,11 +34,10 @@ export default async function KidViewPreviewPage({
   }
 
   const ctx = { householdId: household.id, kidProfileId: kid.id, timezone: household.timezone };
-  const [view, highScores, streaks, arcade] = await Promise.all([
+  const [view, highScores, [streaks, arcade]] = await Promise.all([
     getKidTodayView(ctx),
     getHighScores(household.id),
-    getKidStreaks(ctx),
-    getArcade(ctx),
+    getKidStreaks(ctx).then(async (s) => [s, await getArcade(ctx, s)] as const),
   ]);
 
   return (

@@ -17,7 +17,8 @@ export async function GET(req: Request) {
   const view = await getKidTodayView(auth.ctx);
   if (!view) return jsonError("Sign in first.", 401);
 
-  const [streaks, arcade] = await Promise.all([getKidStreaks(auth.ctx), getArcade(auth.ctx)]);
+  const streaks = await getKidStreaks(auth.ctx);
+  const arcade = await getArcade(auth.ctx, streaks);
   return NextResponse.json({
     ...serializeTodayView(view),
     streaks: streaks.map(({ streak, run, next }) => ({

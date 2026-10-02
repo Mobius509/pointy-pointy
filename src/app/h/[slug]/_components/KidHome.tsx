@@ -153,7 +153,7 @@ export function KidHome({
           <V2KidProposal slug={slug} pendingProposals={pendingProposals} readOnly={preview} />
 
           {/* The games streaks unlock. */}
-          {(streaks.length > 0 || arcade.unlocked.length > 0 || arcade.tickets.length > 0) && (
+          {(streaks.length > 0 || arcade.tickets > 0 || arcade.playing) && (
             <Arcade
               slug={slug}
               avatarSrc={avatarSrc(kid.avatar_emoji)}

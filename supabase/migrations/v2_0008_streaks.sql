@@ -3,9 +3,8 @@
 -- A parent sets up streaks: a set of daily tasks to do every day, how many
 -- days in a row earns a reward, and the bonus points. Every N days of an
 -- unbroken run pays the bonus (as an approved bonus completion) and gives
--- the kid an arcade ticket, which unlocks mini games for 24 hours from when
--- they open it. Tickets climb in tiers within one unbroken run (1 random
--- game, then 1 of their choice, 2, 3… up to all of them).
+-- the kid an arcade ticket. Tickets save up; each is one play of a mini
+-- game (see src/lib/v2/streaks.ts).
 --
 -- Written to be safe to run more than once.
 
@@ -46,8 +45,8 @@ create table if not exists v2.streak_rewards (
   unique (streak_id, kid_profile_id, reached_on)
 );
 
--- Arcade tickets: unclaimed until the kid opens one; then `games` holds
--- what it unlocked and `expires_at` is 24 hours after opening.
+-- Arcade tickets: unclaimed until the kid uses one; then `games` holds
+-- the game it played and `expires_at` is when the kid closed it (spent).
 create table if not exists v2.arcade_tickets (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references v2.households(id) on delete cascade,

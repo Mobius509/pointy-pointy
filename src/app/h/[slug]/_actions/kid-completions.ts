@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getKidSession } from "@/lib/v2/auth";
 import { getKidInitials, submitHighScore } from "@/lib/v2/high-scores";
-import { claimArcadeTicket } from "@/lib/v2/streaks";
+import { finishArcadeTicket, redeemArcadeTicket } from "@/lib/v2/streaks";
 import {
   cancelKidProposal,
   cancelPendingTaskForToday,
@@ -118,20 +118,31 @@ export async function submitHighScoreAction(
   return { ok: true, ...res };
 }
 
-// Opens an arcade ticket (earned from a streak): a random game for a tier 1
-// ticket, otherwise the games the kid picked. They're playable for 24 hours.
-export async function claimArcadeTicketAction(
+// Redeems an arcade ticket (earned from a streak) to start a game: a random
+// one, or the kid's pick once their streak has run two weeks.
+export async function redeemArcadeTicketAction(
   slug: string,
-  ticketId: string,
-  games: string[],
-): Promise<{ ok: true; games: string[] } | { ok: false; error: string }> {
+  picked: string | null,
+): Promise<{ ok: true; ticketId: string; game: string } | { ok: false; error: string }> {
   let ctx;
   try {
     ctx = await requireKidSessionForSlug(slug);
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }
-  const res = await claimArcadeTicket(ctx, ticketId, games);
+  const res = await redeemArcadeTicket(ctx, picked);
   if (res.ok) revalidatePath(`/h/${slug}`);
   return res;
+}
+
+// The game's closed: that ticket is spent.
+export async function finishArcadeTicketAction(slug: string, ticketId: string): Promise<{ ok: boolean }> {
+  try {
+    const ctx = await requireKidSessionForSlug(slug);
+    await finishArcadeTicket(ctx, ticketId);
+  } catch {
+    return { ok: false };
+  }
+  revalidatePath(`/h/${slug}`);
+  return { ok: true };
 }

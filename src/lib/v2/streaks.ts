@@ -2,7 +2,7 @@ import "server-only";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { addDays, todayInTimezone } from "@/lib/time";
 import { ARCADE_GAMES, isArcadeGame, type ArcadeGameId } from "@/lib/games";
-import { nextReward, rewardSteps, streakRun, ticketSlots, type StreakRun } from "@/lib/streak-math";
+import { arcadeMode, nextReward, rewardSteps, streakRun, type ArcadeMode, type StreakRun } from "@/lib/streak-math";
 import { insertBonusCompletion } from "@/lib/v2/bonus";
 import { notifyStreakReward } from "@/lib/v2/push";
 import type { KidContext } from "@/lib/v2/kid-ops";
@@ -32,7 +32,6 @@ export type KidStreak = {
 // rather than a broken page.
 const notSetUp = (code?: string) => code === "42P01" || code === "PGRST205";
 const HISTORY_DAYS = 400;
-const TICKET_HOURS = 24;
 
 export async function getStreaks(householdId: string, { activeOnly = false } = {}): Promise<Streak[]> {
   let q = supabaseV2Admin
@@ -91,7 +90,7 @@ export async function getKidStreaks(ctx: KidContext): Promise<KidStreak[]> {
 }
 
 // Pays any rewards a kid's streaks have reached and not been paid for:
-// bonus points, an arcade ticket (tier = which reward of this unbroken
+// bonus points, an arcade ticket (its `tier` records which reward of the
 // run), and a notification. Safe to call any number of times — each reward
 // is keyed by the day it was reached. Rewards reached before a streak was
 // set up don't pay out (the days still count toward the next one).
@@ -141,88 +140,101 @@ export async function checkStreakRewards(ctx: KidContext): Promise<void> {
 }
 
 // ----- Arcade -------------------------------------------------------------------
+//
+// Tickets pile up; each one is a single play. Using one starts a game
+// (random, or the kid's pick once a streak has run two weeks) and needs a
+// streak going. The ticket is burned when the kid closes the game — until
+// then (say the page reloads) that game is still theirs to play.
+// Columns: `claimed_at` = used, `games` = [the game], `expires_at` = closed.
 
-export type ArcadeTicket = { id: string; tier: number; random: boolean; picks: number };
 export type Arcade = {
-  unlocked: { game: ArcadeGameId; expiresAt: string }[];
-  tickets: ArcadeTicket[]; // waiting to be opened
+  tickets: number; // unused tickets
+  mode: ArcadeMode; // what using one does right now
+  streakDays: number; // best current streak
+  pickAt: number; // streak days that let the kid pick the game
+  playing: { ticketId: string; game: ArcadeGameId } | null; // used, not closed yet
 };
 
-export async function getArcade(ctx: KidContext): Promise<Arcade> {
-  const { data, error } = await supabaseV2Admin
-    .from("arcade_tickets")
-    .select("id, tier, games, claimed_at, expires_at")
-    .eq("household_id", ctx.householdId)
-    .eq("kid_profile_id", ctx.kidProfileId)
-    .or(`claimed_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-    .order("created_at");
+const modeFor = (streaks: KidStreak[]) =>
+  arcadeMode(streaks.map((s) => ({ length: s.run.length, skipWeekends: !!s.streak.skip_weekends })));
+
+export async function getArcade(ctx: KidContext, streaks?: KidStreak[]): Promise<Arcade> {
+  const [{ data, error }, kidStreaks] = await Promise.all([
+    supabaseV2Admin
+      .from("arcade_tickets")
+      .select("id, games, claimed_at")
+      .eq("household_id", ctx.householdId)
+      .eq("kid_profile_id", ctx.kidProfileId)
+      .is("expires_at", null)
+      .order("created_at"),
+    streaks ?? getKidStreaks(ctx),
+  ]);
+  const mode = modeFor(kidStreaks);
   if (error) {
-    if (notSetUp(error.code)) return { unlocked: [], tickets: [] };
+    if (notSetUp(error.code)) return { tickets: 0, playing: null, ...mode };
     throw error;
   }
-  const expiry = new Map<ArcadeGameId, string>();
-  const tickets: ArcadeTicket[] = [];
+  let playing: Arcade["playing"] = null;
+  let tickets = 0;
   for (const t of data ?? []) {
-    if (!t.claimed_at) {
-      tickets.push({ id: t.id as string, tier: t.tier as number, ...ticketSlots(t.tier as number) });
-      continue;
-    }
-    for (const g of (t.games as string[] | null) ?? []) {
-      if (!isArcadeGame(g)) continue;
-      const until = t.expires_at as string;
-      if (!expiry.has(g) || expiry.get(g)! < until) expiry.set(g, until);
-    }
+    const game = (t.games as string[] | null)?.[0];
+    if (!t.claimed_at) tickets++;
+    else if (!playing && game && isArcadeGame(game)) playing = { ticketId: t.id as string, game };
   }
-  return {
-    unlocked: ARCADE_GAMES.filter((g) => expiry.has(g.id)).map((g) => ({ game: g.id, expiresAt: expiry.get(g.id)! })),
-    tickets,
-  };
+  return { tickets, playing, ...mode };
 }
 
-// Opens a ticket: tier 1 gets a random game (not one that's already
-// unlocked, if possible); higher tiers get the games the kid picked. The
-// 24 hours start now.
-export async function claimArcadeTicket(
+// Redeems a ticket: picks the game (random, or `picked` when the streak allows
+// choosing) and marks the ticket used. A game already in progress comes
+// back instead of spending another ticket.
+export async function redeemArcadeTicket(
   ctx: KidContext,
-  ticketId: string,
-  picked: string[],
-): Promise<{ ok: true; games: ArcadeGameId[] } | { ok: false; error: string }> {
-  const { data: ticket, error } = await supabaseV2Admin
+  picked: string | null,
+): Promise<{ ok: true; ticketId: string; game: ArcadeGameId } | { ok: false; error: string }> {
+  const arcade = await getArcade(ctx);
+  if (arcade.playing) return { ok: true, ...arcade.playing };
+  if (arcade.tickets === 0) return { ok: false, error: "No tickets left — keep your streak going to earn more!" };
+  if (arcade.mode === "locked") return { ok: false, error: "Start a streak to use your tickets!" };
+
+  let game: ArcadeGameId;
+  if (arcade.mode === "pick") {
+    if (!picked || !isArcadeGame(picked)) return { ok: false, error: "Pick a game." };
+    game = picked;
+  } else {
+    game = ARCADE_GAMES[Math.floor(Math.random() * ARCADE_GAMES.length)].id;
+  }
+
+  const { data: next, error } = await supabaseV2Admin
     .from("arcade_tickets")
-    .select("id, tier, claimed_at")
+    .select("id")
+    .eq("household_id", ctx.householdId)
+    .eq("kid_profile_id", ctx.kidProfileId)
+    .is("claimed_at", null)
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
+  if (error) return { ok: false, error: error.message };
+  if (!next) return { ok: false, error: "No tickets left." };
+  const { data: used, error: useError } = await supabaseV2Admin
+    .from("arcade_tickets")
+    .update({ games: [game], claimed_at: new Date().toISOString() })
+    .eq("id", next.id)
+    .is("claimed_at", null) // no double-spending from two taps
+    .select("id");
+  if (useError) return { ok: false, error: useError.message };
+  if (!used?.length) return { ok: false, error: "That ticket's already been used — try again." };
+  return { ok: true, ticketId: next.id as string, game };
+}
+
+// Closing the game burns the ticket.
+export async function finishArcadeTicket(ctx: KidContext, ticketId: string): Promise<void> {
+  const { error } = await supabaseV2Admin
+    .from("arcade_tickets")
+    .update({ expires_at: new Date().toISOString() })
     .eq("id", ticketId)
     .eq("household_id", ctx.householdId)
     .eq("kid_profile_id", ctx.kidProfileId)
-    .maybeSingle();
-  if (error) return { ok: false, error: error.message };
-  if (!ticket) return { ok: false, error: "Ticket not found." };
-  if (ticket.claimed_at) return { ok: false, error: "That ticket's already been used." };
-
-  const slots = ticketSlots(ticket.tier as number);
-  let games: ArcadeGameId[];
-  if (slots.random) {
-    const current = new Set((await getArcade(ctx)).unlocked.map((u) => u.game));
-    const fresh = ARCADE_GAMES.filter((g) => !current.has(g.id));
-    const pool = fresh.length ? fresh : ARCADE_GAMES;
-    games = [pool[Math.floor(Math.random() * pool.length)].id];
-  } else {
-    const unique = [...new Set(picked)].filter(isArcadeGame);
-    if (unique.length !== slots.picks) return { ok: false, error: `Pick ${slots.picks} game${slots.picks === 1 ? "" : "s"}.` };
-    games = unique;
-  }
-
-  const now = new Date();
-  const { data: claimed, error: claimError } = await supabaseV2Admin
-    .from("arcade_tickets")
-    .update({
-      games,
-      claimed_at: now.toISOString(),
-      expires_at: new Date(now.getTime() + TICKET_HOURS * 3600_000).toISOString(),
-    })
-    .eq("id", ticketId)
-    .is("claimed_at", null) // no double-claiming from two taps
-    .select("id");
-  if (claimError) return { ok: false, error: claimError.message };
-  if (!claimed?.length) return { ok: false, error: "That ticket's already been used." };
-  return { ok: true, games };
+    .not("claimed_at", "is", null)
+    .is("expires_at", null);
+  if (error) throw error;
 }

@@ -260,8 +260,8 @@ export default async function ParentTasksPage({
       >
         <p className="text-pp-muted">
           Pick daily tasks to do every day. Each time a kid keeps it up for the number of days you set, they get the
-          bonus points and an arcade ticket that unlocks mini games for 24 hours — one random game the first time, then
-          games of their choice, more each reward. Missing a day starts it over.
+          bonus points and an arcade ticket. Tickets save up; each one plays a mini game while a streak is going — a
+          surprise game, or one they pick once a streak has run two weeks. Missing a day starts it over.
         </p>
 
         {streaks.length > 0 && (
