@@ -307,15 +307,53 @@ export function devMode(): boolean {
 export type DevButton = { icon: string; title?: string; run: () => string | void };
 
 // Rows of emoji buttons on the page itself, above the score bar (which
-// would swallow the taps). `run` can return a status line. Remove the
-// returned element when the game stops.
+// would swallow the taps). `run` can return a status line. Drag the ✥ handle
+// to move it, tap 🛠 to fold it away; both are remembered on this device.
+// Remove the returned element when the game stops.
 export function devPanel(safe: { x: number; y: number }, rows: { label: string; buttons: DevButton[] }[]): HTMLElement {
+  const saved = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("pp:dev-panel") ?? "{}") as { x?: number; y?: number; folded?: boolean };
+    } catch {
+      return {};
+    }
+  })();
+  const save = () => {
+    try {
+      localStorage.setItem("pp:dev-panel", JSON.stringify(saved));
+    } catch {}
+  };
   const panel = document.createElement("div");
   panel.className = "fixed z-[90] flex flex-col gap-1 rounded-2xl bg-white/90 p-2 text-xs font-bold text-pp-primary shadow-sm";
-  panel.style.left = `${safe.x + 8}px`;
-  panel.style.top = `${safe.y + 8}px`;
   panel.style.pointerEvents = "auto";
-  panel.style.maxWidth = "calc(100vw - 160px)";
+  panel.style.width = "max-content";
+  panel.style.maxWidth = "min(260px, calc(100vw - 24px))";
+  const place = (x: number, y: number) => {
+    // Kept fully on screen.
+    const nx = Math.max(4, Math.min(window.innerWidth - panel.offsetWidth - 4, x));
+    const ny = Math.max(4, Math.min(window.innerHeight - panel.offsetHeight - 4, y));
+    panel.style.left = `${nx}px`;
+    panel.style.top = `${ny}px`;
+    return { nx, ny };
+  };
+
+  // Header: drag handle and fold button.
+  const header = document.createElement("div");
+  header.className = "flex items-center gap-1";
+  const handle = document.createElement("button");
+  handle.type = "button";
+  handle.textContent = "✥";
+  handle.title = "Drag to move";
+  handle.className = "h-8 w-8 rounded-full bg-pp-soft text-base cursor-move touch-none";
+  const fold = document.createElement("button");
+  fold.type = "button";
+  fold.className = "h-8 rounded-full bg-pp-soft px-2 text-xs";
+  header.append(handle, fold);
+  panel.appendChild(header);
+
+  const body = document.createElement("div");
+  body.className = "flex flex-col gap-1";
+  panel.appendChild(body);
   const status = document.createElement("div");
   for (const { label, buttons } of rows) {
     const wrap = document.createElement("div");
@@ -336,11 +374,50 @@ export function devPanel(safe: { x: number; y: number }, rows: { label: string; 
       };
       wrap.appendChild(b);
     }
-    panel.appendChild(wrap);
+    body.appendChild(wrap);
   }
   status.className = "text-pp-muted";
   status.textContent = "Dev mode";
-  panel.appendChild(status);
+  body.appendChild(status);
+
+  const show = () => {
+    body.style.display = saved.folded ? "none" : "";
+    fold.textContent = saved.folded ? "🛠 Dev" : "Hide";
+  };
+  fold.onclick = () => {
+    saved.folded = !saved.folded;
+    save();
+    show();
+    place(panel.offsetLeft, panel.offsetTop);
+  };
+
+  // Dragging by the handle (the game ignores presses on buttons).
+  handle.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch {}
+    const r = panel.getBoundingClientRect();
+    const dx = e.clientX - r.left;
+    const dy = e.clientY - r.top;
+    const move = (m: PointerEvent) => {
+      const { nx, ny } = place(m.clientX - dx, m.clientY - dy);
+      saved.x = nx;
+      saved.y = ny;
+    };
+    const up = () => {
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      handle.removeEventListener("pointercancel", up);
+      save();
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    handle.addEventListener("pointercancel", up);
+  });
+
   document.body.appendChild(panel);
+  show();
+  place(saved.x ?? safe.x + 8, saved.y ?? safe.y + 8);
   return panel;
 }
