@@ -27,13 +27,14 @@ const SOUNDS = {
   flap: ["/sounds/flap.m4a"],
   clawDown: ["/sounds/claw-down.m4a"],
   clawOpen: ["/sounds/claw-open.m4a"],
+  clawMove: ["/sounds/claw-move-1.m4a", "/sounds/claw-move-2.m4a"],
   waka: ["/sounds/waka-1.m4a", "/sounds/waka-2.m4a"], // played in turn: "waka-waka"
   ow: [1, 2, 3, 4, 5, 6, 7].map((n) => `/sounds/ow-${n}.m4a`),
 };
 
 export type SoundKind = keyof typeof SOUNDS;
 
-const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6, laser: 0.5, ow: 0.9, fanfare: 0.8, explode: 0.7, thud: 0.9, powerUp: 0.7, waka: 0.6, flap: 0.8, clawDown: 0.7, clawOpen: 0.7 };
+const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6, laser: 0.5, ow: 0.9, fanfare: 0.8, explode: 0.7, thud: 0.9, powerUp: 0.7, waka: 0.6, flap: 0.8, clawDown: 0.7, clawOpen: 0.7, clawMove: 0.45 };
 const MUTE_KEY = "pp:sound-muted";
 
 let ctx: AudioContext | null = null;

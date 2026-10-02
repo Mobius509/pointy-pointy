@@ -45,3 +45,4 @@ some are CC BY-NC (no commercial use).
 | flap.m4a | Cloth flap (trimmed) | ssierra1202 | https://freesound.org/s/391945/ |
 | claw-down.m4a | PS_Robot_Joint_Movment_01 (first half) | poundsounduk | https://freesound.org/s/641097/ |
 | claw-open.m4a | PS_Robot_Joint_Movment_01 (second half) | poundsounduk | https://freesound.org/s/641097/ |
+| claw-move-1.m4a, claw-move-2.m4a | Electric scooter (two short pieces) | ienba | https://freesound.org/s/697379/ |

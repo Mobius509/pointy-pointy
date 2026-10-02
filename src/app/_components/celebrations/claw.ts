@@ -179,6 +179,17 @@ async function createClaw(
   let shown: { ball: Ball; prize: Prize; t: number } | null = null;
   let roamSpeed = 120;
 
+  // The motor whirr while the claw glides — only now and then (and never
+  // back to back), not all the time.
+  let whirrIn = rand(2, 5);
+  let lastWhirr = -10;
+  const whirr = (chance: number) => {
+    const now = performance.now() / 1000;
+    if (now - lastWhirr < 2 || Math.random() > chance) return;
+    lastWhirr = now;
+    void playSound("clawMove");
+  };
+
   const headTop = () => topY + rod;
   const hingeY = () => headTop() + HINGE.y * k;
   const grabPoint = () => ({ x, y: hingeY() + GRAB_BELOW_HINGE * k });
@@ -254,6 +265,10 @@ async function createClaw(
     switch (state) {
       case "roam": {
         open += (0.15 - open) * Math.min(1, dt * 6);
+        if ((whirrIn -= dt) <= 0) {
+          whirr(0.5);
+          whirrIn = rand(4, 9);
+        }
         x += dir * roamSpeed * dt;
         const lo = pileLeft + r;
         const hi = area.x + area.w - r;
@@ -299,7 +314,10 @@ async function createClaw(
       }
       case "up": {
         rod = Math.max(restRod, rod - 240 * dt);
-        if (rod <= restRod) state = held ? "carry" : "roam";
+        if (rod <= restRod) {
+          state = held ? "carry" : "roam";
+          if (held) whirr(0.7);
+        }
         break;
       }
       case "carry": {
