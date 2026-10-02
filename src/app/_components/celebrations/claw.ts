@@ -47,6 +47,7 @@ export type Prize =
   | { kind: "blast"; count: number; points: number }
   | { kind: "golden" } // next points prize doubled
   | { kind: "magnet" } // next grab reaches twice as far
+  | { kind: "iron" } // next catch can't slip out
   | { kind: "slow" } // claw slows down for the next 2 drops
   | { kind: "shake" } // the pile jumps and reshuffles
   | { kind: "sneaky" } // a decoy — nothing inside
@@ -73,6 +74,8 @@ function prizeLook(p: Prize): { icon: string; text: string } {
       return { icon: "🧲", text: "Magnet grab next!" };
     case "slow":
       return { icon: "🐌", text: "Slow-mo!" };
+    case "iron":
+      return { icon: "🦾", text: "Iron claw next!" };
     case "shake":
       return { icon: "🌪️", text: "Shake-up!" };
     case "sneaky":
@@ -175,6 +178,7 @@ async function createClaw(
   // Where a just-caught ball was, relative to the claw — it slides into
   // place instead of jumping.
   let heldFrom = { x: 0, y: 0 };
+  let slipAt = -1; // rod length at which a caught ball slips out (-1 = it won't)
   let dropping: { y: number; vy: number; ball: Ball } | null = null;
   let shown: { ball: Ball; prize: Prize; t: number } | null = null;
   let roamSpeed = 120;
@@ -192,7 +196,24 @@ async function createClaw(
 
   const headTop = () => topY + rod;
   const hingeY = () => headTop() + HINGE.y * k;
-  const grabPoint = () => ({ x, y: hingeY() + GRAB_BELOW_HINGE * k });
+
+  // Sway: the claw swings on its rod like a pendulum, pushed by its own
+  // moves (it lags when it starts or turns, then swings back). Grabs line
+  // up with where it has swung to, not where the rod starts.
+  let sway = 0; // radians, + = swung right
+  let swayV = 0;
+  let lastX = x;
+  const anchor = () => ({ x, y: -10 }); // where the rod hangs from
+  // A point on the unswung claw, moved to where the swing has taken it.
+  const swung = (p: { x: number; y: number }) => {
+    const a = anchor();
+    const dx = p.x - a.x;
+    const dy = p.y - a.y;
+    const c = Math.cos(-sway);
+    const sn = Math.sin(-sway);
+    return { x: a.x + dx * c - dy * sn, y: a.y + dx * sn + dy * c };
+  };
+  const grabPoint = () => swung({ x, y: hingeY() + GRAB_BELOW_HINGE * k });
 
   // The arm tips are solid: on the way down they shove the balls beside
   // the claw out of the way (the one lined up between them isn't pushed).
@@ -213,7 +234,7 @@ async function createClaw(
       const dx = side * TIP_OUT * k;
       const dy = TIP_BELOW_HINGE * k;
       const a = -side * open;
-      const tipAt = { x: x + dx * Math.cos(a) - dy * Math.sin(a), y: hingeY() + dx * Math.sin(a) + dy * Math.cos(a) };
+      const tipAt = swung({ x: x + dx * Math.cos(a) - dy * Math.sin(a), y: hingeY() + dx * Math.sin(a) + dy * Math.cos(a) });
       const at = low ? tipAt : { x: -500 - i * 50, y: -500 };
       // Only carry speed while they're moving with the claw — not on the
       // jump in from (or out to) the parking spot.
@@ -228,6 +249,7 @@ async function createClaw(
     for (const b of balls) M.Body.setVelocity(b.body, { x: rand(-6, 6), y: rand(-14, -8) });
   };
   let magnet = false; // the next grab reaches twice as far
+  let iron = false; // the next catch can't slip
   let badges: string[] = []; // little icons for what's active (⭐ 🧲 🐌)
 
   // Super bonus: a few balls in the pile burst, one after another.
@@ -261,6 +283,14 @@ async function createClaw(
       M.Engine.update(engine, ms / 2);
       M.Engine.update(engine, ms / 2);
     }
+    // Swing: the claw lags behind the way it's moving, then swings back.
+    if (dt > 0) {
+      const vx = (x - lastX) / dt;
+      lastX = x;
+      const want = -vx * 0.0005;
+      swayV += (-40 * (sway - want) - 2.5 * swayV) * dt;
+      sway = Math.max(-0.25, Math.min(0.25, sway + swayV * dt));
+    }
     const g = grabPoint();
     switch (state) {
       case "roam": {
@@ -282,10 +312,11 @@ async function createClaw(
         // Stop on the floor, or on top of a ball under the claw.
         const blocked =
           g.y + r * 0.6 >= floorY ||
-          balls.some((b) => Math.abs(b.body.position.x - x) < r * 1.2 && b.body.position.y - g.y < r * 0.6);
+          balls.some((b) => Math.abs(b.body.position.x - g.x) < r * 1.2 && b.body.position.y - g.y < r * 0.6);
         if (blocked) {
           state = "grab";
           timer = 0;
+          void playSound("clawOpen"); // the joint whirr as it closes
         }
         break;
       }
@@ -298,22 +329,36 @@ async function createClaw(
           // the side is just a miss — and once caught, it stays caught.
           const reach = r * (magnet ? 1.1 : 0.55);
           const near = balls
-            .filter((b) => Math.abs(b.body.position.x - x) < reach && Math.abs(b.body.position.y - g.y) < r * 1.2)
-            .sort((a, b) => Math.abs(a.body.position.x - x) - Math.abs(b.body.position.x - x))[0];
+            .filter((b) => Math.abs(b.body.position.x - g.x) < reach && Math.abs(b.body.position.y - g.y) < r * 1.2)
+            .sort((a, b) => Math.abs(a.body.position.x - g.x) - Math.abs(b.body.position.x - g.x))[0];
           if (near) {
             held = near;
             heldFrom = { x: near.body.position.x - g.x, y: near.body.position.y - g.y };
             M.Composite.remove(engine.world, near.body);
             balls.splice(balls.indexOf(near), 1);
-            void playSound("thud");
+            // It can still slip out on the way up — more likely if it was
+            // caught off-center — unless it's an iron claw.
+            const off = Math.abs(heldFrom.x) / r;
+            slipAt = !iron && Math.random() < 0.12 + off * 0.45 ? rod * rand(0.3, 0.75) : -1;
           }
           magnet = false;
+          iron = false;
           state = "up";
         }
         break;
       }
       case "up": {
         rod = Math.max(restRod, rod - 240 * dt);
+        if (held && slipAt > 0 && rod <= slipAt) {
+          // Slipped out!
+          const b = held;
+          held = null;
+          M.Body.setPosition(b.body, g);
+          M.Body.setVelocity(b.body, { x: swayV * 2, y: 0 });
+          M.Composite.add(engine.world, b.body);
+          balls.push(b);
+          void playSound("pop");
+        }
         if (rod <= restRod) {
           state = held ? "carry" : "roam";
           if (held) whirr(0.7);
@@ -351,7 +396,7 @@ async function createClaw(
               else if (won.kind === "sneaky") void playSound("pop");
               else {
                 sparkle(chuteX, floorY - r * 2);
-                void playSound("powerUp");
+                void playSound("pop");
               }
               onWon(won);
             }
@@ -447,15 +492,28 @@ async function createClaw(
     // The claw, hanging from the top of the screen: rod (tucked into the
     // head's top), head, a held ball, then the arms over the hinge.
     const top = headTop();
+    ctx.save();
+    const a = anchor();
+    ctx.translate(a.x, a.y);
+    ctx.rotate(-sway);
+    ctx.translate(-a.x, -a.y);
     part("rod", x - (ART.rod.w * k) / 2, -10, ART.rod.w * k, top + 18);
     part("head", x - HINGE.x * k, top);
-    const g = grabPoint();
+    // (Inside the swing, so drawn at the unswung spot.)
+    const g = { x, y: hingeY() + GRAB_BELOW_HINGE * k };
+    // A loose grip: while it's holding a ball, the ball jiggles and sags a
+    // little and the arms twitch — about twice as much when it's going to
+    // slip (a tell for sharp eyes).
+    const loose = held ? (slipAt > 0 ? 1 : 0.45) : 0;
     if (held) {
       heldFrom.x *= 0.82;
       heldFrom.y *= 0.82;
-      drawBall(held, g.x + heldFrom.x, g.y + heldFrom.y);
+      const jx = (Math.sin(time * 19) + Math.sin(time * 31) * 0.6) * r * 0.07 * loose;
+      const jy = (Math.abs(Math.sin(time * 13)) * 0.6 + 0.4) * r * 0.08 * loose;
+      drawBall(held, g.x + heldFrom.x + jx, g.y + heldFrom.y + jy);
     }
-    const wobble = state === "roam" ? Math.sin(time * 4) * 0.03 : 0;
+    const twitch = (Math.sin(time * 23) * 0.05 + Math.sin(time * 37) * 0.03) * loose + 0.04 * loose;
+    const wobble = (state === "roam" ? Math.sin(time * 4) * 0.03 : 0) + twitch;
     for (const [key, hinge, swing] of [
       ["left", LEFT_HINGE, open + wobble],
       ["right", RIGHT_HINGE, -open - wobble],
@@ -466,6 +524,7 @@ async function createClaw(
       part(key, -hinge.x * k, -hinge.y * k);
       ctx.restore();
     }
+    ctx.restore(); // the swing
 
     // A won ball pops open: its emoji and the points.
     if (shown) {
@@ -511,6 +570,7 @@ async function createClaw(
     drop,
     busy: () => state !== "roam",
     setMagnet: () => (magnet = true),
+    setIron: () => (iron = true),
     setBadges: (b: string[]) => (badges = b),
     stop: () => M.Engine.clear(engine),
   };
@@ -574,8 +634,8 @@ export async function playClaw(opts: CelebrationOptions): Promise<void> {
 // "Keep playing": five tries. Each ball won pops open into something — see
 // `Prize`. Colored balls are mostly points (1–5, bigger ones rarer) with
 // bombs, sneaky decoys, shake-ups and the odd skull mixed in; the shiny
-// pearls are always good (jackpot, super bonus, golden, magnet, slow-mo,
-// an extra try or a mystery box). The claw speeds up as you
+// pearls are always good (jackpot, super bonus, golden, magnet, iron
+// claw, slow-mo, an extra try or a mystery box). The claw speeds up as you
 // go; the game's over when the tries run out (or a skull turns up).
 const TRIES = 5;
 export function playClawGame(opts: GameOptions): () => void {
@@ -588,6 +648,7 @@ export function playClawGame(opts: GameOptions): () => void {
   let golden = false;
   let slowDrops = 0;
   let magnetOn = false;
+  let ironOn = false;
   opts.onLives?.(tries);
   let stop = () => layer.remove();
   const hint = hintBubble(layer, "Tap to drop the claw!", safe.y + safe.h * 0.42);
@@ -618,15 +679,16 @@ export function playClawGame(opts: GameOptions): () => void {
   const bonus = (): Prize =>
     pick(
       [
-        [0.12, () => ({ kind: "jackpot", points: 15 })],
-        [0.18, () => {
+        [0.1, () => ({ kind: "jackpot", points: 15 })],
+        [0.12, () => ({ kind: "iron" })],
+        [0.15, () => {
           const each = Array.from({ length: 3 }, () => 1 + Math.floor(Math.random() * 4));
           return { kind: "blast", count: 3, points: each.reduce((a, b) => a + b, 0) };
         }],
-        [0.15, () => ({ kind: "golden" })],
-        [0.15, () => ({ kind: "magnet" })],
-        [0.12, () => ({ kind: "slow" })],
-        [0.14, () => ({ kind: "try" })],
+        [0.13, () => ({ kind: "golden" })],
+        [0.12, () => ({ kind: "magnet" })],
+        [0.1, () => ({ kind: "slow" })],
+        [0.12, () => ({ kind: "try" })],
       ],
       () => ({ kind: "mystery", inside: [basic(), Math.random() < 0.5 ? basic() : { kind: "try" }] }),
     );
@@ -644,7 +706,9 @@ export function playClawGame(opts: GameOptions): () => void {
 
   let machine: Awaited<ReturnType<typeof createClaw>> | null = null;
   const badges = () =>
-    machine?.setBadges([golden ? "⭐" : "", magnetOn ? "🧲" : "", slowDrops > 0 ? `🐌${slowDrops}` : ""].filter(Boolean));
+    machine?.setBadges(
+      [golden ? "⭐" : "", magnetOn ? "🧲" : "", ironOn ? "🦾" : "", slowDrops > 0 ? `🐌${slowDrops}` : ""].filter(Boolean),
+    );
   const apply = (won: Prize) => {
     switch (won.kind) {
       case "points":
@@ -671,6 +735,10 @@ export function playClawGame(opts: GameOptions): () => void {
       case "slow":
         slowDrops = 2;
         break;
+      case "iron":
+        ironOn = true;
+        machine?.setIron();
+        break;
       case "mystery":
         won.inside.forEach(apply);
         break;
@@ -688,6 +756,7 @@ export function playClawGame(opts: GameOptions): () => void {
           drops++;
           opts.onLives?.(--tries);
           magnetOn = false; // used up by this grab
+          ironOn = false;
           if (slowDrops > 0) slowDrops--;
           badges();
         }
