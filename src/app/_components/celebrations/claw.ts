@@ -471,7 +471,9 @@ async function createClaw(
           M.Body.setVelocity(b.body, { x: swayV * 2, y: 0 });
           M.Composite.add(engine.world, b.body);
           balls.push(b);
+          // "Whoopsie!" … "aww".
           void playSound("whoops");
+          setTimeout(() => void playSound("aww"), 450);
         }
         if (rod <= restRod) {
           state = held ? "carry" : "roam";

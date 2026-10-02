@@ -47,3 +47,6 @@ some are CC BY-NC (no commercial use).
 | claw-open.m4a | PS_Robot_Joint_Movment_01 (second half) | poundsounduk | https://freesound.org/s/641097/ |
 | claw-move-1.m4a, claw-move-2.m4a | Electric scooter (two short pieces) | ienba | https://freesound.org/s/697379/ |
 | whoopsie.m4a | Whoopsie (high pitch), loudness-normalized | deleted_user_3424813 | https://freesound.org/s/274829/ |
+| aww-1.m4a | Disappointed aww (trimmed, loudness-normalized) | kanyonwyvern | https://freesound.org/s/727358/ |
+| aww-2.m4a | Aww (loudness-normalized) | phmiller42 | https://freesound.org/s/124996/ |
+| aww-3.m4a | MKE600 pain aww (trimmed, loudness-normalized) | sadiquecat | https://freesound.org/s/818194/ |
