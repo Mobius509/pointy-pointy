@@ -64,10 +64,16 @@ export async function sendReminder(
       ? "You're all caught up today — nice work!"
       : `You have ${open} ${open === 1 ? "task" : "tasks"} left today.`;
 
-  // A streak going that today's open tasks would break? Say so.
+  // A streak going that today's open tasks would break? Say so. (A task
+  // done and waiting for approval counts — and an "any 3 of 4" streak only
+  // needs three.)
   const openIds = new Set(view?.items.filter((i) => i.state === "open").map((i) => i.id));
+  const shortToday = ({ streak }: { streak: { taskIds: string[]; tasks_needed: number | null } }) => {
+    const need = Math.min(streak.tasks_needed ?? streak.taskIds.length, streak.taskIds.length);
+    return need - streak.taskIds.filter((id) => !openIds.has(id)).length > 0;
+  };
   const atRisk = (await getKidStreaks(ctx).catch(() => []))
-    .filter(({ run, streak }) => run.length > 0 && !run.todayDone && !run.restDay && streak.taskIds.some((id) => openIds.has(id)))
+    .filter((ks) => ks.run.length > 0 && !ks.run.todayDone && !ks.run.restDay && shortToday(ks))
     .sort((a, b) => b.run.length - a.run.length)[0];
   if (atRisk) body += ` Don't break your 🔥 ${atRisk.run.length}-day ${atRisk.streak.name} streak!`;
 

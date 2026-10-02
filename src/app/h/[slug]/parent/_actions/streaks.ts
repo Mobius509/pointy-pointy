@@ -15,41 +15,41 @@ function parseWhole(raw: FormDataEntryValue | null, min: number, max: number, wh
   return Math.round(n);
 }
 
-// The picked tasks (kept to this family's daily tasks), each with the
-// weekdays it's needed — the days_<task id> boxes, 0 = Monday … 6 = Sunday,
-// as a bitmask (127 = every day).
-async function readTasks(formData: FormData, householdId: string): Promise<{ task_id: string; days: number }[]> {
+// The picked tasks, kept to this family's daily tasks.
+async function readTaskIds(formData: FormData, householdId: string): Promise<string[]> {
   const ids = [...new Set(formData.getAll("task_ids").map(String))].filter(Boolean);
   if (ids.length === 0) throw new Error("Pick at least one task.");
   const { data, error } = await supabaseV2Admin
     .from("tasks")
-    .select("id, name")
+    .select("id")
     .eq("household_id", householdId)
     .eq("frequency", "daily")
     .in("id", ids);
   if (error) throw error;
-  const ok = data ?? [];
+  const ok = (data ?? []).map((t) => t.id as string);
   if (ok.length === 0) throw new Error("Pick at least one daily task.");
-  return ok.map((t) => {
-    const days = formData
-      .getAll(`days_${t.id}`)
-      .map(Number)
-      .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
-      .reduce((mask, d) => mask | (1 << d), 0);
-    if (!days) throw new Error(`Pick at least one day for ${t.name}.`);
-    return { task_id: t.id as string, days };
-  });
+  return ok;
 }
 
-// Writes a streak's task list. Before migration v2_0010 there's no days
-// column — then every task is every day.
-async function writeTasks(streakId: string, tasks: { task_id: string; days: number }[]) {
-  let { error } = await supabaseV2Admin.from("streak_tasks").insert(tasks.map((t) => ({ streak_id: streakId, ...t })));
-  if (error && (error.code === "42703" || error.code === "PGRST204"))
-    ({ error } = await supabaseV2Admin
-      .from("streak_tasks")
-      .insert(tasks.map((t) => ({ streak_id: streakId, task_id: t.task_id }))));
-  if (error) throw error;
+// "How many of these each day": blank (or every one of them) = all.
+function readTasksNeeded(formData: FormData, taskCount: number): number | null {
+  const raw = String(formData.get("tasks_needed") ?? "").trim();
+  if (!raw) return null;
+  const n = parseWhole(raw, 1, 50, "Tasks needed each day");
+  if (n > taskCount) throw new Error(`There are only ${taskCount} tasks in this streak — pick ${taskCount} or fewer.`);
+  return n >= taskCount ? null : n;
+}
+
+// Saves the streak row. Before migration v2_0010 there's no tasks_needed
+// column — then it's left out (all tasks needed).
+async function saveStreak<T>(write: (row: Record<string, unknown>) => PromiseLike<T & { error: { code?: string } | null }>, row: Record<string, unknown>) {
+  let res = await write(row);
+  if (res.error && (res.error.code === "PGRST204" || res.error.code === "42703") && row.tasks_needed == null) {
+    const { tasks_needed: _skip, ...rest } = row;
+    void _skip;
+    res = await write(rest);
+  }
+  return res;
 }
 
 function readFields(formData: FormData) {
@@ -73,7 +73,8 @@ export async function createStreakAction(formData: FormData) {
   const slug = String(formData.get("slug") ?? "");
   const household = await requireHouseholdAccess(slug);
   const fields = readFields(formData);
-  const tasks = await readTasks(formData, household.id);
+  const taskIds = await readTaskIds(formData, household.id);
+  const tasks_needed = readTasksNeeded(formData, taskIds.length);
 
   const { data: last } = await supabaseV2Admin
     .from("streaks")
@@ -82,13 +83,15 @@ export async function createStreakAction(formData: FormData) {
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const { data: streak, error } = await supabaseV2Admin
-    .from("streaks")
-    .insert({ household_id: household.id, ...fields, sort_order: (last?.sort_order ?? 0) + 10 })
-    .select("id")
-    .single();
-  if (error) throw error;
-  await writeTasks(streak.id, tasks);
+  const { data: streak, error } = await saveStreak(
+    (row) => supabaseV2Admin.from("streaks").insert(row).select("id").single(),
+    { household_id: household.id, ...fields, tasks_needed, sort_order: (last?.sort_order ?? 0) + 10 },
+  );
+  if (error || !streak) throw error ?? new Error("Couldn't add the streak.");
+  const { error: linkError } = await supabaseV2Admin
+    .from("streak_tasks")
+    .insert(taskIds.map((task_id) => ({ streak_id: streak.id, task_id })));
+  if (linkError) throw linkError;
   revalidate(slug);
 }
 
@@ -98,19 +101,21 @@ export async function updateStreakAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("Missing streak.");
   const fields = readFields(formData);
-  const tasks = await readTasks(formData, household.id);
+  const taskIds = await readTaskIds(formData, household.id);
+  const tasks_needed = readTasksNeeded(formData, taskIds.length);
 
-  const { data: updated, error } = await supabaseV2Admin
-    .from("streaks")
-    .update({ ...fields, active: formData.get("active") === "on" })
-    .eq("id", id)
-    .eq("household_id", household.id)
-    .select("id");
+  const { data: updated, error } = await saveStreak(
+    (row) => supabaseV2Admin.from("streaks").update(row).eq("id", id).eq("household_id", household.id).select("id"),
+    { ...fields, tasks_needed, active: formData.get("active") === "on" },
+  );
   if (error) throw error;
   if (!updated?.length) throw new Error("Streak not found.");
   // Replace its task list.
   await supabaseV2Admin.from("streak_tasks").delete().eq("streak_id", id);
-  await writeTasks(id, tasks);
+  const { error: linkError } = await supabaseV2Admin
+    .from("streak_tasks")
+    .insert(taskIds.map((task_id) => ({ streak_id: id, task_id })));
+  if (linkError) throw linkError;
   revalidate(slug);
 }
 

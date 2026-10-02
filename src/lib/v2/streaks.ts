@@ -20,9 +20,9 @@ export type Streak = {
   sort_order: number;
   created_at: string;
   taskIds: string[];
-  // Which weekdays each task is needed (bitmask, bit 0 = Monday; 127 = every
-  // day — see v2_0010_streak_days.sql).
-  taskDays: Record<string, number>;
+  // How many of its tasks make a day count (null: all of them — see
+  // v2_0010_streak_days.sql).
+  tasks_needed: number | null;
 };
 
 export type KidStreak = {
@@ -40,33 +40,27 @@ export type KidStreak = {
 // Before the streaks migration is run there are no tables — no streaks,
 // rather than a broken page.
 const notSetUp = (code?: string) => code === "42P01" || code === "PGRST205";
-// Before v2_0010 is run: no task days column (every day) / no excused days.
-const noTaskDays = (code?: string) => code === "42703" || code === "PGRST204";
 const HISTORY_DAYS = 400;
 
 export async function getStreaks(householdId: string, { activeOnly = false } = {}): Promise<Streak[]> {
-  const load = (cols: string) => {
-    let q = supabaseV2Admin
-      .from("streaks")
-      .select(`*, streak_tasks(${cols})`)
-      .eq("household_id", householdId)
-      .order("sort_order")
-      .order("created_at");
-    if (activeOnly) q = q.eq("active", true);
-    return q;
-  };
-  let { data, error } = await load("task_id, days");
-  if (error && noTaskDays(error.code)) ({ data, error } = await load("task_id"));
+  let q = supabaseV2Admin
+    .from("streaks")
+    .select("*, streak_tasks(task_id)")
+    .eq("household_id", householdId)
+    .order("sort_order")
+    .order("created_at");
+  if (activeOnly) q = q.eq("active", true);
+  const { data, error } = await q;
   if (error) {
     if (notSetUp(error.code)) return [];
     throw error;
   }
-  type Row = Omit<Streak, "taskIds" | "taskDays"> & { streak_tasks: { task_id: string; days?: number }[] | null };
-  return ((data ?? []) as unknown as Row[]).map(({ streak_tasks, ...rest }) => ({
+  type Row = Omit<Streak, "taskIds"> & { streak_tasks: { task_id: string }[] | null };
+  return ((data ?? []) as Row[]).map(({ streak_tasks, ...rest }) => ({
     ...rest,
     skip_weekends: !!rest.skip_weekends,
+    tasks_needed: rest.tasks_needed ?? null, // (missing before v2_0010)
     taskIds: (streak_tasks ?? []).map((t) => t.task_id),
-    taskDays: Object.fromEntries((streak_tasks ?? []).map((t) => [t.task_id, t.days ?? 127])),
   }));
 }
 
@@ -133,7 +127,7 @@ export async function getKidStreaks(ctx: KidContext): Promise<KidStreak[]> {
   return streaks.map((streak) => {
     const rules = {
       skipWeekends: !!streak.skip_weekends,
-      taskDays: streak.taskDays,
+      tasksNeeded: streak.tasks_needed,
       excused: excused.get(streak.id) ?? new Set<string>(),
     };
     const run = streakRun(streak.taskIds, days, today, rules);

@@ -259,7 +259,7 @@ export default async function ParentTasksPage({
         summary={streaks.length ? `${streaks.length} streak${streaks.length === 1 ? "" : "s"}` : "Bonus points + game unlocks"}
       >
         <p className="text-pp-muted">
-          Pick daily tasks to do every day (or just some days). Each time a kid keeps it up for the number of days you set, they get the
+          Pick daily tasks to do every day — all of them, or any few of them. Each time a kid keeps it up for the number of days you set, they get the
           bonus points and an arcade ticket. Tickets save up; each one plays a mini game while a streak is going — a
           surprise game, or one they pick once a streak has run two weeks. Missing a day starts it over.
         </p>
@@ -323,17 +323,7 @@ export default async function ParentTasksPage({
   );
 }
 
-const WEEKDAYS = [
-  { short: "M", long: "Monday" },
-  { short: "T", long: "Tuesday" },
-  { short: "W", long: "Wednesday" },
-  { short: "T", long: "Thursday" },
-  { short: "F", long: "Friday" },
-  { short: "S", long: "Saturday" },
-  { short: "S", long: "Sunday" },
-];
-
-// Name, which daily tasks (and the weekdays each is needed), days in a
+// Name, which daily tasks (and how many of them a day needs), days in a
 // row, bonus points — for adding and editing a streak.
 function StreakFields({
   streak,
@@ -360,49 +350,44 @@ function StreakFields({
         />
       </div>
       <fieldset className="sm:col-span-2">
-        <legend className="label">Tasks, and the days each is needed</legend>
-        <p className="mb-2 text-[12px] text-pp-muted">
-          Untick a day if a task isn&apos;t needed then (no lunch on Fridays). A day with nothing needed doesn&apos;t
-          count or break the streak.
-        </p>
-        <div className="space-y-2">
-          {dailyTasks.map((t) => {
-            const days = streak?.taskDays[t.id] ?? 127;
-            return (
-              <div key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                <label className="flex min-w-[10rem] items-center gap-2 rounded-full bg-white ring-1 ring-pp-line px-3 py-1.5 text-pp-primary font-medium has-[:checked]:bg-pp-tint has-[:checked]:ring-pp-primary">
-                  <input
-                    type="checkbox"
-                    name="task_ids"
-                    value={t.id}
-                    defaultChecked={streak?.taskIds.includes(t.id)}
-                    className="accent-pp-primary"
-                  />
-                  {t.name}
-                </label>
-                <span className="flex gap-1" role="group" aria-label={`Days for ${t.name}`}>
-                  {WEEKDAYS.map((d, i) => (
-                    <label
-                      key={i}
-                      title={d.long}
-                      className="grid size-7 cursor-pointer place-items-center rounded-full bg-white text-[11px] font-semibold text-pp-muted ring-1 ring-pp-line has-[:checked]:bg-pp-primary has-[:checked]:text-white has-[:checked]:ring-pp-primary"
-                    >
-                      <input
-                        type="checkbox"
-                        name={`days_${t.id}`}
-                        value={i}
-                        defaultChecked={(days & (1 << i)) !== 0}
-                        className="sr-only"
-                      />
-                      {d.short}
-                    </label>
-                  ))}
-                </span>
-              </div>
-            );
-          })}
+        <legend className="label">Tasks in this streak</legend>
+        <div className="flex flex-wrap gap-2">
+          {dailyTasks.map((t) => (
+            <label
+              key={t.id}
+              className="flex items-center gap-2 rounded-full bg-white ring-1 ring-pp-line px-3 py-1.5 text-pp-primary font-medium has-[:checked]:bg-pp-tint has-[:checked]:ring-pp-primary"
+            >
+              <input
+                type="checkbox"
+                name="task_ids"
+                value={t.id}
+                defaultChecked={streak?.taskIds.includes(t.id)}
+                className="accent-pp-primary"
+              />
+              {t.name}
+            </label>
+          ))}
         </div>
       </fieldset>
+      <div className="sm:col-span-2">
+        <label className="label" htmlFor={`${idPrefix}-needed`}>
+          How many of these each day
+        </label>
+        <input
+          id={`${idPrefix}-needed`}
+          name="tasks_needed"
+          type="number"
+          min={1}
+          max={50}
+          defaultValue={streak?.tasks_needed ?? ""}
+          placeholder="All of them"
+          className="input max-w-[12rem]"
+        />
+        <p className="mt-1 text-[12px] text-pp-muted">
+          Leave blank to need every task. Pick 3 of 4 and any three count (no lunch on Fridays? reading instead
+          is fine).
+        </p>
+      </div>
       <div>
         <label className="label" htmlFor={`${idPrefix}-days`}>
           Days in a row for a reward

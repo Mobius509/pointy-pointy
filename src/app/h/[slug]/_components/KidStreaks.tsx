@@ -16,7 +16,9 @@ export function KidStreaks({ streaks, items }: { streaks: KidStreak[]; items: Ch
           const lit = run.length > 0 && run.length % n === 0 ? n : run.length % n;
           const tasks = streak.taskIds.map((id) => byId.get(id)).filter(Boolean) as ChecklistItem[];
           const todo = tasks.filter((t) => t.state === "open").map((t) => t.name);
-          const waiting = tasks.some((t) => t.state === "pending");
+          // Done or waiting for approval both count toward today's "how many".
+          const need = Math.min(streak.tasks_needed ?? tasks.length, tasks.length);
+          const more = need - tasks.filter((t) => t.state !== "open").length;
           return (
             <li key={streak.id} className="rounded-2xl bg-pp-soft p-4">
               <div className="flex items-baseline justify-between gap-3">
@@ -48,11 +50,11 @@ export function KidStreaks({ streaks, items }: { streaks: KidStreak[]; items: Ch
                   ? "It's the weekend — no streak today 🎉"
                   : run.todayDone
                   ? "Today's done ✓"
-                  : todo.length
-                    ? `Do ${todo.join(" + ")} today to keep it going!`
-                    : waiting
-                      ? "Waiting for approval ⏳"
-                      : "Keep it going today!"}
+                  : more <= 0
+                    ? "Waiting for approval ⏳"
+                    : more >= todo.length
+                      ? `Do ${todo.join(" + ")} today to keep it going!`
+                      : `Do ${more} more today: ${todo.join(" or ")}`}
               </p>
             </li>
           );

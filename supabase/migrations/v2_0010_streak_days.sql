@@ -1,19 +1,17 @@
--- v2: which days each streak task is needed, and parent-approved days.
+-- v2: "any N of these" streaks, and parent-approved streak days.
 --
--- streak_tasks.days: the weekdays the task is needed for the streak, as a
--- bitmask — bit 0 = Monday … bit 6 = Sunday; 127 = every day. On a day a
--- task isn't needed it doesn't have to be done, and a day with no tasks
--- needed is a rest day (doesn't count, doesn't break the streak — like a
--- weekend with "skip weekends").
+-- streaks.tasks_needed: how many of the streak's tasks make a day count —
+-- e.g. a streak of Make lunch, Practice piano, Homework, Read with 3 needed:
+-- any three of them do. Null = all of them (how streaks worked before).
 --
 -- streak_excused_days: "count this day" — a parent approved a streak day
--- even though its tasks weren't all done (sick day, holiday…). It counts as
--- a streak day.
+-- even though not enough of its tasks were done (sick day, holiday…). It
+-- counts as a streak day.
 --
 -- Written to be safe to run more than once.
 
-alter table v2.streak_tasks
-  add column if not exists days smallint not null default 127 check (days between 1 and 127);
+alter table v2.streaks
+  add column if not exists tasks_needed smallint check (tasks_needed >= 1);
 
 create table if not exists v2.streak_excused_days (
   streak_id uuid not null references v2.streaks(id) on delete cascade,
