@@ -304,8 +304,11 @@ async function createClaw(
 
     // The claw: roof, rod, then arms behind the hub (a held ball between them).
     const top = hubTop();
+    // The rod starts up inside the roof's collar and the roof is drawn over
+    // it, so there's no seam where they meet.
+    const tuck = roofH * 0.35;
+    part("rod", x - (ART.rod.w * k) / 2, railY - 10 + roofH - tuck, ART.rod.w * k, rod + tuck + 16);
     part("roof", x - (ART.roof.w * k) / 2, railY - 10);
-    part("rod", x - (ART.rod.w * k) / 2, railY + roofH - 8, ART.rod.w * k, rod + 16);
     const g = grabPoint();
     if (held) drawBall(held, g.x, g.y);
     const hubLeft = x - (ART.hub.w * k) / 2;
