@@ -791,8 +791,8 @@ export async function playClaw(opts: CelebrationOptions): Promise<void> {
   layer.remove();
 }
 
-// Dev panel for trying out the specials without hunting for them: add
-// ?dev to the page URL (it's remembered on this device; ?dev=0 turns it off).
+// Dev panel for trying out the specials without hunting for them (local
+// dev server only — never in a deployed build): add ?dev to the page URL (it's remembered on this device; ?dev=0 turns it off).
 function devMode(): boolean {
   try {
     const q = new URLSearchParams(window.location.search).get("dev");
@@ -1008,7 +1008,10 @@ export function playClawGame(opts: GameOptions): () => void {
 
   void createClaw(ctx, W, H, safe, prize, apply).then((m) => {
     machine = m;
-    const dev = devMode() ? devPanel(safe, apply, (p) => (forced = p)) : null;
+    // Local dev server only: the check is compiled away in deployed builds,
+    // taking the panel with it.
+    const dev =
+      process.env.NODE_ENV === "development" && devMode() ? devPanel(safe, apply, (p) => (forced = p)) : null;
     gameInput({
       down: () => {
         hint.remove();
