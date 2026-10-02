@@ -412,9 +412,6 @@ async function createClaw(
     ctx.beginPath();
     ctx.roundRect(area.x, floorY - 80, chuteW - 6, 80, [16, 16, 0, 0]);
     ctx.fill();
-    ctx.font = `${Math.round(chuteW * 0.32)}px system-ui, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.fillText("🎁", chuteX, floorY - 34);
     // Divider and floor line.
     ctx.fillStyle = color("primary", 0.25);
     ctx.beginPath();
