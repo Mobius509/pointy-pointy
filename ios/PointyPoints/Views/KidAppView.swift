@@ -140,8 +140,8 @@ private struct TabBar: View {
                 side(.arcade, "Arcade", "IconGame", iconFirst: false)
             }
             .padding(.horizontal, 16)
-            .frame(height: 46)
-            .frame(maxHeight: .infinity, alignment: .bottom)
+            .frame(height: 46.45) // the bar part of the shape: y 19.6 – 66.05
+            .padding(.top, 19.6)
             // The big ✓ fills the hump.
             Button { tab = .tasks } label: {
                 Image(systemName: "checkmark.square.fill")
@@ -167,7 +167,6 @@ private struct TabBar: View {
                 if !iconFirst { Image(icon).resizable().frame(width: 22, height: 22) }
             }
             .foregroundStyle(Theme.palette.strong)
-            .opacity(tab == which ? 1 : 0.75)
         }
         .accessibilityAddTraits(tab == which ? .isSelected : [])
     }

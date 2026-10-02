@@ -20,8 +20,8 @@ export function KidTabBar({ slug, disabled = false }: { slug: string; disabled?:
   const arcade = `${base}/arcade`;
   const on = (href: string) => (href === base ? path === base : path.startsWith(href));
 
-  // A side tab: icon and label in the strong color — the one you're on at
-  // full strength, the other a touch softer.
+  // A side tab: icon and label in the strong color (#B36BFB in the default
+  // palette), same as the big button.
   const side = (href: string, label: string, Icon: typeof StatsIcon, iconFirst: boolean) => {
     const active = on(href);
     const inner = (
@@ -31,7 +31,7 @@ export function KidTabBar({ slug, disabled = false }: { slug: string; disabled?:
         {!iconFirst && <Icon className="size-[22px]" />}
       </>
     );
-    const cls = `flex items-center gap-1.5 text-kid-strong transition ${active ? "" : "opacity-75"}`;
+    const cls = "flex items-center gap-1.5 text-kid-strong transition";
     return disabled ? (
       <span className={cls}>{inner}</span>
     ) : (
@@ -58,7 +58,7 @@ export function KidTabBar({ slug, disabled = false }: { slug: string; disabled?:
           <path d={NAV_PATH} fill="currentColor" />
         </svg>
         {/* The bar: Stats on the left, Arcade on the right. */}
-        <div className="absolute inset-x-0 bottom-0 flex h-[46px] items-center justify-between px-4">
+        <div className="absolute inset-x-0 top-[19.6px] flex h-[46.45px] items-center justify-between px-4">
           {side(base, "Stats", StatsIcon, true)}
           {side(arcade, "Arcade", ArcadeIcon, false)}
         </div>

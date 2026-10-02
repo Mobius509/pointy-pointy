@@ -15,17 +15,19 @@ struct KidPalette: Equatable {
     static let baseHue: Double = 304 // the mock's lavender
     static let defaultHue = 304
 
-    /// Lightness, chroma and hue offset per token (kid-palette.ts KID_TOKENS).
-    private static let tokens: [String: (l: Double, c: Double, dh: Double)] = [
-        "card": (0.9067, 0.0451, 9),
-        "cardInner": (0.9258, 0.0358, 9),
-        "cardSoft": (0.9713, 0.0135, 10),
-        "strong": (0.6703, 0.2097, 0),
-        "strongDeep": (0.5983, 0.2037, 0),
-        "track": (0.8728, 0.0707, 5),
-        "text": (0.4871, 0.1933, -2),
-        "textStrong": (0.4448, 0.2206, -5),
-        "nav": (0.1422, 0.0687, 0),
+    /// Each color as it is in the mock — OKLCH lightness, chroma and hue,
+    /// sampled exactly (kid-palette.ts KID_TOKENS). A kid's color turns every
+    /// hue by the same amount.
+    private static let tokens: [String: (l: Double, c: Double, h: Double)] = [
+        "card": (0.9067, 0.0451, 313.3), // #EBD8F6
+        "cardInner": (0.9258, 0.0358, 313.05), // #EFE0F8
+        "cardSoft": (0.9713, 0.0135, 314.76), // #F9F3FC
+        "strong": (0.6703, 0.2097, 304.4), // #B36BFB
+        "strongDeep": (0.5983, 0.2037, 303.87), // #9B56E0
+        "track": (0.8728, 0.0707, 309.33), // #E3C9F9
+        "text": (0.4871, 0.1933, 302.81), // #7736B7
+        "textStrong": (0.4448, 0.2206, 298.94), // #6919B9
+        "nav": (0.1422, 0.0687, 303.51), // #100120
     ]
 
     let hue: Int
@@ -36,7 +38,7 @@ struct KidPalette: Equatable {
         self.hue = h
         func make(_ name: String) -> Color {
             let t = Self.tokens[name]!
-            return Self.oklch(t.l, t.c, Double(h) + t.dh)
+            return Self.oklch(t.l, t.c, t.h + Double(h - Self.defaultHue))
         }
         card = make("card")
         cardInner = make("cardInner")

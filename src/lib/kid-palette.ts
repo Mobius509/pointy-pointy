@@ -15,18 +15,19 @@
 export const BASE_HUE = 304; // the mock's lavender
 export const DEFAULT_HUE = BASE_HUE;
 
-// Lightness (0–1), chroma, and hue offset from the kid's hue (the mock's
-// light colors lean a few degrees pinker than its strong ones).
+// Each color as it is in the mock (OKLCH lightness 0–1, chroma, hue in
+// degrees — sampled exactly, so the default palette reproduces the design's
+// hex colors). A kid's color turns every hue by the same amount.
 export const KID_TOKENS = {
-  card: { l: 0.9067, c: 0.0451, dh: 9 }, // the big pastel cards
-  cardInner: { l: 0.9258, c: 0.0358, dh: 9 }, // a card inside a card; the ring's track
-  cardSoft: { l: 0.9713, c: 0.0135, dh: 10 }, // near-white card, the tab bar
-  strong: { l: 0.6703, c: 0.2097, dh: 0 }, // the celebrate card, ring, headings
-  strongDeep: { l: 0.5983, c: 0.2037, dh: 0 }, // tiles on a strong card
-  track: { l: 0.8728, c: 0.0707, dh: 5 }, // soft accents
-  text: { l: 0.4871, c: 0.1933, dh: -2 }, // body text, filled dots
-  textStrong: { l: 0.4448, c: 0.2206, dh: -5 }, // big numbers
-  nav: { l: 0.1422, c: 0.0687, dh: 0 }, // the dark tab bar
+  card: { l: 0.9067, c: 0.0451, h: 313.3 }, // #EBD8F6 the big pastel cards
+  cardInner: { l: 0.9258, c: 0.0358, h: 313.05 }, // #EFE0F8 a card in a card
+  cardSoft: { l: 0.9713, c: 0.0135, h: 314.76 }, // #F9F3FC near-white card
+  strong: { l: 0.6703, c: 0.2097, h: 304.4 }, // #B36BFB celebrate card, ring, nav icons & labels
+  strongDeep: { l: 0.5983, c: 0.2037, h: 303.87 }, // #9B56E0 tiles on a strong card
+  track: { l: 0.8728, c: 0.0707, h: 309.33 }, // #E3C9F9 the ring's paler part
+  text: { l: 0.4871, c: 0.1933, h: 302.81 }, // #7736B7 body text, filled dots
+  textStrong: { l: 0.4448, c: 0.2206, h: 298.94 }, // #6919B9 big numbers
+  nav: { l: 0.1422, c: 0.0687, h: 303.51 }, // #100120 the dark tab bar
 } as const;
 
 export type KidToken = keyof typeof KID_TOKENS;
@@ -41,7 +42,7 @@ export function kidPalette(hue: number | null | undefined): KidPalette {
   const h = normalizeHue(hue);
   const out = {} as KidPalette;
   for (const [name, t] of Object.entries(KID_TOKENS) as [KidToken, (typeof KID_TOKENS)[KidToken]][])
-    out[name] = oklchToHex(t.l, t.c, h + t.dh);
+    out[name] = oklchToHex(t.l, t.c, t.h + (h - DEFAULT_HUE));
   return out;
 }
 

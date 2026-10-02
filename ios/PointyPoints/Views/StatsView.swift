@@ -133,7 +133,8 @@ private struct StreakWeekCard: View {
 }
 
 /// Their points, the ring filling toward the next milestone; then how far
-/// toward the goal itself.
+/// toward the goal itself. With both a next milestone and a goal, the two
+/// cards hand over as the kid scrolls (GoalModule), like the web.
 private struct GoalRingCard: View {
     let today: TodayResponse
 
@@ -142,103 +143,124 @@ private struct GoalRingCard: View {
         let next = today.milestones.first { $0.points > progress }
         let prev = today.milestones.last { $0.points <= progress }?.points ?? 0
         let goalPct = today.goal.map { pct(Double(progress) / Double(max(1, $0.targetPoints))) } ?? 0
-        let ring: (pct: Int, label: String, caption: String) =
-            if let next {
-                (pct(Double(progress - prev) / Double(max(1, next.points - prev))), next.name, "Towards your next milestone")
-            } else if let goal = today.goal {
-                (goalPct, goal.name, "Towards \(goal.name)")
-            } else {
-                (0, "points", "")
-            }
 
-        VStack(spacing: 18) {
+        if let next, let goal = today.goal {
+            GoalModule(
+                milestone: .init(
+                    pct: pct(Double(progress - prev) / Double(max(1, next.points - prev))),
+                    caption: "Towards your next milestone", points: progress, label: next.name),
+                goal: .init(pct: goalPct, caption: "Towards \(goal.name)", points: progress, label: goal.name)
+            )
+        } else {
+            let ring: (pct: Int, label: String, caption: String) =
+                if let goal = today.goal { (goalPct, goal.name, "Towards \(goal.name)") } else { (0, "points", "") }
             VStack(spacing: 16) {
                 Ring(pct: ring.pct, points: progress, label: ring.label)
-                if !ring.caption.isEmpty {
-                    HStack(alignment: .bottom) {
-                        Text("\(ring.pct)%").font(.rounded(34)).foregroundStyle(Theme.palette.textStrong)
-                        Spacer()
-                        Text(ring.caption)
-                            .font(.rounded(13))
-                            .foregroundStyle(Theme.palette.textStrong)
-                            .multilineTextAlignment(.trailing)
-                            .padding(.bottom, 4)
-                    }
-                }
+                if !ring.caption.isEmpty { GoalRow(pct: ring.pct, caption: ring.caption) }
             }
             .padding(.horizontal, 20)
             .padding(.top, 28)
             .padding(.bottom, 24)
-            .background(Theme.palette.cardInner, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-
-            if let goal = today.goal, next != nil {
-                GoalOpenCard(goalName: goal.name, goalPct: goalPct, progress: progress, target: goal.targetPoints)
-            }
+            .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .padding(18)
+            .background(Theme.palette.card, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
         }
-        .padding(18)
-        .background(Theme.palette.card, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
     }
 
     private func pct(_ x: Double) -> Int { max(0, min(100, Int((x * 100).rounded()))) }
 }
 
-/// The goal card at the bottom of Stats: "86% Towards Get a dog" — and as
-/// the kid scrolls down to it, it opens up like an accordion into a big ring
-/// for the goal itself. Same as the web's GoalOpenCard.
-private struct GoalOpenCard: View {
-    let goalName: String
-    let goalPct: Int
-    let progress: Int
-    let target: Int
-    @State private var open: Double = 0 // 0 closed … 1 open
+/// "79%    Towards your next milestone"
+private struct GoalRow: View {
+    let pct: Int
+    let caption: String
 
-    private static let closed: CGFloat = 84
-    private static let opened: CGFloat = 430
+    var body: some View {
+        HStack {
+            Text("\(pct)%").font(.rounded(34)).foregroundStyle(Theme.palette.textStrong)
+            Spacer()
+            Text(caption)
+                .font(.rounded(13))
+                .foregroundStyle(Theme.palette.textStrong)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+}
+
+/// The bottom of Stats: two cards — the next milestone and the big goal. One
+/// is open (white, a big ring above its row) and the other is just its row.
+/// Scrolling down hands over from the milestone to the goal; tapping the
+/// closed one opens it. They always add up to the same height, so nothing
+/// jumps. Same as the web's GoalModule.
+private struct GoalModule: View {
+    struct Card {
+        let pct: Int
+        let caption: String
+        let points: Int
+        let label: String
+    }
+
+    let milestone: Card
+    let goal: Card
+    @State private var p: Double = 0 // 0: milestone open … 1: goal open
+    @State private var top: CGFloat = 0
+    @State private var tappedAt: CGFloat? // where the module was when a card was tapped
+
+    private static let ringArea: CGFloat = 300
     private static var screenHeight: CGFloat {
         (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.screen.bounds.height ?? 874
     }
 
     var body: some View {
-        let e = open * open * (3 - 2 * open) // smoothstep
-        ZStack(alignment: .top) {
-            HStack {
-                Text("\(goalPct)%").font(.rounded(34)).foregroundStyle(Theme.palette.textStrong)
-                Spacer()
-                Text("Towards \(goalName)")
-                    .font(.rounded(13))
-                    .foregroundStyle(Theme.palette.textStrong)
-                    .multilineTextAlignment(.trailing)
-            }
-            .padding(.horizontal, 24)
-            .frame(height: Self.closed)
-            .opacity(1 - e * 1.6)
-            .accessibilityHidden(e > 0.6)
-
-            VStack(spacing: 12) {
-                Text("The big goal: \(goalName)")
-                    .font(.rounded(17))
-                    .foregroundStyle(Theme.palette.strong)
-                    .multilineTextAlignment(.center)
-                Ring(pct: goalPct, points: progress, label: "of \(target.formatted()) points")
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 28)
-            .opacity(max(0, e * 1.4 - 0.4))
-            .scaleEffect(0.85 + 0.15 * e, anchor: .top)
-            .accessibilityHidden(e < 0.4)
+        let e = p * p * (3 - 2 * p) // smoothstep
+        VStack(spacing: 14) {
+            panel(milestone, openness: 1 - e, closed: Theme.palette.cardInner) { open(0) }
+            panel(goal, openness: e, closed: Theme.palette.cardSoft) { open(1) }
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: Self.closed + (Self.opened - Self.closed) * e, alignment: .top)
-        .clipped()
-        .background(Theme.palette.cardSoft, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        // The open height is kept free underneath from the start, so the
-        // page can always scroll far enough for the card to open all the way.
-        .frame(height: Self.opened, alignment: .top)
-        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { top in
-            // Opens as its top climbs from the bottom of the screen to 45% up.
+        .padding(18)
+        .background(Theme.palette.card, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { y in
+            top = y
+            if let tapped = tappedAt {
+                if abs(y - tapped) < 40 { return } // a tap's choice holds until they scroll on
+                tappedAt = nil
+            }
+            // The hand-over: as the module's top climbs from 75% of the
+            // screen to 35%.
             let vh = Self.screenHeight
-            open = max(0, min(1, (vh * 0.95 - top) / (vh * 0.5)))
+            p = max(0, min(1, (vh * 0.75 - y) / (vh * 0.4)))
         }
+    }
+
+    private func open(_ target: Double) {
+        tappedAt = top
+        withAnimation(.easeInOut(duration: 0.38)) { p = target }
+    }
+
+    private func panel(_ card: Card, openness o: Double, closed: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 0) {
+                Ring(pct: card.pct, points: card.points, label: card.label)
+                    .frame(width: 260)
+                    .scaleEffect(0.35 + 0.65 * o, anchor: .top)
+                    .padding(.top, 28)
+                    .opacity(max(0, min(1, (o - 0.12) * 2.2)))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: Self.ringArea * o, alignment: .top)
+                    .clipped()
+                GoalRow(pct: card.pct, caption: card.caption)
+                    .padding(.horizontal, 24)
+                    .frame(height: 84)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(closed)
+                    .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).fill(.white.opacity(o)))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(o > 0.5 ? .isSelected : [])
     }
 }
 

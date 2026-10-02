@@ -3,7 +3,7 @@ import Link from "next/link";
 import { avatarSrc } from "@/lib/avatar";
 import type { KidHome } from "@/lib/v2/kid-home";
 import { CelebrateCard } from "./CelebrateCard";
-import { GoalOpenCard } from "./GoalOpenCard";
+import { GoalModule } from "./GoalModule";
 import { Ring } from "./KidRing";
 
 // The kid app's home (Stats): greeting with their avatar, "let's
@@ -96,9 +96,19 @@ function GoalRingCard({ home }: { home: KidHome }) {
       ? { pct: goalPct, label: goal.name, caption: `Towards ${goal.name}` }
       : { pct: 0, label: "points", caption: "" };
 
+  // Both a next milestone and a goal: the two cards that hand over as the
+  // kid scrolls (or taps).
+  if (goal && next)
+    return (
+      <GoalModule
+        milestone={{ ...ring, points: progress }}
+        goal={{ pct: goalPct, caption: `Towards ${goal.name}`, points: progress, label: goal.name }}
+      />
+    );
+
   return (
     <section className="rounded-[36px] bg-kid-card p-[18px] space-y-[18px]">
-      <div className="rounded-[28px] bg-kid-card-inner px-5 pb-6 pt-7">
+      <div className="rounded-[28px] bg-white px-5 pb-6 pt-7">
         <Ring pct={ring.pct} points={progress} label={ring.label} />
         {ring.caption && (
           <div className="mt-4 flex items-end justify-between gap-4">
@@ -107,9 +117,6 @@ function GoalRingCard({ home }: { home: KidHome }) {
           </div>
         )}
       </div>
-      {goal && next && (
-        <GoalOpenCard goalName={goal.name} goalPct={goalPct} progress={progress} target={goal.target_points} />
-      )}
     </section>
   );
 }
