@@ -204,10 +204,10 @@ export const CELEBRATIONS: Celebration[] = [
     id: "bubbles",
     revealsPoints: true,
     hidesStage: true,
-    game: { kind: "score", icon: "🫧", label: "points", lives: 3, start: playBubblesGame },
+    game: { kind: "score", icon: "🫧", label: "points", seconds: 90, start: playBubblesGame },
     name: "Bubble shooter",
     description:
-      "Aim the shooter and let go to fire — three or more bubbles of a color pop, and anything hanging from them drops. The points are on the \"+N\" bubbles. Keep playing: rounds that bring new shapes and special bubbles (rainbow, stone, prize, skull, star, ice, bomb, ghost, lightning, chained); shiny pearls win power shots (fireball, rainbow, bomb, triple) — three lives.",
+      "Aim the shooter and let go to fire — three or more bubbles of a color pop, and anything hanging from them drops. The points are on the \"+N\" bubbles. Keep playing: rounds that bring new shapes and special bubbles (rainbow, stone, prize, skull, star, ice, bomb, ghost, lightning, chained); shiny pearls win power shots (fireball, rainbow, bomb, triple) — 90 seconds.",
     play: playBubbles,
   },
   {

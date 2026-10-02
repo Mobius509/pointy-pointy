@@ -841,20 +841,17 @@ export async function playBubbles(opts: CelebrationOptions): Promise<void> {
   layer.remove();
 }
 
-// "Keep playing", in rounds (bubbleLevels.ts): +1 a bubble popped, +2 for
-// each one dropped, prizes and stones extra. Misses push a new row down;
-// let the bubbles reach the line and you lose a heart (and replay the
-// round). Clearing the board is +10 × the round, and on to the next.
-const LIVES = 3;
+// "Keep playing": 90 seconds (the screen's timer), in rounds
+// (bubbleLevels.ts). +1 a bubble popped, +2 for each one dropped, prizes
+// and stones extra; clearing the board is +10 × the round, and on to the
+// next. Misses push a new row down; let the bubbles reach the line and the
+// round starts over (the time's gone).
 export function playBubblesGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, safe } = createCanvasGame("game");
   let score = 0;
-  let lives = LIVES;
   let round = 1;
-  let over = false;
   let between = false; // the gap between rounds
   const explained = new Set<SpecialKind>();
-  opts.onLives?.(lives);
   let stop = () => layer.remove();
   let hint: HTMLElement | null = hintBubble(layer, "Aim, let go to shoot!", safe.y + safe.h * 0.55);
   let game: Bubbles | null = null;
@@ -883,27 +880,20 @@ export function playBubblesGame(opts: GameOptions): () => void {
       game?.float(`+${r.points}`, r.x, r.y);
     },
     onCleared: () => {
-      if (between || over) return;
+      if (between) return;
       between = true;
       const bonus = 10 * round;
       opts.onScore((score += bonus));
       void playSound("fanfare");
       game?.float(`Round ${round} cleared! +${bonus}`, game.center.x, game.center.y, 22, 1.4);
-      setTimeout(() => !over && begin(round + 1), 1400);
+      setTimeout(() => begin(round + 1), 1400);
     },
     onReachedBottom: () => {
-      if (over || between) return;
+      if (between) return;
+      between = true;
       void playSound("boom");
-      opts.onLives?.(--lives);
-      if (lives <= 0) {
-        over = true;
-        game?.pause();
-        opts.onGameOver?.();
-      } else {
-        between = true;
-        game?.float("Too low! Try again", game.center.x, game.center.y, 22, 1.2);
-        setTimeout(() => !over && begin(round), 900); // same round, fresh board
-      }
+      game?.float("Too low! Start again", game.center.x, game.center.y, 22, 1.2);
+      setTimeout(() => begin(round), 900); // same round, fresh board
     },
   }).then((g) => {
     game = g;
