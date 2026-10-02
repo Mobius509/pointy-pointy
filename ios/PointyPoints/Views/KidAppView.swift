@@ -122,49 +122,78 @@ private struct ArcadeTab<TopBar: View>: View {
     }
 }
 
-/// The floating tab bar: Stats · the big ✓ (Tasks) · Arcade.
+/// The floating tab bar: Stats · the big ✓ (Tasks) · Arcade. A dark bar
+/// with a hump in the middle that holds the big button — custom-drawn
+/// (NavShape), the same shape and colors as the web's KidTabBar.
 private struct TabBar: View {
     @Binding var tab: KidAppView.Tab
 
     var body: some View {
-        HStack(spacing: 12) {
-            side(.stats, "Stats", "IconThumbsUp")
+        ZStack(alignment: .top) {
+            NavShape()
+                .fill(Theme.palette.nav)
+                .shadow(color: .black.opacity(0.25), radius: 10, y: 6)
+            // The bar: Stats on the left, Arcade on the right.
+            HStack {
+                side(.stats, "Stats", "IconThumbsUp", iconFirst: true)
+                Spacer()
+                side(.arcade, "Arcade", "IconGame", iconFirst: false)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 46)
+            .frame(maxHeight: .infinity, alignment: .bottom)
+            // The big ✓ in the hump.
             Button { tab = .tasks } label: {
                 Image(systemName: "checkmark.square.fill")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(Theme.palette.strong, Theme.palette.cardSoft)
                     .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 62, height: 62)
+                    .frame(width: 55, height: 55)
                     .background(Theme.palette.strong, in: Circle())
-                    .overlay(Circle().stroke(Theme.palette.card, lineWidth: tab == .tasks ? 4 : 0))
-                    .shadow(color: Theme.palette.text.opacity(0.25), radius: 6, y: 3)
             }
-            .padding(.vertical, -12)
+            .padding(.top, 5)
             .accessibilityLabel("Tasks")
-            side(.arcade, "Arcade", "IconGame")
+            .accessibilityAddTraits(tab == .tasks ? .isSelected : [])
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(Theme.palette.cardSoft.opacity(0.95), in: Capsule())
-        .overlay(Capsule().stroke(Theme.palette.card, lineWidth: 1))
-        .shadow(color: Theme.palette.text.opacity(0.15), radius: 12, y: 8)
+        .frame(width: 257, height: 67)
     }
 
-    private func side(_ which: KidAppView.Tab, _ label: String, _ icon: String) -> some View {
+    private func side(_ which: KidAppView.Tab, _ label: String, _ icon: String, iconFirst: Bool) -> some View {
         Button { tab = which } label: {
             HStack(spacing: 6) {
-                Image(icon)
-                    .resizable()
-                    .frame(width: 24, height: 24)
-                    .foregroundStyle(Theme.palette.strong)
-                Text(label)
-                    .font(.rounded(13, .semibold))
-                    .foregroundStyle(tab == which ? Theme.palette.textStrong : Theme.palette.text)
+                if iconFirst { Image(icon).resizable().frame(width: 22, height: 22) }
+                Text(label).font(.rounded(14, .bold))
+                if !iconFirst { Image(icon).resizable().frame(width: 22, height: 22) }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(tab == which ? Theme.palette.card : .clear, in: Capsule())
+            .foregroundStyle(Theme.palette.strong)
+            .opacity(tab == which ? 1 : 0.75)
         }
         .accessibilityAddTraits(tab == which ? .isSelected : [])
+    }
+}
+
+/// The tab bar's outline: a 257 × 67 pill-ended bar with a hump in the
+/// middle — the exported design (public/icons/UI_Navigation.svg), scaled to
+/// the frame. Same path as the web.
+struct NavShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let sx = rect.width / 257, sy = rect.height / 67
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: rect.minX + x * sx, y: rect.minY + y * sy) }
+        var path = Path()
+        path.move(to: p(129.193, 0))
+        path.addCurve(to: p(148.387, 7.26088), control1: p(136.554, 0), control2: p(143.274, 2.74226))
+        path.addCurve(to: p(171.638, 19.5967), control1: p(155.113, 13.2039), control2: p(162.663, 19.5967))
+        path.addLine(to: p(233.142, 19.5967))
+        path.addCurve(to: p(256.367, 42.8223), control1: p(245.969, 19.5968), control2: p(256.367, 29.9953))
+        path.addCurve(to: p(233.142, 66.0488), control1: p(256.367, 55.6494), control2: p(245.969, 66.0487))
+        path.addLine(to: p(23.2256, 66.0488))
+        path.addCurve(to: p(0, 42.8223), control1: p(10.3984, 66.0487), control2: p(0, 55.6494))
+        path.addCurve(to: p(23.2256, 19.5967), control1: p(0.000230911, 29.9953), control2: p(10.3986, 19.5968))
+        path.addLine(to: p(84.7295, 19.5967))
+        path.addCurve(to: p(107.98, 7.26088), control1: p(93.7044, 19.5967), control2: p(101.255, 13.2039))
+        path.addCurve(to: p(127.174, 0), control1: p(113.093, 2.74226), control2: p(119.813, 0))
+        path.closeSubpath()
+        return path
     }
 }
 

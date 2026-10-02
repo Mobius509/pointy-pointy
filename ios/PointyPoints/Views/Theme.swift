@@ -25,10 +25,11 @@ struct KidPalette: Equatable {
         "track": (0.8728, 0.0707, 5),
         "text": (0.4871, 0.1933, -2),
         "textStrong": (0.4448, 0.2206, -5),
+        "nav": (0.1422, 0.0687, 0),
     ]
 
     let hue: Int
-    let card, cardInner, cardSoft, strong, strongDeep, track, text, textStrong: Color
+    let card, cardInner, cardSoft, strong, strongDeep, track, text, textStrong, nav: Color
 
     init(hue: Int) {
         let h = ((hue % 360) + 360) % 360
@@ -45,6 +46,7 @@ struct KidPalette: Equatable {
         track = make("track")
         text = make("text")
         textStrong = make("textStrong")
+        nav = make("nav")
     }
 
 

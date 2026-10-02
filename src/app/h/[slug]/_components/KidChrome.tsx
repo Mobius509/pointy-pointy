@@ -38,7 +38,7 @@ export function KidChrome({
           page root the same colors while the kid app is open (not in a
           parent's preview — that would recolor the parent pages). */}
       {!preview && <KidThemeRoot vars={vars} />}
-      <div className={`mx-auto w-full max-w-[440px] px-3 ${embedded ? "pt-3 pb-6" : "pt-4 pb-32"}`}>
+      <div className={`mx-auto w-full max-w-[440px] px-3 ${embedded || preview ? "pt-3 pb-6" : "pt-4 pb-32"}`}>
         {!embedded && (
           <header className="flex items-center justify-between gap-3 px-3 pb-2">
             <span className="text-[13px] font-medium text-kid-strong truncate">{householdName}</span>
@@ -61,8 +61,9 @@ export function KidChrome({
           </header>
         )}
         {children}
+        {preview && <KidTabBar slug={slug} disabled />}
       </div>
-      {!embedded && <KidTabBar slug={slug} disabled={preview} />}
+      {!embedded && !preview && <KidTabBar slug={slug} />}
     </div>
   );
 }

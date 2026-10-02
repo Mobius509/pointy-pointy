@@ -33,6 +33,7 @@ const config: Config = {
           track: "rgb(var(--kid-track) / <alpha-value>)",
           text: "rgb(var(--kid-text) / <alpha-value>)",
           "text-strong": "rgb(var(--kid-text-strong) / <alpha-value>)",
+          nav: "rgb(var(--kid-nav) / <alpha-value>)",
         },
       },
       fontFamily: {

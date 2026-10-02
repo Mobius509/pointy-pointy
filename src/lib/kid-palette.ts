@@ -26,6 +26,7 @@ export const KID_TOKENS = {
   track: { l: 0.8728, c: 0.0707, dh: 5 }, // soft accents
   text: { l: 0.4871, c: 0.1933, dh: -2 }, // body text, filled dots
   textStrong: { l: 0.4448, c: 0.2206, dh: -5 }, // big numbers
+  nav: { l: 0.1422, c: 0.0687, dh: 0 }, // the dark tab bar
 } as const;
 
 export type KidToken = keyof typeof KID_TOKENS;

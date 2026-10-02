@@ -51,6 +51,7 @@
   --kid-track: 227 201 249; /* #E3C9F9 soft accents */
   --kid-text: 118 55 184; /* #7637B8 body text, filled dots */
   --kid-text-strong: 105 25 185; /* #6919B9 big numbers */
+  --kid-nav: 16 1 32; /* #100120 the dark tab bar */
 }
 
 html,
