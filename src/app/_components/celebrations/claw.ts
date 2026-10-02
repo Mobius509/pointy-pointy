@@ -311,6 +311,28 @@ async function createClaw(
     );
   };
 
+  // Bomb: it takes out one of the pearls in the pile too.
+  const bombPearl = () => {
+    const pearls = balls.filter((b) => b.special);
+    if (!pearls.length) return;
+    const b = pearls[Math.floor(Math.random() * pearls.length)];
+    setTimeout(() => {
+      const at = balls.indexOf(b);
+      if (at < 0) return;
+      balls.splice(at, 1);
+      M.Composite.remove(engine.world, b.body);
+      // Knock its neighbours away from the blast.
+      for (const o of balls) {
+        const dx = o.body.position.x - b.body.position.x;
+        const dy = o.body.position.y - b.body.position.y;
+        const d = Math.hypot(dx, dy);
+        if (d < r * 4 && d > 0) M.Body.setVelocity(o.body, { x: (dx / d) * 9, y: (dy / d) * 9 - 4 });
+      }
+      sparkle(b.body.position.x, b.body.position.y);
+      void playSound("explode");
+    }, 450);
+  };
+
   const drop = () => {
     if (state !== "roam") return false;
     state = "down";
@@ -455,7 +477,10 @@ async function createClaw(
             dropping = null;
             if (won) {
               shown = { ball, prize: won, t: 0 };
-              if (won.kind === "bomb" || won.kind === "death") void playSound("boom");
+              if (won.kind === "bomb" || won.kind === "death") {
+                void playSound("boom");
+                if (won.kind === "bomb") bombPearl();
+              }
               else if (won.kind === "blast") blast(won.count);
               else if (won.kind === "shake") shake();
               else if (won.kind === "sneaky") void playSound("pop");
