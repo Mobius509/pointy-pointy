@@ -153,7 +153,7 @@ async function createClaw(
     for (let i = 0; i < count; i++) addBall(rand(pileLeft + r + 10, area.x + area.w - r - 4), fromY - i * r * 2.2);
   };
   // Start with a settled pile.
-  fill(10, floorY - r * 3);
+  fill(18, floorY - r * 3);
   for (let i = 0; i < 180; i++) M.Engine.update(engine, 1000 / 60);
 
   // The claw.
@@ -173,6 +173,28 @@ async function createClaw(
 
   const hubTop = () => railY + roofH + rod;
   const grabPoint = () => ({ x, y: hubTop() + GRAB_BELOW_HUB * k });
+
+  // The arm tips are solid: on the way down they shove the balls beside
+  // the claw out of the way (the one lined up between them isn't pushed).
+  // Parked off-screen while the claw is up at the top.
+  const tipR = r * 0.35;
+  const tips = [-1, 1].map(() => M.Bodies.circle(-500, -500, tipR, { isStatic: true, friction: 0.1 }));
+  M.Composite.add(engine.world, tips);
+  // Moved by hand with their velocity filled in, so they push (see stack.ts).
+  const setPosition = M.Body.setPosition as (b: MatterNS.Body, p: MatterNS.Vector, updateVelocity?: boolean) => void;
+  let tipsLow = false;
+  const placeTips = () => {
+    const low = state === "down" || state === "grab" || state === "up";
+    const g = grabPoint();
+    tips.forEach((tip, i) => {
+      const side = i === 0 ? -1 : 1;
+      const at = low ? { x: x + side * r * (1.15 + open * 1.1), y: g.y + r * 0.55 } : { x: -500 - i * 50, y: -500 };
+      // Only carry speed while they're moving with the claw — not on the
+      // jump in from (or out to) the parking spot.
+      setPosition(tip, at, low && tipsLow);
+    });
+    tipsLow = low;
+  };
 
   // Shake-up: the whole pile jumps and lands somewhere new.
   const shake = () => {
@@ -209,6 +231,7 @@ async function createClaw(
     roamSpeed = 120 + speedUp;
     const ms = Math.min(dt, 1 / 20) * 1000;
     if (ms > 0) {
+      placeTips();
       M.Engine.update(engine, ms / 2);
       M.Engine.update(engine, ms / 2);
     }
@@ -315,7 +338,7 @@ async function createClaw(
     }
     if (shown && (shown.t += dt) > 1.6) shown = null;
     // Keep the pile topped up.
-    if (balls.length + (held ? 1 : 0) < 7) fill(1, area.y + area.h * 0.35);
+    if (balls.length + (held ? 1 : 0) < 14) fill(1, area.y + area.h * 0.35);
   };
 
   const drawBall = (b: Ball, bx: number, by: number, angle = 0) => {
