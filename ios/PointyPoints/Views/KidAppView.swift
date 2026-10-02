@@ -142,16 +142,17 @@ private struct TabBar: View {
             .padding(.horizontal, 16)
             .frame(height: 46)
             .frame(maxHeight: .infinity, alignment: .bottom)
-            // The big ✓ in the hump.
+            // The big ✓ fills the hump.
             Button { tab = .tasks } label: {
                 Image(systemName: "checkmark.square.fill")
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(Theme.palette.strong, Theme.palette.cardSoft)
-                    .font(.system(size: 26, weight: .semibold))
-                    .frame(width: 55, height: 55)
+                    .font(.system(size: 28, weight: .semibold))
+                    .frame(width: 59, height: 59)
                     .background(Theme.palette.strong, in: Circle())
             }
-            .padding(.top, 5)
+            .padding(.top, 3)
+            .offset(x: 128.18 - 257 / 2) // centered on the hump's peak
             .accessibilityLabel("Tasks")
             .accessibilityAddTraits(tab == .tasks ? .isSelected : [])
         }
@@ -181,17 +182,18 @@ struct NavShape: Shape {
         func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: rect.minX + x * sx, y: rect.minY + y * sy) }
         var path = Path()
         path.move(to: p(129.193, 0))
-        path.addCurve(to: p(148.387, 7.26088), control1: p(136.554, 0), control2: p(143.274, 2.74226))
-        path.addCurve(to: p(171.638, 19.5967), control1: p(155.113, 13.2039), control2: p(162.663, 19.5967))
-        path.addLine(to: p(233.142, 19.5967))
-        path.addCurve(to: p(256.367, 42.8223), control1: p(245.969, 19.5968), control2: p(256.367, 29.9953))
-        path.addCurve(to: p(233.142, 66.0488), control1: p(256.367, 55.6494), control2: p(245.969, 66.0487))
-        path.addLine(to: p(23.2256, 66.0488))
-        path.addCurve(to: p(0, 42.8223), control1: p(10.3984, 66.0487), control2: p(0, 55.6494))
-        path.addCurve(to: p(23.2256, 19.5967), control1: p(0.000230911, 29.9953), control2: p(10.3986, 19.5968))
-        path.addLine(to: p(84.7295, 19.5967))
-        path.addCurve(to: p(107.98, 7.26088), control1: p(93.7044, 19.5967), control2: p(101.255, 13.2039))
-        path.addCurve(to: p(127.174, 0), control1: p(113.093, 2.74226), control2: p(119.813, 0))
+        path.addCurve(to: p(148.387, 7.26144), control1: p(136.554, 0), control2: p(143.274, 2.74254))
+        path.addCurve(to: p(171.638, 19.5977), control1: p(155.113, 13.2047), control2: p(162.663, 19.5977))
+        path.addLine(to: p(233.142, 19.5977))
+        path.addCurve(to: p(256.367, 42.8232), control1: p(245.969, 19.5978), control2: p(256.367, 29.9963))
+        path.addCurve(to: p(233.142, 66.0498), control1: p(256.367, 55.6504), control2: p(245.969, 66.0497))
+        path.addLine(to: p(23.2256, 66.0498))
+        path.addCurve(to: p(0, 42.8232), control1: p(10.3985, 66.0497), control2: p(0, 55.6504))
+        path.addCurve(to: p(23.2256, 19.5977), control1: p(0.00023, 29.9963), control2: p(10.3986, 19.5978))
+        path.addLine(to: p(84.7292, 19.5977))
+        path.addCurve(to: p(107.98, 7.26144), control1: p(93.7043, 19.5977), control2: p(101.254, 13.2047))
+        path.addCurve(to: p(127.174, 0), control1: p(113.093, 2.74253), control2: p(119.813, 0))
+        path.addLine(to: p(129.193, 0))
         path.closeSubpath()
         return path
     }

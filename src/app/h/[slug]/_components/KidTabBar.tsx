@@ -9,7 +9,7 @@ import { ArcadeIcon, CheckIcon, StatsIcon } from "./KidIcons";
 // button — the exported shape (public/icons/UI_Navigation.svg, 257 × 67).
 // The iOS app draws the same path (NavShape in KidAppView.swift).
 const NAV_PATH =
-  "M129.193 0C136.554 4.63221e-08 143.274 2.74226 148.387 7.26088C155.113 13.2039 162.663 19.5967 171.638 19.5967H233.142C245.969 19.5968 256.367 29.9953 256.367 42.8223C256.367 55.6494 245.969 66.0487 233.142 66.0488H23.2256C10.3984 66.0487 0 55.6494 0 42.8223C0.000230911 29.9953 10.3986 19.5968 23.2256 19.5967H84.7295C93.7044 19.5967 101.255 13.2039 107.98 7.26088C113.093 2.74226 119.813 4.63221e-08 127.174 0H129.193Z";
+  "M129.193 0C136.554 8.57418e-06 143.274 2.74254 148.387 7.26144C155.113 13.2047 162.663 19.5977 171.638 19.5977H233.142C245.969 19.5978 256.367 29.9963 256.367 42.8232C256.367 55.6504 245.969 66.0497 233.142 66.0498H23.2256C10.3985 66.0497 2.98953e-05 55.6504 0 42.8232C0.000230911 29.9963 10.3986 19.5978 23.2256 19.5977H84.7292C93.7043 19.5977 101.254 13.2047 107.98 7.26144C113.093 2.74253 119.813 4.63221e-08 127.174 0H129.193Z";
 
 // `disabled` (a parent's preview): shown at the end of the page rather than
 // floating, and the tabs don't go anywhere.
@@ -42,8 +42,8 @@ export function KidTabBar({ slug, disabled = false }: { slug: string; disabled?:
   };
 
   const center = (
-    <span className="grid size-[55px] place-items-center rounded-full bg-kid-strong text-kid-card-soft">
-      <CheckIcon className="size-7" />
+    <span className="grid size-[59px] place-items-center rounded-full bg-kid-strong text-kid-card-soft">
+      <CheckIcon className="size-[30px]" />
     </span>
   );
 
@@ -62,8 +62,8 @@ export function KidTabBar({ slug, disabled = false }: { slug: string; disabled?:
           {side(base, "Stats", StatsIcon, true)}
           {side(arcade, "Arcade", ArcadeIcon, false)}
         </div>
-        {/* The big ✓ sits in the hump. */}
-        <div className="absolute left-1/2 top-[5px] -translate-x-1/2">
+        {/* The big ✓ fills the hump (centered on its peak, x 128.18). */}
+        <div className="absolute left-[128.18px] top-[3px] -translate-x-1/2">
           {disabled ? (
             center
           ) : (
