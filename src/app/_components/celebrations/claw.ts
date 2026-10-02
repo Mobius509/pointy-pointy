@@ -8,8 +8,8 @@ import { playSound } from "./sounds";
 import { loadMatter } from "./stack";
 
 // Claw machine: the claw glides back and forth on its own — tap to drop
-// it. It grabs the ball under it (near the middle always holds; well off
-// to the side it may miss or slip), carries it to the prize chute, and the ball pops open: an
+// it. It only catches a ball that's lined up under it (off to the side is
+// a miss), carries it to the prize chute, and the ball pops open: an
 // emoji and some points. Balls are a physics pile (matter-js).
 
 // The claw artwork, all at the same scale (sizes in art pixels).
@@ -42,7 +42,7 @@ export type Prize =
   | { kind: "death" }
   | { kind: "blast"; count: number; points: number }
   | { kind: "golden" } // next points prize doubled
-  | { kind: "magnet" } // next grab can't miss or slip
+  | { kind: "magnet" } // next grab reaches twice as far
   | { kind: "slow" } // claw slows down for the next 2 drops
   | { kind: "shake" } // the pile jumps and reshuffles
   | { kind: "sneaky" } // a decoy — nothing inside
@@ -66,7 +66,7 @@ function prizeLook(p: Prize): { icon: string; text: string } {
     case "golden":
       return { icon: "⭐", text: "Next one ×2!" };
     case "magnet":
-      return { icon: "🧲", text: "Can't miss next!" };
+      return { icon: "🧲", text: "Magnet grab next!" };
     case "slow":
       return { icon: "🐌", text: "Slow-mo!" };
     case "shake":
@@ -164,7 +164,9 @@ async function createClaw(
   let open = 0.15; // arm swing (radians)
   let timer = 0;
   let held: Ball | null = null;
-  let slipAt = -1; // rod length at which a loose grab lets go
+  // Where a just-caught ball was, relative to the claw — it slides into
+  // place instead of jumping.
+  let heldFrom = { x: 0, y: 0 };
   let dropping: { y: number; vy: number; ball: Ball } | null = null;
   let shown: { ball: Ball; prize: Prize; t: number } | null = null;
   let roamSpeed = 120;
@@ -177,7 +179,7 @@ async function createClaw(
     void playSound("thud");
     for (const b of balls) M.Body.setVelocity(b.body, { x: rand(-6, 6), y: rand(-14, -8) });
   };
-  let magnet = false; // the next grab can't miss or slip
+  let magnet = false; // the next grab reaches twice as far
   let badges: string[] = []; // little icons for what's active (⭐ 🧲 🐌)
 
   // Super bonus: a few balls in the pile burst, one after another.
@@ -238,22 +240,19 @@ async function createClaw(
         timer += dt;
         open = 0.55 * Math.max(0, 1 - timer / 0.35);
         if (timer >= 0.35) {
+          // Only a ball lined up under the claw gets caught: within about
+          // half a ball's width of center (wider with the 🧲 magnet). Off to
+          // the side is just a miss — and once caught, it stays caught.
+          const reach = r * (magnet ? 1.1 : 0.55);
           const near = balls
-            .map((b) => ({ b, d: Math.hypot(b.body.position.x - g.x, b.body.position.y - g.y) }))
-            .filter((n) => n.d < r * 1.3)
-            .sort((a, b) => a.d - b.d)[0];
+            .filter((b) => Math.abs(b.body.position.x - x) < reach && Math.abs(b.body.position.y - g.y) < r * 1.2)
+            .sort((a, b) => Math.abs(a.body.position.x - x) - Math.abs(b.body.position.x - x))[0];
           if (near) {
-            // How far off center it is (0 = dead center, 1 = a ball's width
-            // over). Near the middle always holds; well off to the side
-            // might miss, or slip out on the way up.
-            const off = magnet ? 0 : Math.abs(near.b.body.position.x - x) / r;
-            if (off < 0.48 || Math.random() > (off - 0.48) * 1.8) {
-              held = near.b;
-              M.Composite.remove(engine.world, held.body);
-              balls.splice(balls.indexOf(held), 1);
-              void playSound("thud");
-              slipAt = Math.random() < Math.max(0, off - 0.44) * 1.4 ? rod * 0.5 : -1;
-            }
+            held = near;
+            heldFrom = { x: near.body.position.x - g.x, y: near.body.position.y - g.y };
+            M.Composite.remove(engine.world, near.body);
+            balls.splice(balls.indexOf(near), 1);
+            void playSound("thud");
           }
           magnet = false;
           state = "up";
@@ -262,16 +261,6 @@ async function createClaw(
       }
       case "up": {
         rod = Math.max(restRod, rod - 240 * dt);
-        if (held && slipAt > 0 && rod <= slipAt) {
-          // Slipped out!
-          const b = held;
-          held = null;
-          M.Body.setPosition(b.body, g);
-          M.Body.setVelocity(b.body, { x: 0, y: 0 });
-          M.Composite.add(engine.world, b.body);
-          balls.push(b);
-          void playSound("pop");
-        }
         if (rod <= restRod) state = held ? "carry" : "roam";
         break;
       }
@@ -382,7 +371,11 @@ async function createClaw(
     part("rod", x - (ART.rod.w * k) / 2, railY - 10 + roofH - tuck, ART.rod.w * k, rod + tuck + 16);
     part("roof", x - (ART.roof.w * k) / 2, railY - 10);
     const g = grabPoint();
-    if (held) drawBall(held, g.x, g.y);
+    if (held) {
+      heldFrom.x *= 0.82;
+      heldFrom.y *= 0.82;
+      drawBall(held, g.x + heldFrom.x, g.y + heldFrom.y);
+    }
     const hubLeft = x - (ART.hub.w * k) / 2;
     const wobble = state === "roam" ? Math.sin(time * 4) * 0.03 : 0;
     // side -1 = left arm, 1 = right arm (the left art mirrored).
