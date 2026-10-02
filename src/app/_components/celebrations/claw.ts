@@ -189,7 +189,6 @@ async function createClaw(
   // The starting pile: neat staggered rows from the floor up, a little
   // jitter, then let it settle before anyone sees it.
   const startPile = (count: number) => {
-    const across = Math.max(1, Math.floor((right - left) / (r * 2.1)) + 1);
     for (let i = 0; i < count; i++) {
       const row = Math.floor(i / across);
       const col = i % across;
@@ -202,6 +201,7 @@ async function createClaw(
     const y = area.y + area.h * 0.35;
     for (let tries = 0; tries < 6; tries++) {
       const bx = rand(left, right);
+      if (Math.abs(bx - x) < clawHalf + r) continue;
       if (balls.every((b) => Math.hypot(b.body.position.x - bx, b.body.position.y - y) > r * 2.3)) {
         addBall(bx, y);
         return;
@@ -218,7 +218,9 @@ async function createClaw(
         M.Body.setVelocity(b.body, { x: v.x * f, y: v.y * f });
       }
   };
-  startPile(18);
+  // Two rows' worth for the screen width (about 10 on a phone, up to 18).
+  const across = Math.max(1, Math.floor((right - left) / (r * 2.1)) + 1);
+  startPile(Math.max(8, Math.min(18, across * 2)));
   for (let i = 0; i < 360; i++) {
     M.Engine.update(engine, 1000 / 60);
     calm();
@@ -556,8 +558,8 @@ async function createClaw(
         balls.splice(i, 1);
       }
     }
-    // Keep the pile topped up.
-    if (balls.length + (held ? 1 : 0) < 14) dropIn();
+    // Only if the pile is nearly gone does a ball drop in — away from the claw.
+    if (balls.length + (held ? 1 : 0) + toDrop.length + (dropping ? 1 : 0) < 3) dropIn();
   };
 
   const drawBall = (b: Ball, bx: number, by: number, angle = 0) => {
