@@ -29,3 +29,12 @@ fix, rule or piece of copy that changes on one should change on the other.
   (`/h/<slug>/arcade`) in a signed-in web view (`WebPlayView`, via
   `/api/v2/kid/web-session`) until native versions are built. Goal: native
   parity later.
+
+## 2. Live and in-progress work stay on separate branches
+
+- **`main` is the live site** — pushing it deploys. It only gets finished,
+  verified work, with a go-ahead.
+- **Big in-progress work gets its own branch** (kid app 2.0: `kid-app-2`), so
+  it never rides along with a live fix.
+- **A fix for the live site** branches from `main`, ships to `main`, then
+  `main` is merged into the in-progress branch so nothing drifts.
