@@ -125,14 +125,14 @@ export function CelebrationScreen({
   const endRound = () => {
     stopGame.current();
     setTimesUp(true);
-    void playSound("fanfare");
+    void playSound("cheer");
     const final = scoreRef.current;
     if (!onSubmitHighScore || final <= 0) return;
     void onSubmitHighScore(effect.id, final).then((res) => {
       if (!res) return;
       setBest(res.best);
       setNewBest(res.isNew);
-      if (res.isNew) void playSound("cheer");
+      if (res.isNew) void playSound("yay"); // on top of the end-of-round sound
     });
   };
   const stopGame = useRef<() => void>(() => {});

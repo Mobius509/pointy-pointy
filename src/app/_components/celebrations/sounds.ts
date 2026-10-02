@@ -5,19 +5,20 @@
 // effects can play sounds at any moment (e.g. the high-five smack).
 // Muting is a per-device choice kept in browser storage.
 
+const YAYS = [
+  "/sounds/cheer-group-yay.m4a",
+  "/sounds/cheer-funny-yay.m4a",
+  "/sounds/cheer-yay.m4a",
+  "/sounds/cheer-woohoo.m4a",
+  "/sounds/cheer-woohoo-cartoon.m4a",
+  "/sounds/cheer-joyful.m4a",
+];
+const FANFARES = ["/sounds/fanfare.m4a", "/sounds/fanfare-2.m4a", "/sounds/fanfare-3.m4a"];
+
 const SOUNDS = {
-  cheer: [
-    "/sounds/cheer-group-yay.m4a",
-    "/sounds/cheer-funny-yay.m4a",
-    "/sounds/cheer-yay.m4a",
-    "/sounds/cheer-woohoo.m4a",
-    "/sounds/cheer-woohoo-cartoon.m4a",
-    "/sounds/cheer-joyful.m4a",
-    "/sounds/fanfare.m4a",
-    "/sounds/fanfare-2.m4a",
-    "/sounds/fanfare-3.m4a",
-  ],
-  fanfare: ["/sounds/fanfare.m4a", "/sounds/fanfare-2.m4a", "/sounds/fanfare-3.m4a"],
+  cheer: [...YAYS, ...FANFARES], // any happy sound
+  yay: YAYS, // just the voices
+  fanfare: FANFARES,
   pop: ["/sounds/pop-cracker.m4a", "/sounds/pop-balloons.m4a"],
   boom: ["/sounds/boom.m4a"],
   laser: ["/sounds/laser.m4a", "/sounds/laser-2.m4a"],
@@ -35,7 +36,7 @@ const SOUNDS = {
 
 export type SoundKind = keyof typeof SOUNDS;
 
-const VOLUME: Record<SoundKind, number> = { cheer: 0.9, pop: 0.8, boom: 0.6, laser: 0.5, ow: 0.9, fanfare: 0.8, explode: 0.7, thud: 0.9, powerUp: 0.7, waka: 0.6, flap: 0.8, clawDown: 0.7, clawOpen: 0.7, clawMove: 0.45, whoops: 0.8 };
+const VOLUME: Record<SoundKind, number> = { cheer: 0.9, yay: 0.9, pop: 0.8, boom: 0.6, laser: 0.5, ow: 0.9, fanfare: 0.8, explode: 0.7, thud: 0.9, powerUp: 0.7, waka: 0.6, flap: 0.8, clawDown: 0.7, clawOpen: 0.7, clawMove: 0.45, whoops: 0.8 };
 const MUTE_KEY = "pp:sound-muted";
 
 let ctx: AudioContext | null = null;
