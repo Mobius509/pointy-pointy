@@ -10,6 +10,8 @@ const BIRD_SRC = "/anims/bird.webp";
 const WING_SRC = "/anims/bird-wing.webp";
 const PIPE_SRC = "/anims/pipe.webp";
 const CLOUD_SRCS = ["/anims/cloud-1.webp", "/anims/cloud-2.webp"];
+const COIN_SRC = "/anims/coin.webp";
+const COIN_ASPECT = 125 / 120;
 const BIRD_ASPECT = 217 / 240; // height / width
 const WING_ASPECT = 162 / 140;
 // The wing, as in the reference art: 54% of the bird's width, its base (the
@@ -32,19 +34,37 @@ type Art = {
   bird: HTMLImageElement | null;
   wing: HTMLImageElement | null;
   pipe: HTMLImageElement | null;
+  coin: HTMLImageElement | null;
   clouds: HTMLImageElement[];
 };
+type Coin = { x: number; y: number };
 type Cloud = { x: number; y: number; w: number; speed: number; img: number };
 type Bird = { x: number; y: number; vy: number; flapAt: number; hurt: number };
 type Pipe = { x: number; gapY: number; gap: number; passed: boolean; label?: number };
 
 const loadArt = async (): Promise<Art> => {
-  const [bird, wing, pipe, ...clouds] = await Promise.all(
-    [BIRD_SRC, WING_SRC, PIPE_SRC, ...CLOUD_SRCS].map((s) => loadImage(s)),
+  const [bird, wing, pipe, coin, ...clouds] = await Promise.all(
+    [BIRD_SRC, WING_SRC, PIPE_SRC, COIN_SRC, ...CLOUD_SRCS].map((s) => loadImage(s)),
   );
-  return { bird, wing, pipe, clouds: clouds.filter(Boolean) as HTMLImageElement[] };
+  return { bird, wing, pipe, coin, clouds: clouds.filter(Boolean) as HTMLImageElement[] };
 };
-const noArt: Art = { bird: null, wing: null, pipe: null, clouds: [] };
+const noArt: Art = { bird: null, wing: null, pipe: null, coin: null, clouds: [] };
+
+// A spinning coin (it flips side to side).
+function drawCoin(ctx: CanvasRenderingContext2D, art: Art, c: Coin, size: number, time: number) {
+  const flip = Math.max(0.15, Math.abs(Math.cos(time * 3 + c.x * 0.01)));
+  ctx.save();
+  ctx.translate(c.x, c.y);
+  ctx.scale(flip, 1);
+  if (art.coin) ctx.drawImage(art.coin, -size / 2, (-size * COIN_ASPECT) / 2, size, size * COIN_ASPECT);
+  else {
+    ctx.fillStyle = color("party-yellow");
+    ctx.beginPath();
+    ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
 
 // A few clouds drifting slowly behind everything (a little parallax).
 function makeClouds(area: Area): Cloud[] {
@@ -268,7 +288,8 @@ export async function playFlappy(opts: CelebrationOptions): Promise<void> {
 }
 
 // "Keep playing": classic flappy — tap to flap through the gaps, +1 per
-// pipe. Gaps narrow and pipes speed up as it goes. Three lives: hitting a
+// pipe and +1 per coin (one floats between each pair of pipes, on the way
+// from one gap to the next). Gaps narrow and pipes speed up as it goes. Three lives: hitting a
 // pipe or the ground costs one (then a moment to recover).
 export function playFlappyGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, area, safe } = createCanvasGame("game");
@@ -278,6 +299,8 @@ export function playFlappyGame(opts: GameOptions): () => void {
   const r = size * 0.36;
   const bird: Bird = { x: W * 0.28, y: safe.y + safe.h * 0.45, vy: 0, flapAt: -1, hurt: 0 };
   const pipes: Pipe[] = [];
+  const coins: Coin[] = [];
+  const coinSize = 34;
   const clouds = makeClouds(area);
   const hint = hintBubble(layer, "Tap to flap!", safe.y + 16);
   let started = false;
@@ -318,7 +341,22 @@ export function playFlappyGame(opts: GameOptions): () => void {
       const gap = Math.max(160, 230 - elapsed * 2);
       if (fall(bird, dt, area.y, area.y + area.h, r) && bird.hurt === 0 && hurt()) return false;
       const last = pipes[pipes.length - 1];
-      if (!last || last.x < W - 240) pipes.push({ x: W + 20, gapY: randomGap(safe, gap), gap, passed: false });
+      if (!last || last.x < W - 260) {
+        const next: Pipe = { x: W + 20, gapY: randomGap(safe, gap), gap, passed: false };
+        // A coin in the open space between this pipe and the last one.
+        if (last) coins.push({ x: (last.x + PIPE_W + next.x) / 2, y: (last.gapY + next.gapY) / 2 });
+        pipes.push(next);
+      }
+      for (let i = coins.length - 1; i >= 0; i--) {
+        const c = coins[i];
+        c.x -= speed * dt;
+        if (Math.hypot(c.x - bird.x, c.y - bird.y) < r + coinSize / 2) {
+          coins.splice(i, 1);
+          opts.onScore(++score);
+          void playSound("waka", 0);
+          sparkle(c.x, c.y);
+        } else if (c.x < -coinSize) coins.splice(i, 1);
+      }
       for (const p of pipes) {
         p.x -= speed * dt;
         if (bird.hurt === 0 && hits(bird, r, p) && hurt()) return false;
@@ -333,6 +371,7 @@ export function playFlappyGame(opts: GameOptions): () => void {
     ctx.clearRect(0, 0, W, H);
     driftClouds(ctx, art, clouds, area, dt);
     pipes.forEach((p) => drawPipe(ctx, art, p, area.y, area.y + area.h));
+    coins.forEach((c) => drawCoin(ctx, art, c, coinSize, time));
     drawBird(ctx, art, bird, size, time);
   });
 

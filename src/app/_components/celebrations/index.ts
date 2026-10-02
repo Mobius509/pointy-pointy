@@ -164,9 +164,9 @@ export const CELEBRATIONS: Celebration[] = [
     id: "flappy",
     revealsPoints: true,
     hidesStage: true,
-    game: { kind: "score", icon: "🐦", label: "pipes", lives: 3, start: playFlappyGame },
+    game: { kind: "score", icon: "🐦", label: "points", lives: 3, start: playFlappyGame },
     name: "Flappy bird",
-    description: "Tap to flap through the gaps to grab the points. Keep playing: how many pipes can you clear? Three lives.",
+    description: "Tap to flap through the gaps to grab the points. Keep playing: clear pipes and grab coins (+1 each). Three lives.",
     play: playFlappy,
   },
   {
