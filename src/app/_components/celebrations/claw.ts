@@ -31,8 +31,15 @@ const BALL_SRCS = ["/anims/orb-red.webp", "/anims/orb-pearl.webp"];
 
 type Ball = { body: MatterNS.Body; look: number; emoji: number };
 // What a won ball turns out to be: points (an emoji prize), a bomb that
-// knocks points off, or an extra try.
-export type Prize = { kind: "points"; points: number } | { kind: "bomb"; points: number } | { kind: "try" };
+// knocks points off, an extra try — or the rare ones: a skull (game over on
+// the spot) and a super bonus that blasts a few balls out of the pile for
+// their points.
+export type Prize =
+  | { kind: "points"; points: number }
+  | { kind: "bomb"; points: number }
+  | { kind: "try" }
+  | { kind: "death" }
+  | { kind: "blast"; count: number; points: number };
 type State = "roam" | "down" | "grab" | "up" | "carry" | "release" | "prize";
 type Images = {
   parts: Record<keyof typeof ART, HTMLImageElement | null>;
@@ -127,6 +134,22 @@ async function createClaw(
 
   const hubTop = () => railY + roofH + rod;
   const grabPoint = () => ({ x, y: hubTop() + GRAB_BELOW_HUB * k });
+
+  // Super bonus: a few balls in the pile burst, one after another.
+  const blast = (count: number) => {
+    void playSound("boom");
+    const picks = [...balls].sort(() => Math.random() - 0.5).slice(0, count);
+    picks.forEach((b, i) =>
+      setTimeout(() => {
+        const at = balls.indexOf(b);
+        if (at < 0) return;
+        balls.splice(at, 1);
+        M.Composite.remove(engine.world, b.body);
+        sparkle(b.body.position.x, b.body.position.y);
+        void playSound("pop");
+      }, 150 + i * 220),
+    );
+  };
 
   const drop = () => {
     if (state !== "roam") return false;
@@ -230,7 +253,8 @@ async function createClaw(
             dropping = null;
             if (won) {
               shown = { ball, prize: won, t: 0 };
-              if (won.kind === "bomb") void playSound("boom");
+              if (won.kind === "bomb" || won.kind === "death") void playSound("boom");
+              else if (won.kind === "blast") blast(won.count);
               else {
                 sparkle(chuteX, floorY - r * 2);
                 void playSound("powerUp");
@@ -339,9 +363,17 @@ async function createClaw(
         ctx.font = `${Math.round(size * 0.8)}px system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "alphabetic";
-        ctx.fillText(won.kind === "bomb" ? "💣" : "❤️", chuteX, y - size * 0.15);
+        const icon = { bomb: "💣", try: "❤️", death: "💀", blast: "💥" }[won.kind];
+        ctx.fillText(icon, chuteX, y - size * 0.15);
       }
-      const text = won.kind === "try" ? "+1 try" : won.kind === "bomb" ? `−${won.points}` : `+${won.points}`;
+      const text =
+        won.kind === "try"
+          ? "+1 try"
+          : won.kind === "bomb"
+            ? `−${won.points}`
+            : won.kind === "death"
+              ? "Game over!"
+              : `+${won.points}`;
       drawLabel(ctx, text, chuteX + size * 0.6, y - size * 0.85, 28);
       ctx.restore();
     }
@@ -406,8 +438,10 @@ export async function playClaw(opts: CelebrationOptions): Promise<void> {
 }
 
 // "Keep playing": five tries. Each ball won pops open into points (1–5,
-// bigger ones rarer), a bomb (−3 points), or an extra try. The claw speeds
-// up as you go; the game's over when the tries run out.
+// bigger ones rarer), a bomb (−3 points), an extra try — or, rarely, a
+// skull (game over on the spot) or a super bonus (blasts 3 balls out of
+// the pile, 1–4 points each). The claw speeds up as you go; the game's
+// over when the tries run out.
 const TRIES = 5;
 export function playClawGame(opts: GameOptions): () => void {
   const { layer, ctx, W, H, safe } = createCanvasGame("game");
@@ -420,13 +454,19 @@ export function playClawGame(opts: GameOptions): () => void {
   const hint = hintBubble(layer, "Tap to drop the claw!", safe.y + safe.h * 0.42);
   const prize = (): Prize => {
     const roll = Math.random();
-    if (roll < 0.15) return { kind: "bomb", points: 3 };
-    if (roll < 0.3) return { kind: "try" };
+    if (roll < 0.04) return { kind: "death" };
+    if (roll < 0.1) {
+      const each = Array.from({ length: 3 }, () => 1 + Math.floor(Math.random() * 4));
+      return { kind: "blast", count: 3, points: each.reduce((a, b) => a + b, 0) };
+    }
+    if (roll < 0.25) return { kind: "bomb", points: 3 };
+    if (roll < 0.38) return { kind: "try" };
     const p = Math.random();
     return { kind: "points", points: p < 0.5 ? 1 : p < 0.75 ? 2 : p < 0.9 ? 3 : 5 };
   };
   const onWon = (won: Prize) => {
-    if (won.kind === "points") opts.onScore((score += won.points));
+    if (won.kind === "points" || won.kind === "blast") opts.onScore((score += won.points));
+    if (won.kind === "death") opts.onLives?.((tries = 0));
     if (won.kind === "bomb") opts.onScore((score = Math.max(0, score - won.points)));
     if (won.kind === "try") opts.onLives?.(++tries);
   };
