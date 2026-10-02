@@ -29,7 +29,9 @@ const GRAB_BELOW_HUB = 140; // where a held ball sits, below the hub's top (art 
 const BALL_RADIUS = 40; // art px — fits inside the closed claw
 const BALL_SRCS = ["/anims/orb-red.webp", "/anims/orb-pearl.webp"];
 
-type Ball = { body: MatterNS.Body; look: number; emoji: number };
+// `special`: a pearl — the bonus balls, with a rainbow sheen.
+type Ball = { body: MatterNS.Body; look: number; emoji: number; special: boolean };
+const PEARL_CHANCE = 1 / 6;
 // What a won ball turns out to be: points (an emoji prize), a bomb that
 // knocks points off, an extra try — or the rare ones: a skull (game over on
 // the spot) and a super bonus that blasts a few balls out of the pile for
@@ -80,7 +82,8 @@ function prizeLook(p: Prize): { icon: string; text: string } {
 type State = "roam" | "down" | "grab" | "up" | "carry" | "release" | "prize";
 type Images = {
   parts: Record<keyof typeof ART, HTMLImageElement | null>;
-  balls: (HTMLImageElement | HTMLCanvasElement)[];
+  balls: (HTMLImageElement | HTMLCanvasElement)[]; // the colored ones
+  pearl: HTMLImageElement | null;
   emojis: (HTMLImageElement | null)[];
 };
 
@@ -94,8 +97,7 @@ async function loadImages(): Promise<Images> {
   ]);
   const balls: (HTMLImageElement | HTMLCanvasElement)[] = [];
   if (red) for (const t of TINTS) balls.push(tinted(red, t));
-  if (pearl) balls.push(pearl);
-  return { parts: Object.fromEntries(keys.map((k, i) => [k, parts[i]])) as Images["parts"], balls, emojis };
+  return { parts: Object.fromEntries(keys.map((k, i) => [k, parts[i]])) as Images["parts"], balls, pearl, emojis };
 }
 
 const sparkle = (x: number, y: number) =>
@@ -115,7 +117,7 @@ async function createClaw(
   W: number,
   H: number,
   area: Area,
-  prize: () => Prize | null,
+  prize: (special: boolean) => Prize | null,
   onWon: (prize: Prize) => void,
 ) {
   const M = await loadMatter();
@@ -147,7 +149,12 @@ async function createClaw(
   const addBall = (x: number, y: number) => {
     const body = M.Bodies.circle(x, y, r, { friction: 0.4, restitution: 0.2, density: 0.002, frictionAir: 0.01 });
     M.Composite.add(engine.world, body);
-    balls.push({ body, look: looks++ % Math.max(1, img.balls.length), emoji: Math.floor(Math.random() * EMOJI_SOURCES.length) });
+    balls.push({
+      body,
+      look: looks++ % Math.max(1, img.balls.length),
+      emoji: Math.floor(Math.random() * EMOJI_SOURCES.length),
+      special: Math.random() < PEARL_CHANCE,
+    });
   };
   const fill = (count: number, fromY: number) => {
     for (let i = 0; i < count; i++) addBall(rand(pileLeft + r + 10, area.x + area.w - r - 4), fromY - i * r * 2.2);
@@ -306,7 +313,7 @@ async function createClaw(
           dropping.vy += 1600 * dt;
           dropping.y += dropping.vy * dt;
           if (dropping.y > floorY - r) {
-            const won = prize();
+            const won = prize(dropping.ball.special);
             const ball = dropping.ball;
             dropping = null;
             if (won) {
@@ -337,14 +344,28 @@ async function createClaw(
       }
     }
     if (shown && (shown.t += dt) > 1.6) shown = null;
+    // A ball that bounces over into the chute can't be grabbed — clear it.
+    for (let i = balls.length - 1; i >= 0; i--) {
+      if (balls[i].body.position.x < pileLeft - r * 0.3) {
+        M.Composite.remove(engine.world, balls[i].body);
+        balls.splice(i, 1);
+      }
+    }
     // Keep the pile topped up.
     if (balls.length + (held ? 1 : 0) < 14) fill(1, area.y + area.h * 0.35);
   };
 
   const drawBall = (b: Ball, bx: number, by: number, angle = 0) => {
-    const src = img.balls[b.look % Math.max(1, img.balls.length)];
+    const src = b.special && img.pearl ? img.pearl : img.balls[b.look % Math.max(1, img.balls.length)];
+    const time = performance.now() / 1000;
     ctx.save();
     ctx.translate(bx, by);
+    if (b.special) {
+      // A soft pulsing glow…
+      ctx.shadowColor = color("party-yellow", 0.9);
+      ctx.shadowBlur = 10 + Math.sin(time * 4 + b.emoji) * 5;
+    }
+    ctx.save();
     ctx.rotate(angle);
     if (src) ctx.drawImage(src, -r, -r, r * 2, r * 2);
     else {
@@ -352,6 +373,24 @@ async function createClaw(
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, Math.PI * 2);
       ctx.fill();
+    }
+    ctx.restore();
+    if (b.special) {
+      // …and a rainbow sheen sweeping across it.
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.clip();
+      const sweep = ((time * 0.7 + b.emoji * 0.13) % 1) * r * 5 - r * 2.5;
+      const sheen = ctx.createLinearGradient(sweep - r, -r, sweep + r, r);
+      sheen.addColorStop(0, color("party-pink", 0));
+      sheen.addColorStop(0.3, color("party-pink", 0.55));
+      sheen.addColorStop(0.5, color("party-cyan", 0.6));
+      sheen.addColorStop(0.7, color("party-yellow", 0.55));
+      sheen.addColorStop(1, color("party-yellow", 0));
+      ctx.globalCompositeOperation = "screen";
+      ctx.fillStyle = sheen;
+      ctx.fillRect(-r, -r, r * 2, r * 2);
     }
     ctx.restore();
   };
@@ -486,7 +525,7 @@ export async function playClaw(opts: CelebrationOptions): Promise<void> {
     W,
     H,
     { ...area, y: area.y + 50, h: area.h - 60 },
-    () => (prizes.length ? { kind: "points", points: prizes.shift()! } : null),
+    () => (prizes.length ? { kind: "points", points: prizes.shift()! } : null), // pearls hold the same here
     () => {
       if (!prizes.length && !revealed) {
         revealed = true;
@@ -517,8 +556,10 @@ export async function playClaw(opts: CelebrationOptions): Promise<void> {
 }
 
 // "Keep playing": five tries. Each ball won pops open into something — see
-// `Prize`: mostly points (1–5, bigger ones rarer), sometimes a bomb or an
-// extra try, and rarely one of the specials. The claw speeds up as you
+// `Prize`. Colored balls are mostly points (1–5, bigger ones rarer) with
+// bombs, sneaky decoys, shake-ups and the odd skull mixed in; the shiny
+// pearls are always good (jackpot, super bonus, golden, magnet, slow-mo,
+// an extra try or a mystery box). The claw speeds up as you
 // go; the game's over when the tries run out (or a skull turns up).
 const TRIES = 5;
 export function playClawGame(opts: GameOptions): () => void {
@@ -539,37 +580,44 @@ export function playClawGame(opts: GameOptions): () => void {
     const p = Math.random();
     return { kind: "points", points: p < 0.5 ? 1 : p < 0.75 ? 2 : p < 0.9 ? 3 : 5 };
   };
-  const roll = (): Prize => {
+  const pick = (table: [number, () => Prize][], rest: () => Prize): Prize => {
     const r = Math.random();
-    const table: [number, () => Prize][] = [
-      [0.03, () => ({ kind: "death" })],
-      [0.05, () => {
-        const each = Array.from({ length: 3 }, () => 1 + Math.floor(Math.random() * 4));
-        return { kind: "blast", count: 3, points: each.reduce((a, b) => a + b, 0) };
-      }],
-      [0.02, () => ({ kind: "jackpot", points: 15 })],
-      [0.04, () => ({ kind: "golden" })],
-      [0.04, () => ({ kind: "magnet" })],
-      [0.04, () => ({ kind: "slow" })],
-      [0.04, () => ({ kind: "shake" })],
-      [0.04, () => ({ kind: "sneaky" })],
-      [0.04, () => {
-        const pick = (): Prize => {
-          const q = Math.random();
-          return q < 0.55 ? basic() : q < 0.8 ? { kind: "bomb", points: 3 } : { kind: "try" };
-        };
-        return { kind: "mystery", inside: [pick(), pick()] };
-      }],
-      [0.13, () => ({ kind: "bomb", points: 3 })],
-      [0.11, () => ({ kind: "try" })],
-    ];
     let acc = 0;
     for (const [chance, make] of table) if (r < (acc += chance)) return make();
-    return basic();
+    return rest();
   };
+  // Colored balls: mostly points, with the risky ones mixed in.
+  const regular = (): Prize =>
+    pick(
+      [
+        [0.04, () => ({ kind: "death" })],
+        [0.16, () => ({ kind: "bomb", points: 3 })],
+        [0.08, () => ({ kind: "try" })],
+        [0.06, () => ({ kind: "shake" })],
+        [0.06, () => ({ kind: "sneaky" })],
+      ],
+      basic,
+    );
+  // Pearls: always something good.
+  const bonus = (): Prize =>
+    pick(
+      [
+        [0.12, () => ({ kind: "jackpot", points: 15 })],
+        [0.18, () => {
+          const each = Array.from({ length: 3 }, () => 1 + Math.floor(Math.random() * 4));
+          return { kind: "blast", count: 3, points: each.reduce((a, b) => a + b, 0) };
+        }],
+        [0.15, () => ({ kind: "golden" })],
+        [0.15, () => ({ kind: "magnet" })],
+        [0.12, () => ({ kind: "slow" })],
+        [0.14, () => ({ kind: "try" })],
+      ],
+      () => ({ kind: "mystery", inside: [basic(), Math.random() < 0.5 ? basic() : { kind: "try" }] }),
+    );
+  const roll = (special: boolean) => (special ? bonus() : regular());
   // ⭐ doubles the next points prize (shown doubled when it pops open).
-  const prize = (): Prize => {
-    const won = roll();
+  const prize = (special: boolean): Prize => {
+    const won = roll(special);
     const double = (p: Prize): Prize => (p.kind === "points" || p.kind === "jackpot" ? { ...p, points: p.points * 2 } : p);
     if (golden && (won.kind === "points" || won.kind === "jackpot")) {
       golden = false;
