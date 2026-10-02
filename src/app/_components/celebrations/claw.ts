@@ -48,10 +48,11 @@ export type Prize =
   | { kind: "golden" } // next points prize doubled
   | { kind: "magnet" } // next grab reaches twice as far
   | { kind: "iron" } // next catch can't slip out
+  | { kind: "sticky" } // next grab can pick up a couple of extra balls
   | { kind: "slow" } // claw slows down for the next 2 drops
   | { kind: "shake" } // the pile jumps and reshuffles
   | { kind: "sneaky" } // a decoy — nothing inside
-  | { kind: "mystery"; inside: Prize[] }; // two prizes at once
+  | { kind: "mystery"; inside: Prize[] }; // points + a power-up
 
 // The icon and words a prize pops open with.
 function prizeLook(p: Prize): { icon: string; text: string } {
@@ -76,6 +77,8 @@ function prizeLook(p: Prize): { icon: string; text: string } {
       return { icon: "🐌", text: "Slow-mo!" };
     case "iron":
       return { icon: "🦾", text: "Iron claw next!" };
+    case "sticky":
+      return { icon: "🍯", text: "Sticky claw next!" };
     case "shake":
       return { icon: "🌪️", text: "Shake-up!" };
     case "sneaky":
@@ -215,6 +218,10 @@ async function createClaw(
   let heldFrom = { x: 0, y: 0 };
   let slipAt = -1; // rod length at which a caught ball slips out (-1 = it won't)
   let dropping: { y: number; vy: number; ball: Ball } | null = null;
+  // Sticky claw: extra balls stuck to the outside of the arms (offsets from
+  // the grab point), and the balls still to drop into the chute.
+  let stuck: { ball: Ball; ox: number; oy: number }[] = [];
+  let toDrop: Ball[] = [];
   let shown: { ball: Ball; prize: Prize; t: number } | null = null;
   let roamSpeed = 120;
 
@@ -285,6 +292,7 @@ async function createClaw(
   };
   let magnet = false; // the next grab reaches twice as far
   let iron = false; // the next catch can't slip
+  let sticky = false; // the next grab picks up extra balls touching the claw
   let badges: string[] = []; // little icons for what's active (⭐ 🧲 🐌)
 
   // Super bonus: a few balls in the pile burst, one after another.
@@ -374,12 +382,29 @@ async function createClaw(
             M.Composite.remove(engine.world, near.body);
             balls.splice(balls.indexOf(near), 1);
             // It can still slip out on the way up — more likely if it was
-            // caught off-center — unless it's an iron claw.
+            // caught off-center — unless it's an iron (or sticky) claw.
             const off = Math.abs(heldFrom.x) / r;
-            slipAt = !iron && Math.random() < 0.12 + off * 0.45 ? rod * rand(0.3, 0.75) : -1;
+            slipAt = !iron && !sticky && Math.random() < 0.12 + off * 0.45 ? rod * rand(0.3, 0.75) : -1;
+            // Sticky: up to two more balls touching the claw come along,
+            // stuck to the outside of the arms.
+            if (sticky) {
+              const extra = balls
+                .map((b) => ({ b, d: Math.hypot(b.body.position.x - g.x, b.body.position.y - g.y) }))
+                .filter((n) => n.d < r * 2.2)
+                .sort((a, b) => a.d - b.d)
+                .slice(0, 2);
+              for (const { b } of extra) {
+                const dx = b.body.position.x - g.x;
+                const side = dx < 0 ? -1 : dx > 0 ? 1 : stuck.length ? 1 : -1;
+                stuck.push({ ball: b, ox: side * r * 1.7, oy: r * (0.3 + stuck.length * 0.5) });
+                M.Composite.remove(engine.world, b.body);
+                balls.splice(balls.indexOf(b), 1);
+              }
+            }
           }
           magnet = false;
           iron = false;
+          sticky = false;
           state = "up";
         }
         break;
@@ -415,9 +440,12 @@ async function createClaw(
         timer += dt;
         open += (0.55 - open) * Math.min(1, dt * 8);
         if (held && timer > 0.15) {
-          dropping = { y: g.y, vy: 0, ball: held };
+          toDrop = [held, ...stuck.map((s) => s.ball)];
           held = null;
+          stuck = [];
         }
+        // One ball at a time into the chute, each its own prize.
+        if (!dropping && toDrop.length) dropping = { y: g.y, vy: 0, ball: toDrop.shift()! };
         if (dropping) {
           dropping.vy += 1600 * dt;
           dropping.y += dropping.vy * dt;
@@ -437,8 +465,10 @@ async function createClaw(
               }
               onWon(won);
             }
-            state = "prize";
-            timer = 0;
+            if (!toDrop.length) {
+              state = "prize";
+              timer = 0;
+            }
           }
         }
         break;
@@ -543,6 +573,7 @@ async function createClaw(
     // slip (a tell for sharp eyes).
     const loose = held ? (slipAt > 0 ? 1 : 0.45) : 0;
     if (held) {
+      for (const s of stuck) drawBall(s.ball, g.x + s.ox, g.y + s.oy);
       heldFrom.x *= 0.82;
       heldFrom.y *= 0.82;
       const jx = (Math.sin(time * 19) + Math.sin(time * 31) * 0.6) * r * 0.07 * loose;
@@ -608,6 +639,7 @@ async function createClaw(
     busy: () => state !== "roam",
     setMagnet: () => (magnet = true),
     setIron: () => (iron = true),
+    setSticky: () => (sticky = true),
     setBadges: (b: string[]) => (badges = b),
     stop: () => M.Engine.clear(engine),
   };
@@ -672,7 +704,7 @@ export async function playClaw(opts: CelebrationOptions): Promise<void> {
 // `Prize`. Colored balls are mostly points (1–5, bigger ones rarer) with
 // bombs, sneaky decoys, shake-ups and the odd skull mixed in; the shiny
 // pearls are always good (jackpot, super bonus, golden, magnet, iron
-// claw, slow-mo, an extra try or a mystery box). The claw speeds up as you
+// claw, sticky claw, slow-mo, an extra try or a mystery box). The claw speeds up as you
 // go; the game's over when the tries run out (or a skull turns up).
 const TRIES = 5;
 export function playClawGame(opts: GameOptions): () => void {
@@ -686,6 +718,7 @@ export function playClawGame(opts: GameOptions): () => void {
   let slowDrops = 0;
   let magnetOn = false;
   let ironOn = false;
+  let stickyOn = false;
   opts.onLives?.(tries);
   let stop = () => layer.remove();
   const hint = hintBubble(layer, "Tap to drop the claw!", safe.y + safe.h * 0.42);
@@ -717,7 +750,8 @@ export function playClawGame(opts: GameOptions): () => void {
     pick(
       [
         [0.1, () => ({ kind: "jackpot", points: 15 })],
-        [0.12, () => ({ kind: "iron" })],
+        [0.11, () => ({ kind: "iron" })],
+        [0.07, () => ({ kind: "sticky" })],
         [0.15, () => {
           const each = Array.from({ length: 3 }, () => 1 + Math.floor(Math.random() * 4));
           return { kind: "blast", count: 3, points: each.reduce((a, b) => a + b, 0) };
@@ -727,7 +761,18 @@ export function playClawGame(opts: GameOptions): () => void {
         [0.1, () => ({ kind: "slow" })],
         [0.12, () => ({ kind: "try" })],
       ],
-      () => ({ kind: "mystery", inside: [basic(), Math.random() < 0.5 ? basic() : { kind: "try" }] }),
+      // Mystery box: some points plus a random power-up.
+      () => {
+        const powerUps: Prize[] = [
+          { kind: "try" },
+          { kind: "golden" },
+          { kind: "magnet" },
+          { kind: "iron" },
+          { kind: "slow" },
+          { kind: "sticky" },
+        ];
+        return { kind: "mystery", inside: [basic(), powerUps[Math.floor(Math.random() * powerUps.length)]] };
+      },
     );
   const roll = (special: boolean) => (special ? bonus() : regular());
   // ⭐ doubles the next points prize (shown doubled when it pops open).
@@ -744,7 +789,7 @@ export function playClawGame(opts: GameOptions): () => void {
   let machine: Awaited<ReturnType<typeof createClaw>> | null = null;
   const badges = () =>
     machine?.setBadges(
-      [golden ? "⭐" : "", magnetOn ? "🧲" : "", ironOn ? "🦾" : "", slowDrops > 0 ? `🐌${slowDrops}` : ""].filter(Boolean),
+      [golden ? "⭐" : "", magnetOn ? "🧲" : "", ironOn ? "🦾" : "", stickyOn ? "🍯" : "", slowDrops > 0 ? `🐌${slowDrops}` : ""].filter(Boolean),
     );
   const apply = (won: Prize) => {
     switch (won.kind) {
@@ -776,6 +821,10 @@ export function playClawGame(opts: GameOptions): () => void {
         ironOn = true;
         machine?.setIron();
         break;
+      case "sticky":
+        stickyOn = true;
+        machine?.setSticky();
+        break;
       case "mystery":
         won.inside.forEach(apply);
         break;
@@ -794,6 +843,7 @@ export function playClawGame(opts: GameOptions): () => void {
           opts.onLives?.(--tries);
           magnetOn = false; // used up by this grab
           ironOn = false;
+          stickyOn = false;
           if (slowDrops > 0) slowDrops--;
           badges();
         }
