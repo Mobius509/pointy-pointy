@@ -176,7 +176,7 @@ export const CELEBRATIONS: Celebration[] = [
     hidesStage: true,
     game: { kind: "score", icon: "🧱", label: "blocks", lives: 3, start: playStackGame },
     name: "Block stack",
-    description: "Drag the hanging block, let go to drop — stack the points. Keep playing: build it tall; every block that falls costs a life.",
+    description: "Slide the platform to catch the falling blocks and stack the points. Keep playing: build it tall — every block that falls costs a life.",
     play: playStack,
   },
   {
