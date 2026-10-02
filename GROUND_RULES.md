@@ -24,4 +24,8 @@ fix, rule or piece of copy that changes on one should change on the other.
 
 ### Agreed deviations
 
-_None yet._
+- **Celebrations and mini games on iOS run the web versions** (2026-10-02).
+  The iOS app shows the web celebration (`/h/<slug>/celebrate`) and arcade
+  (`/h/<slug>/arcade`) in a signed-in web view (`WebPlayView`, via
+  `/api/v2/kid/web-session`) until native versions are built. Goal: native
+  parity later.

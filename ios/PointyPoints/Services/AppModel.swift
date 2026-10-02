@@ -20,6 +20,10 @@ final class AppModel {
     /// Bumped whenever a task is marked done, to fire confetti.
     private(set) var celebrationCount = 0
 
+    /// A web page to show full screen (the celebration — the web version
+    /// for now), e.g. after tapping an "approved!" notification.
+    var webPage: WebPage?
+
     private(set) var notificationStatus: UNAuthorizationStatus = .notDetermined
     /// "HH:MM" (24h, household timezone) or nil when the reminder is off.
     private(set) var reminderTime: String?
@@ -34,6 +38,11 @@ final class AppModel {
         token = KeychainStore.string(for: Self.tokenAccount)
         PushManager.shared.onNotification = { [weak self] in
             Task { await self?.refresh() }
+        }
+        // Tapping an "approved!" notification opens the celebration.
+        PushManager.shared.onOpen = { [weak self] url in
+            guard let self, url.hasSuffix("/celebrate") else { return }
+            self.webPage = .celebrate
         }
     }
 
@@ -102,6 +111,8 @@ final class AppModel {
         setToken(nil)
         today = nil
         reminderTime = nil
+        webPage = nil
+        ThemeStore.shared.palette = KidPalette(hue: KidPalette.defaultHue)
     }
 
     private func setToken(_ value: String?) {
@@ -113,7 +124,40 @@ final class AppModel {
 
     func refresh() async {
         guard let api, token != nil else { return }
-        await run { self.today = try await api.today() }
+        await run {
+            let today = try await api.today()
+            self.today = today
+            if let hue = today.hue { ThemeStore.shared.palette = KidPalette(hue: hue) }
+        }
+    }
+
+    // MARK: - Color
+
+    /// Recolors the app while the kid slides the color picker (not saved).
+    func previewHue(_ hue: Int) {
+        ThemeStore.shared.palette = KidPalette(hue: hue)
+    }
+
+    /// Saves the kid's color; puts the old one back if that fails.
+    func saveHue(_ hue: Int) async {
+        guard let api else { return }
+        let saved = today?.hue ?? KidPalette.defaultHue
+        previewHue(hue)
+        let ok = await run { try await api.setHue(hue) }
+        if ok { await refresh() } else { previewHue(saved) }
+    }
+
+    // MARK: - Web pages (celebrations, arcade)
+
+    enum WebPage: String, Identifiable {
+        case celebrate, arcade
+        var id: String { rawValue }
+    }
+
+    /// The signed-in web view request for a kid page.
+    func webRequest(_ page: WebPage) -> URLRequest? {
+        guard let link, let api, token != nil else { return nil }
+        return api.webSessionRequest(to: "/h/\(link.slug)/\(page.rawValue)")
     }
 
     func complete(_ item: ChecklistItem) async {

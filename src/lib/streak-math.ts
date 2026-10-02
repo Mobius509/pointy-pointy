@@ -88,3 +88,45 @@ export function arcadeMode(runs: { length: number; skipWeekends: boolean }[]): {
   }
   return { mode: pick ? "pick" : best > 0 ? "random" : "locked", streakDays: best, pickAt };
 }
+
+// This week (Monday on) for the streak card's dots: each day done, missed,
+// today (not done yet) or still to come. Weekends are left out of a streak
+// that skips them.
+export type WeekDay = { day: string; state: "done" | "missed" | "today" | "upcoming" };
+export function streakWeek(
+  taskIds: string[],
+  doneDays: Map<string, Set<string>>,
+  today: string,
+  { skipWeekends = false } = {},
+): WeekDay[] {
+  const done = (day: string) => taskIds.length > 0 && taskIds.every((t) => doneDays.get(t)?.has(day));
+  const dow = (new Date(`${today}T12:00:00Z`).getUTCDay() + 6) % 7; // Monday = 0
+  const monday = addDays(today, -dow);
+  const week: WeekDay[] = [];
+  for (let i = 0; i < 7; i++) {
+    const day = addDays(monday, i);
+    if (skipWeekends && isWeekend(day)) continue;
+    week.push({
+      day,
+      state: done(day) ? "done" : day < today ? "missed" : day === today ? "today" : "upcoming",
+    });
+  }
+  return week;
+}
+
+// The streak just ended: no run now, but there was one that finished in
+// the last few (counted) days — for the "you lost your streak" greeting.
+export function brokeRecently(
+  taskIds: string[],
+  doneDays: Map<string, Set<string>>,
+  today: string,
+  { skipWeekends = false, within = 3 } = {},
+): boolean {
+  let day = addDays(today, -1);
+  for (let counted = 0; counted < within; day = addDays(day, -1)) {
+    if (skipWeekends && isWeekend(day)) continue;
+    counted++;
+    if (taskIds.length > 0 && taskIds.every((t) => doneDays.get(t)?.has(day))) return true;
+  }
+  return false;
+}

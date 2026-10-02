@@ -5,6 +5,7 @@ import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { getKidSession } from "@/lib/v2/auth";
 import { getKidInitials, submitHighScore } from "@/lib/v2/high-scores";
 import { finishArcadeTicket, redeemArcadeTicket } from "@/lib/v2/streaks";
+import { markCelebrated } from "@/lib/v2/kid-home";
 import {
   cancelKidProposal,
   cancelPendingTaskForToday,
@@ -140,6 +141,19 @@ export async function finishArcadeTicketAction(slug: string, ticketId: string): 
   try {
     const ctx = await requireKidSessionForSlug(slug);
     await finishArcadeTicket(ctx, ticketId);
+  } catch {
+    return { ok: false };
+  }
+  revalidatePath(`/h/${slug}`);
+  return { ok: true };
+}
+
+// The kid played the celebration for these approvals: don't offer it again
+// on any device (the iOS app uses POST /api/v2/kid/celebrations/seen).
+export async function markCelebratedAction(slug: string, ids: string[]): Promise<{ ok: boolean }> {
+  try {
+    const ctx = await requireKidSessionForSlug(slug);
+    await markCelebrated(ctx, ids.filter((x) => typeof x === "string"));
   } catch {
     return { ok: false };
   }

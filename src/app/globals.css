@@ -39,6 +39,19 @@
   /* Scratch-card foil. */
   --pp-foil-light: 226 226 234; /* #E2E2EA */
   --pp-foil-dark: 164 164 184; /* #A4A4B8 */
+
+  /* The kid app's pastel palette (default lavender). Each kid picks their
+     own hue; the kid layout overrides these from src/lib/kid-palette.ts
+     (the iOS app mirrors the same values in Theme.swift). */
+  --kid-card: 235 216 246; /* #EBD8F6 the big cards */
+  --kid-card-inner: 239 224 248; /* #EFE0F8 a card in a card, ring track */
+  --kid-card-soft: 249 243 252; /* #F9F3FC near-white card, tab bar */
+  --kid-strong: 178 107 251; /* #B26BFB celebrate card, ring, headings */
+  --kid-strong-deep: 155 86 224; /* #9B56E0 tiles on a strong card */
+  --kid-track: 227 201 249; /* #E3C9F9 soft accents */
+  --kid-text: 118 55 184; /* #7637B8 body text, filled dots */
+  --kid-text-strong: 105 25 185; /* #6919B9 big numbers */
+  --kid-avatar-shift: 0deg; /* turns the avatar's colors to match */
 }
 
 html,
@@ -151,6 +164,31 @@ body {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+}
+
+/* ----- Kid app --------------------------------------------------------------- */
+@layer components {
+  /* The kid's avatar, recolored to match their palette. */
+  .kid-avatar {
+    filter: hue-rotate(var(--kid-avatar-shift));
+  }
+  /* The "My color" slider: a rainbow track and a big white knob. */
+  .kid-hue-slider {
+    @apply h-10 cursor-pointer appearance-none rounded-full;
+  }
+  .kid-hue-slider::-webkit-slider-thumb {
+    @apply size-9 appearance-none rounded-full bg-white shadow-md ring-4 ring-white/60;
+  }
+  .kid-hue-slider::-moz-range-thumb {
+    @apply size-9 rounded-full border-0 bg-white shadow-md;
+  }
+  /* A tab bar / button icon (an SVG or PNG used as a mask) drawn in the
+     current text color, so it follows the kid's palette. */
+  .kid-icon {
+    background-color: currentColor;
+    -webkit-mask: var(--icon) center / contain no-repeat;
+    mask: var(--icon) center / contain no-repeat;
   }
 }
 

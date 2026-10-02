@@ -6,12 +6,12 @@ import {
   unregisterWebPushAction,
 } from "@/app/_actions/push";
 import { REMINDER_TIMES } from "@/lib/reminder-times";
-import { AvatarPicker } from "../../_components/AvatarPicker";
+import { AvatarPicker } from "../../../_components/AvatarPicker";
 import {
   updateKidAvatarAction,
   updateKidInitialsAction,
   updateKidReminderAction,
-} from "../../_actions/kid-settings";
+} from "../../../_actions/kid-settings";
 import { cleanInitials } from "@/lib/initials";
 
 type NotifState = "loading" | "unsupported" | "blocked" | "off" | "on";
@@ -185,7 +185,7 @@ export function KidSettingsPanel({
   };
 
   return (
-    <section className="bg-white rounded-[32px] p-6 sm:p-8 shadow-lg">
+    <section className="rounded-[32px] bg-kid-card p-6 sm:p-8">
       {/* Avatar */}
       <h2
         className="text-pp-primary leading-tight"

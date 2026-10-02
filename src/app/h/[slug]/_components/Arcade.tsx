@@ -7,6 +7,7 @@ import { unlockAudio } from "@/app/_components/celebrations";
 import { ARCADE_GAMES, arcadeGameName } from "@/lib/games";
 import type { Arcade as ArcadeState } from "@/lib/v2/streaks";
 import { finishArcadeTicketAction, redeemArcadeTicketAction, submitHighScoreAction } from "../_actions/kid-completions";
+import { useShiftedAvatar } from "./useShiftedAvatar";
 
 // The kid's arcade. Streak rewards give arcade tickets, which pile up; each
 // one is a single play. With a streak going a ticket plays a surprise game,
@@ -19,15 +20,18 @@ export function Arcade({
   highScores,
   preview = false,
   kidName = "",
+  avatarShift = 0,
 }: {
   slug: string;
   avatarSrc: string;
+  avatarShift?: number; // turn the avatar's colors to the kid's palette (in games)
   arcade: ArcadeState;
   highScores: Record<string, HighScore>;
   // Parent "Kid view": tickets are the kid's to use, so it's look-only.
   preview?: boolean;
   kidName?: string;
 }) {
+  const avatar = useShiftedAvatar(avatarSrc, avatarShift);
   const [playing, setPlaying] = useState<{ ticketId: string; game: string } | null>(null);
   const [spin, setSpin] = useState(false); // the surprise-game dialog
   const [confirm, setConfirm] = useState<string | null>(null); // picked game, to confirm
@@ -142,7 +146,7 @@ export function Arcade({
           key={playing.ticketId}
           mode="game"
           effectId={playing.game}
-          avatarSrc={avatarSrc}
+          avatarSrc={avatar}
           total={0}
           items={[]}
           milestonesUnlocked={[]}

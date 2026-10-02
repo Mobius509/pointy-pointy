@@ -69,6 +69,24 @@ struct APIClient {
         let _: OkResponse = try await send("PUT", "api/v2/kid/settings", body: ["reminderTime": time])
     }
 
+    /// The kid's color (0–359). Only the hue is changed.
+    func setHue(_ hue: Int) async throws {
+        let _: OkResponse = try await send("PUT", "api/v2/kid/settings", body: ["hue": String(hue)])
+    }
+
+    /// A request that signs a web view in as the kid (cookie) and opens
+    /// `path` — for the celebrations and arcade, which run the web versions
+    /// for now (GROUND_RULES.md, agreed deviations).
+    func webSessionRequest(to path: String) -> URLRequest {
+        var components = URLComponents(url: origin.appending(path: "api/v2/kid/web-session"), resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "to", value: path)]
+        var request = URLRequest(url: components.url!)
+        if let token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        return request
+    }
+
     // MARK: - Plumbing
 
     private struct OkResponse: Decodable {}

@@ -2,7 +2,7 @@ import "server-only";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { addDays, todayInTimezone } from "@/lib/time";
 import { ARCADE_GAMES, isArcadeGame, type ArcadeGameId } from "@/lib/games";
-import { arcadeMode, nextReward, rewardSteps, streakRun, type ArcadeMode, type StreakRun } from "@/lib/streak-math";
+import { arcadeMode, brokeRecently, nextReward, rewardSteps, streakRun, streakWeek, type ArcadeMode, type StreakRun, type WeekDay } from "@/lib/streak-math";
 import { insertBonusCompletion } from "@/lib/v2/bonus";
 import { notifyStreakReward } from "@/lib/v2/push";
 import type { KidContext } from "@/lib/v2/kid-ops";
@@ -26,6 +26,8 @@ export type KidStreak = {
   streak: Streak;
   run: StreakRun;
   next: { at: number; daysToGo: number };
+  week: WeekDay[]; // this week's days, for the streak card's dots
+  broken: boolean; // no run now, but there was one in the last few days
 };
 
 // Before the streaks migration is run there are no tables — no streaks,
@@ -84,8 +86,15 @@ export async function getKidStreaks(ctx: KidContext): Promise<KidStreak[]> {
   const today = todayInTimezone(ctx.timezone);
   const days = await doneDays(ctx, [...new Set(streaks.flatMap((s) => s.taskIds))], today);
   return streaks.map((streak) => {
-    const run = streakRun(streak.taskIds, days, today, { skipWeekends: !!streak.skip_weekends });
-    return { streak, run, next: nextReward(run, streak.days_required) };
+    const skipWeekends = !!streak.skip_weekends;
+    const run = streakRun(streak.taskIds, days, today, { skipWeekends });
+    return {
+      streak,
+      run,
+      next: nextReward(run, streak.days_required),
+      week: streakWeek(streak.taskIds, days, today, { skipWeekends }),
+      broken: run.length === 0 && brokeRecently(streak.taskIds, days, today, { skipWeekends }),
+    };
   });
 }
 

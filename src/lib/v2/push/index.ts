@@ -16,6 +16,9 @@ export type PushPayload = {
   body?: string;
   tag?: string;
   url?: string;
+  // Kid notifications: a page of the kid app to open, e.g. "celebrate" →
+  // /h/<slug>/celebrate (the web and the iOS app both follow `url`).
+  page?: string;
 };
 
 type DeviceRow = {
@@ -171,9 +174,10 @@ export async function notifyKid(
   if (!data?.length) return 0;
 
   const slug = await householdSlug(householdId);
+  const { page, ...rest } = payload;
   return deliver(data as DeviceRow[], {
-    url: slug ? `/h/${slug}` : undefined,
-    ...payload,
+    url: slug ? `/h/${slug}${page ? `/${page}` : ""}` : undefined,
+    ...rest,
   });
 }
 
@@ -271,8 +275,8 @@ export function notifyCompletionsApproved(
       householdId,
       kidProfileId,
       items.length === 1
-        ? { title: `${names[0]} approved!`, body: `+${pts(total)}`, tag: "approved" }
-        : { title: `${items.length} tasks approved!`, body: `+${pts(total)} · ${listed}`, tag: "approved" },
+        ? { title: `${names[0]} approved!`, body: `+${pts(total)}`, tag: "approved", page: "celebrate" }
+        : { title: `${items.length} tasks approved!`, body: `+${pts(total)} · ${listed}`, tag: "approved", page: "celebrate" },
     ),
   );
 }
@@ -290,6 +294,7 @@ export function notifyStreakReward(
       title: `🔥 ${days}-day streak!`,
       body: `${streakName}: ${points > 0 ? `+${pts(points)} and ` : ""}an arcade ticket 🎟️`,
       tag: "streak",
+      page: points > 0 ? "celebrate" : undefined,
     }),
   );
 }
@@ -306,6 +311,7 @@ export function notifyBonusAwarded(
       title: `Bonus! +${pts(points)}`,
       body: reason,
       tag: "bonus",
+      page: "celebrate",
     }),
   );
 }

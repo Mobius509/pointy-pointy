@@ -11,6 +11,7 @@ struct SettingsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    ColorCard()
                     notificationsCard
                     reminderCard
 
@@ -27,7 +28,7 @@ struct SettingsView: View {
                 }
                 .padding(16)
             }
-            .background(Theme.cream)
+            .background(Color.white)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -114,5 +115,41 @@ struct SettingsView: View {
         let h = minutes / 60, m = minutes % 60
         let label = "\(h % 12 == 0 ? 12 : h % 12):\(String(format: "%02d", m)) \(h < 12 ? "AM" : "PM")"
         return (String(format: "%02d:%02d", h, m), label)
+    }
+}
+
+/// "My color": slide through the rainbow. The whole app (and the avatar)
+/// recolors as you slide; it's saved when you let go — on the kid's profile,
+/// so the web matches (same as the web's ColorSlider).
+private struct ColorCard: View {
+    @Environment(AppModel.self) private var model
+    @State private var hue: Double = Double(KidPalette.defaultHue)
+
+    var body: some View {
+        Card {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("My color")
+                    .font(.rounded(20, .medium))
+                    .foregroundStyle(Theme.orange)
+                Text("Slide to pick your color. Everything changes to match — even you!")
+                    .font(.rounded(13))
+                    .foregroundStyle(Theme.sand)
+                Slider(value: $hue, in: 0...359, step: 1) { editing in
+                    if !editing { Task { await model.saveHue(Int(hue)) } }
+                }
+                .tint(.clear)
+                .background(
+                    LinearGradient(
+                        colors: stride(from: 0, through: 360, by: 30).map { KidPalette(hue: $0).strong },
+                        startPoint: .leading, endPoint: .trailing
+                    )
+                    .frame(height: 28)
+                    .clipShape(Capsule())
+                )
+                .onChange(of: hue) { _, value in model.previewHue(Int(value)) }
+                .accessibilityLabel("My color")
+            }
+        }
+        .onAppear { hue = Double(model.today?.hue ?? Theme.palette.hue) }
     }
 }

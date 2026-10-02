@@ -65,6 +65,34 @@ struct Proposal: Codable, Identifiable, Hashable {
     let name: String
 }
 
+/// A day of this week on the streak card.
+struct StreakDay: Codable, Hashable {
+    enum State: String, Codable { case done, missed, today, upcoming }
+    let day: String // YYYY-MM-DD
+    let state: State
+}
+
+struct StreakInfo: Codable, Identifiable, Hashable {
+    let id: String
+    let name: String
+    let daysRequired: Int
+    let bonusPoints: Int
+    let days: Int
+    let todayDone: Bool
+    let nextRewardAt: Int
+    let daysToGo: Int
+    let week: [StreakDay]?
+    let broken: Bool?
+}
+
+/// An approval waiting to be celebrated.
+struct PendingCelebration: Codable, Identifiable, Hashable {
+    let id: String
+    let name: String
+    let points: Int
+    let isBonus: Bool
+}
+
 struct TodayResponse: Codable {
     let kid: KidSummary
     let goal: Goal?
@@ -72,9 +100,18 @@ struct TodayResponse: Codable {
     let milestones: [Milestone]
     var items: [ChecklistItem]
     var pendingProposals: [Proposal]
+    // The home (Stats) page — optional so an older server still decodes.
+    let streaks: [StreakInfo]?
+    let householdName: String?
+    let initials: String?
+    let hue: Int?
+    let greeting: String?
+    let pendingCelebration: [PendingCelebration]?
 }
 
 struct KidSettings: Codable {
     /// "HH:MM" (24h) in the household's timezone, or nil when off.
     var reminderTime: String?
+    /// The kid's color (0–359).
+    var hue: Int?
 }

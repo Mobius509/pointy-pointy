@@ -5,12 +5,12 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            Theme.cream.ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
             switch model.screen {
             case .connect: ConnectView()
             case .pickKid: KidPickerView()
-            case .today: TodayView()
+            case .today: KidAppView()
             }
         }
         .animation(.default, value: model.screen)

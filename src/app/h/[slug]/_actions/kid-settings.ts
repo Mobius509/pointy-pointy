@@ -7,6 +7,7 @@ import { AVATAR_IDS } from "@/lib/avatar";
 import { cleanInitials } from "@/lib/initials";
 import { getKidInitials, renameHighScoreHolder } from "@/lib/v2/high-scores";
 import { setKidReminderTime, type OpResult } from "@/lib/v2/kid-ops";
+import { setKidHue } from "@/lib/v2/kid-home";
 
 // Kid-side action: update the signed-in kid's own avatar. Only the kid
 // session is required (no parent auth). The kid can only change their own
@@ -107,4 +108,30 @@ export async function updateKidInitialsAction(
   revalidatePath(`/h/${slug}/settings`);
   revalidatePath(`/h/${slug}/parent/settings`);
   return { ok: true, initials: shown };
+}
+
+// Kid-side action: the kid's color (a hue, 0–359 — see kid-palette.ts).
+export async function updateKidHueAction(
+  slug: string,
+  hue: number,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await getKidSession();
+  if (!session) return { ok: false, error: "Sign in first." };
+  if (!Number.isFinite(hue)) return { ok: false, error: "Pick a color." };
+  const { data: household } = await supabaseV2Admin
+    .from("households")
+    .select("id, slug, timezone")
+    .eq("id", session.householdId)
+    .maybeSingle();
+  if (!household || household.slug !== slug) return { ok: false, error: "Sign in first." };
+  try {
+    await setKidHue(
+      { householdId: session.householdId, kidProfileId: session.kidProfileId, timezone: household.timezone as string },
+      hue,
+    );
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+  revalidatePath(`/h/${slug}`, "layout");
+  return { ok: true };
 }

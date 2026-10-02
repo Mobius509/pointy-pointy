@@ -21,8 +21,22 @@ const config: Config = {
           "party-cyan": "rgb(var(--pp-party-cyan) / <alpha-value>)",
           "party-red": "rgb(var(--pp-party-red) / <alpha-value>)",
         },
+        // The kid app's palette, in the kid's own hue — values in
+        // globals.css (:root --kid-*), overridden per kid by the kid layout
+        // (src/lib/kid-palette.ts).
+        kid: {
+          card: "rgb(var(--kid-card) / <alpha-value>)",
+          "card-inner": "rgb(var(--kid-card-inner) / <alpha-value>)",
+          "card-soft": "rgb(var(--kid-card-soft) / <alpha-value>)",
+          strong: "rgb(var(--kid-strong) / <alpha-value>)",
+          "strong-deep": "rgb(var(--kid-strong-deep) / <alpha-value>)",
+          track: "rgb(var(--kid-track) / <alpha-value>)",
+          text: "rgb(var(--kid-text) / <alpha-value>)",
+          "text-strong": "rgb(var(--kid-text-strong) / <alpha-value>)",
+        },
       },
       fontFamily: {
+        kid: ["var(--font-figtree)", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
         sans: [
           "var(--font-dm-sans)",
           "ui-sans-serif",

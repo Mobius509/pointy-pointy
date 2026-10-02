@@ -22,6 +22,10 @@ final class PushManager: NSObject {
     /// checklist can refresh (e.g. "approved!").
     var onNotification: (() -> Void)?
 
+    /// Called with the notification's `url` (e.g. "/h/<slug>/celebrate") when
+    /// the kid taps it.
+    var onOpen: ((String) -> Void)?
+
     func authorizationStatus() async -> UNAuthorizationStatus {
         await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
@@ -89,6 +93,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
-        await MainActor.run { PushManager.shared.onNotification?() }
+        let url = response.notification.request.content.userInfo["url"] as? String
+        await MainActor.run {
+            PushManager.shared.onNotification?()
+            if let url { PushManager.shared.onOpen?(url) }
+        }
     }
 }
