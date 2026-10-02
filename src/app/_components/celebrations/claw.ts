@@ -12,21 +12,23 @@ import { loadMatter } from "./stack";
 // a miss), carries it to the prize chute, and the ball pops open: an
 // emoji and some points. Balls are a physics pile (matter-js).
 
-// The claw artwork, all at the same scale (sizes in art pixels).
+// The claw artwork, all at the same scale (sizes in art pixels). It hangs
+// from the top of the screen on its rod: head, then two arms whose round
+// discs sit right over the head's hinge wheel and swing around its center.
 const ART = {
-  roof: { src: "/anims/claw-roof.webp", w: 244, h: 115 },
-  rod: { src: "/anims/claw-rod.webp", w: 48, h: 46 },
-  hub: { src: "/anims/claw-hub.webp", w: 92, h: 93 },
-  arm: { src: "/anims/claw-arm-left.webp", w: 107, h: 210 },
+  rod: { src: "/anims/claw-rod.webp", w: 24, h: 87 },
+  head: { src: "/anims/claw-head.webp", w: 209, h: 315 },
+  left: { src: "/anims/claw-left.webp", w: 211, h: 241 },
+  right: { src: "/anims/claw-right.webp", w: 210, h: 241 },
 };
-// The arm swings around the middle of its cut end (fractions of the arm
-// art), which sits well inside the round hub (fractions of the hub) so the
-// joint stays covered however far it opens. The right arm is the left one
-// mirrored, so the two always match.
-const ARM_JOINT = { x: 0.82, y: 0.2 };
-const ARM_ON_HUB = { x: 0.32, y: 0.55 }; // left arm; the right is mirrored
-const GRAB_BELOW_HUB = 140; // where a held ball sits, below the hub's top (art px)
-const BALL_RADIUS = 40; // art px — fits inside the closed claw
+const HINGE = { x: 104.75, y: 252.5 }; // center of the head's hinge wheel
+const LEFT_HINGE = { x: 149.5, y: 61 }; // center of the left arm's disc
+const RIGHT_HINGE = { x: 62.5, y: 60.5 }; // center of the right arm's disc
+const GRAB_BELOW_HINGE = 110; // where a held ball sits, below the hinge
+const TIP_BELOW_HINGE = 164; // the fingertips (closed), below the hinge…
+const TIP_OUT = 44; // …and out to each side
+const CLAW_HALF_WIDTH = 150; // from the hinge to the far side of an arm
+const BALL_RADIUS = 57; // art px — fits inside the closed claw
 const BALL_SRCS = ["/anims/orb-red.webp", "/anims/orb-pearl.webp"];
 
 // `special`: a pearl — the bonus balls, with a rainbow sheen.
@@ -122,18 +124,17 @@ async function createClaw(
 ) {
   const M = await loadMatter();
   const img = await loadImages();
-  const k = Math.min(0.55, W / 680); // art px → screen px
+  const k = Math.min(0.42, W / 890); // art px → screen px
   const r = BALL_RADIUS * k;
   const floorY = area.y + area.h;
-  // The chute is wide enough that the claw can sit over it without its
-  // roof running off the screen.
-  const roofHalf = (ART.roof.w * k) / 2;
-  const chuteW = Math.max(r * 3.4, roofHalf + r + 12);
-  const chuteX = Math.max(area.x + chuteW / 2, area.x + roofHalf);
+  // The chute is wide enough that the claw can sit over it without an arm
+  // running off the screen.
+  const clawHalf = CLAW_HALF_WIDTH * k;
+  const chuteW = Math.max(r * 3.4, clawHalf + r + 12);
+  const chuteX = Math.max(area.x + chuteW / 2, area.x + clawHalf);
   const pileLeft = area.x + chuteW;
-  const railY = area.y + 8;
-  const roofH = ART.roof.h * k;
-  const restRod = 14 * k;
+  const topY = area.y; // the head's top at rest is the rod's length below this
+  const restRod = 8;
 
   const engine = M.Engine.create({ gravity: { x: 0, y: 1, scale: 0.0012 } });
   const wall = (x: number, y: number, w: number, h: number) =>
@@ -178,8 +179,9 @@ async function createClaw(
   let shown: { ball: Ball; prize: Prize; t: number } | null = null;
   let roamSpeed = 120;
 
-  const hubTop = () => railY + roofH + rod;
-  const grabPoint = () => ({ x, y: hubTop() + GRAB_BELOW_HUB * k });
+  const headTop = () => topY + rod;
+  const hingeY = () => headTop() + HINGE.y * k;
+  const grabPoint = () => ({ x, y: hingeY() + GRAB_BELOW_HINGE * k });
 
   // The arm tips are solid: on the way down they shove the balls beside
   // the claw out of the way (the one lined up between them isn't pushed).
@@ -193,9 +195,15 @@ async function createClaw(
   const placeTips = () => {
     const low = state === "down" || state === "grab" || state === "up";
     const g = grabPoint();
+    void g;
     tips.forEach((tip, i) => {
       const side = i === 0 ? -1 : 1;
-      const at = low ? { x: x + side * r * (1.15 + open * 1.1), y: g.y + r * 0.55 } : { x: -500 - i * 50, y: -500 };
+      // The fingertip, swung open around the hinge.
+      const dx = side * TIP_OUT * k;
+      const dy = TIP_BELOW_HINGE * k;
+      const a = -side * open;
+      const tipAt = { x: x + dx * Math.cos(a) - dy * Math.sin(a), y: hingeY() + dx * Math.sin(a) + dy * Math.cos(a) };
+      const at = low ? tipAt : { x: -500 - i * 50, y: -500 };
       // Only carry speed while they're moving with the claw — not on the
       // jump in from (or out to) the parking spot.
       setPosition(tip, at, low && tipsLow);
@@ -230,7 +238,7 @@ async function createClaw(
   const drop = () => {
     if (state !== "roam") return false;
     state = "down";
-    void playSound("waka", 1);
+    void playSound("clawDown");
     return true;
   };
 
@@ -299,6 +307,7 @@ async function createClaw(
         if (x <= chuteX) {
           state = "release";
           timer = 0;
+          void playSound("clawOpen");
         }
         break;
       }
@@ -402,11 +411,6 @@ async function createClaw(
 
   const draw = (time: number) => {
     ctx.clearRect(0, 0, W, H);
-    // Rail.
-    ctx.fillStyle = color("primary", 0.18);
-    ctx.beginPath();
-    ctx.roundRect(area.x, railY - 4, area.w, 8, 4);
-    ctx.fill();
     // Prize chute.
     ctx.fillStyle = color("primary", 0.12);
     ctx.beginPath();
@@ -422,31 +426,28 @@ async function createClaw(
     for (const b of balls) drawBall(b, b.body.position.x, b.body.position.y, b.body.angle);
     if (dropping) drawBall(dropping.ball, chuteX, dropping.y);
 
-    // The claw: roof, rod, then arms behind the hub (a held ball between them).
-    const top = hubTop();
-    // The rod starts up inside the roof's collar and the roof is drawn over
-    // it, so there's no seam where they meet.
-    const tuck = roofH * 0.35;
-    part("rod", x - (ART.rod.w * k) / 2, railY - 10 + roofH - tuck, ART.rod.w * k, rod + tuck + 16);
-    part("roof", x - (ART.roof.w * k) / 2, railY - 10);
+    // The claw, hanging from the top of the screen: rod (tucked into the
+    // head's top), head, a held ball, then the arms over the hinge.
+    const top = headTop();
+    part("rod", x - (ART.rod.w * k) / 2, -10, ART.rod.w * k, top + 18);
+    part("head", x - HINGE.x * k, top);
     const g = grabPoint();
     if (held) {
       heldFrom.x *= 0.82;
       heldFrom.y *= 0.82;
       drawBall(held, g.x + heldFrom.x, g.y + heldFrom.y);
     }
-    const hubLeft = x - (ART.hub.w * k) / 2;
     const wobble = state === "roam" ? Math.sin(time * 4) * 0.03 : 0;
-    // side -1 = left arm, 1 = right arm (the left art mirrored).
-    for (const side of [-1, 1]) {
+    for (const [key, hinge, swing] of [
+      ["left", LEFT_HINGE, open + wobble],
+      ["right", RIGHT_HINGE, -open - wobble],
+    ] as const) {
       ctx.save();
-      ctx.translate(x + side * (0.5 - ARM_ON_HUB.x) * ART.hub.w * k, top + ART.hub.h * k * ARM_ON_HUB.y);
-      ctx.scale(-side, 1); // mirrors the right one
-      ctx.rotate(open + wobble);
-      part("arm", -ART.arm.w * k * ARM_JOINT.x, -ART.arm.h * k * ARM_JOINT.y);
+      ctx.translate(x, hingeY());
+      ctx.rotate(swing);
+      part(key, -hinge.x * k, -hinge.y * k);
       ctx.restore();
     }
-    part("hub", hubLeft, top);
 
     // A won ball pops open: its emoji and the points.
     if (shown) {
@@ -481,7 +482,7 @@ async function createClaw(
       ctx.font = "22px system-ui, sans-serif";
       ctx.textAlign = "right";
       ctx.textBaseline = "top";
-      ctx.fillText(badges.join(" "), area.x + area.w, railY + 12);
+      ctx.fillText(badges.join(" "), area.x + area.w, area.y + 4);
       ctx.restore();
     }
   };

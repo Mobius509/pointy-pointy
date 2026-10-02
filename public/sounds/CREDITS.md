@@ -43,3 +43,5 @@ some are CC BY-NC (no commercial use).
 | waka-1.m4a | Sqr beep (freesounds doesn't play it right) C | etheraudio | https://freesound.org/s/752670/ |
 | waka-2.m4a | 000101_0580s3 (trimmed to 1.00–1.16s) | gerent | https://freesound.org/s/669150/ |
 | flap.m4a | Cloth flap (trimmed) | ssierra1202 | https://freesound.org/s/391945/ |
+| claw-down.m4a | PS_Robot_Joint_Movment_01 (first half) | poundsounduk | https://freesound.org/s/641097/ |
+| claw-open.m4a | PS_Robot_Joint_Movment_01 (second half) | poundsounduk | https://freesound.org/s/641097/ |
