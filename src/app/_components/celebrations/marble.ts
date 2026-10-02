@@ -19,8 +19,9 @@ const COIN_ASPECT = 125 / 120;
 //    third of the inner walls so there are loops and little rooms — never
 //    just one path, and room to get around holes.
 // 2. Start somewhere random; coins go in dead ends and far corners.
-// 3. Holes: each one is only kept if every coin can still be reached from
-//    the start without rolling over a hole.
+// 3. Holes: never right next to a coin or the start, and each one is only
+//    kept if every coin can still be reached from the start without
+//    rolling over a hole.
 export function generateMaze(cols = 9, rows = 13, coinCount = 6, holeCount = 4): string[] {
   const g = Array.from({ length: rows }, () => Array.from({ length: cols }, () => "#"));
   const cw = (cols - 1) / 2; // rooms across (on odd squares)
@@ -82,8 +83,13 @@ export function generateMaze(cols = 9, rows = 13, coinCount = 6, holeCount = 4):
     return coins.every(([x, y]) => got.has(`${x},${y}`));
   };
   let holes = 0;
+  // Never right next to a coin or the start (so nothing's boxed in by a
+  // hole — every coin has a clear way up to it).
+  const nextToCoin = (x: number, y: number) => coins.some((c) => dist(c, [x, y]) <= 1);
   const candidates = shuffle(
-    g.flatMap((row, y) => row.map((c, x) => [x, y, c] as const)).filter(([x, y, c]) => c === "." && dist([x, y], [sx, sy]) > 2),
+    g
+      .flatMap((row, y) => row.map((c, x) => [x, y, c] as const))
+      .filter(([x, y, c]) => c === "." && dist([x, y], [sx, sy]) > 2 && !nextToCoin(x, y)),
   );
   for (const [x, y] of candidates) {
     if (holes >= holeCount) break;
