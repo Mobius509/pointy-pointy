@@ -108,12 +108,12 @@ async function loadImages(): Promise<Images> {
   return { parts: Object.fromEntries(keys.map((k, i) => [k, parts[i]])) as Images["parts"], balls, pearl, emojis };
 }
 
-const sparkle = (x: number, y: number) =>
+const sparkle = (x: number, y: number, count = 28) =>
   confetti({
     ...confettiStyle(),
-    particleCount: 28,
+    particleCount: count,
     spread: 360,
-    startVelocity: 16,
+    startVelocity: count > 28 ? 26 : 16,
     ticks: 60,
     origin: { x: x / window.innerWidth, y: y / window.innerHeight },
   });
@@ -311,18 +311,24 @@ async function createClaw(
     );
   };
 
+  let doomed: Ball | null = null; // about to be blown up by a bomb
   // Bomb: it takes out one of the pearls in the pile and the blast throws
   // the whole pile around — which can bury good balls or dig them out.
   const bombPearl = () => {
+    // A pearl if there is one, otherwise any ball — it flashes red first so
+    // you can see which one's going.
     const pearls = balls.filter((b) => b.special);
-    const b = pearls.length ? pearls[Math.floor(Math.random() * pearls.length)] : null;
+    const pool = pearls.length ? pearls : balls;
+    const b = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+    doomed = b;
     setTimeout(() => {
+      doomed = null;
       // Blast from the pearl, or from the middle of the pile if none are left.
       const at = b ? { ...b.body.position } : { x: pileLeft + (W - pileLeft) / 2, y: floorY - r };
       if (b && balls.includes(b)) {
         balls.splice(balls.indexOf(b), 1);
         M.Composite.remove(engine.world, b.body);
-        sparkle(at.x, at.y);
+        sparkle(at.x, at.y, 70);
       }
       for (const o of balls) {
         const dx = o.body.position.x - at.x;
@@ -335,7 +341,7 @@ async function createClaw(
         });
       }
       void playSound("explode");
-    }, 450);
+    }, 700);
   };
 
   const drop = () => {
@@ -584,6 +590,20 @@ async function createClaw(
     ctx.fill();
 
     for (const b of balls) drawBall(b, b.body.position.x, b.body.position.y, b.body.angle);
+    if (doomed) {
+      // Drawn over the pile so a buried one still shows: a pulsing red glow.
+      const { x: dx, y: dy } = doomed.body.position;
+      drawBall(doomed, dx, dy, doomed.body.angle);
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 40, 40, ${0.35 + 0.3 * Math.abs(Math.sin(time * 18))})`;
+      ctx.strokeStyle = "rgba(255, 40, 40, 0.9)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(dx, dy, r * 1.05, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
     if (dropping) drawBall(dropping.ball, chuteX, dropping.y);
 
     // The claw, hanging from the top of the screen: rod (tucked into the
