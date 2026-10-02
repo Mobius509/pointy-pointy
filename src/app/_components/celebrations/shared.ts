@@ -288,3 +288,59 @@ export async function flyToCounter(el: HTMLElement, counter?: { x: number; y: nu
     .finished.catch(() => {});
   el.remove();
 }
+
+// ----- Dev panel ----------------------------------------------------------------
+// For trying out a game's specials without hunting for them. Local dev
+// server only: callers gate it with `process.env.NODE_ENV === "development"
+// && devMode()`, which compiles away in deployed builds. Turn it on with ?dev
+// on the page URL (remembered on this device; ?dev=0 turns it off).
+export function devMode(): boolean {
+  try {
+    const q = new URLSearchParams(window.location.search).get("dev");
+    if (q !== null) localStorage.setItem("pp:dev", q === "0" ? "" : "1");
+    return localStorage.getItem("pp:dev") === "1";
+  } catch {
+    return false;
+  }
+}
+
+export type DevButton = { icon: string; title?: string; run: () => string | void };
+
+// Rows of emoji buttons on the page itself, above the score bar (which
+// would swallow the taps). `run` can return a status line. Remove the
+// returned element when the game stops.
+export function devPanel(safe: { x: number; y: number }, rows: { label: string; buttons: DevButton[] }[]): HTMLElement {
+  const panel = document.createElement("div");
+  panel.className = "fixed z-[90] flex flex-col gap-1 rounded-2xl bg-white/90 p-2 text-xs font-bold text-pp-primary shadow-sm";
+  panel.style.left = `${safe.x + 8}px`;
+  panel.style.top = `${safe.y + 8}px`;
+  panel.style.pointerEvents = "auto";
+  panel.style.maxWidth = "calc(100vw - 160px)";
+  const status = document.createElement("div");
+  for (const { label, buttons } of rows) {
+    const wrap = document.createElement("div");
+    wrap.className = "flex flex-wrap items-center gap-1";
+    const title = document.createElement("span");
+    title.textContent = label;
+    title.className = "mr-1";
+    wrap.appendChild(title);
+    for (const { icon, title: tip, run } of buttons) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = icon;
+      if (tip) b.title = tip;
+      b.className = "h-8 min-w-8 px-1 rounded-full bg-pp-soft text-base";
+      b.onclick = () => {
+        const said = run();
+        status.textContent = said || `${icon} done`;
+      };
+      wrap.appendChild(b);
+    }
+    panel.appendChild(wrap);
+  }
+  status.className = "text-pp-muted";
+  status.textContent = "Dev mode";
+  panel.appendChild(status);
+  document.body.appendChild(panel);
+  return panel;
+}
