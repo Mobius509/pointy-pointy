@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
 import { unlockAudio } from "@/app/_components/celebrations";
@@ -10,8 +11,8 @@ import { ChevronIcon } from "./KidIcons";
 export function CelebrateCard({ slug, disabled = false }: { slug: string; disabled?: boolean }) {
   const inner = (
     <>
-      <span className="grid size-[75px] shrink-0 place-items-center rounded-[22px] bg-kid-strong-deep text-[42px]" aria-hidden>
-        🔥
+      <span className="grid size-[75px] shrink-0 place-items-center rounded-[22px] bg-kid-strong-deep" aria-hidden>
+        <img src="/icons/3dIcon_Fire.png" alt="" className="size-[54px] object-contain" />
       </span>
       <span className="flex-1 text-[17px] font-medium leading-snug text-white">
         Your points have been approved! Nice work. Let&apos;s celebrate!

@@ -34,7 +34,7 @@ export function KidTabBar({ slug, disabled = false }: { slug: string; disabled?:
         on(tasks) ? "ring-4 ring-kid-card" : ""
       }`}
     >
-      <CheckIcon className="size-7 text-white/90 [&_path]:stroke-kid-strong" />
+      <CheckIcon className="size-7 text-white" />
     </span>
   );
   return (

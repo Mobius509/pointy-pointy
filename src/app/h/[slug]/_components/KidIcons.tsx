@@ -1,6 +1,6 @@
-// The kid app's icons. Placeholders drawn to match the mock until the
-// exported icon set arrives; all use currentColor so they follow the kid's
-// palette.
+// The kid app's icons — the exported set (public/icons), plus a gear drawn
+// to match. All take the current text color, so they follow the kid's
+// palette. The iOS app has the same icons in its asset catalog.
 
 type P = { className?: string };
 
@@ -12,36 +12,24 @@ export function GearIcon({ className }: P) {
   );
 }
 
-export function StatsIcon({ className }: P) {
+// The exported icon set (public/icons): drawn as a mask in the current text
+// color, so they follow the kid's palette (.kid-icon in globals.css).
+function MaskIcon({ src, className }: P & { src: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden className={className} fill="currentColor">
-      <path d="M11 2.05A10 10 0 1 0 21.95 13H11z" opacity="0.55" />
-      <path d="M13 2.05V11h8.95A10 10 0 0 0 13 2.05z" />
-    </svg>
+    <span aria-hidden className={`kid-icon inline-block ${className ?? ""}`} style={{ "--icon": `url(${src})` } as React.CSSProperties} />
   );
 }
 
+export const StatsIcon = ({ className }: P) => <MaskIcon src="/icons/Icon_ThumbsUp.svg" className={className} />;
+export const ArcadeIcon = ({ className }: P) => <MaskIcon src="/icons/Icon_Game.svg" className={className} />;
+
+// The big ✓ on the tab bar (drawn until there's an exported one).
 export function CheckIcon({ className }: P) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden className={className} fill="none">
       <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" />
-      <path d="M8 12.5l2.6 2.6L16.5 9" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 12.5l2.6 2.6L16.5 9" stroke="rgb(var(--kid-strong))" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
-
-export function ArcadeIcon({ className }: P) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className={className} fill="currentColor">
-      <path d="M7 6h10a5 5 0 0 1 0 10l-1.2-.1-1.6 1.6A2 2 0 0 1 12.8 18h-1.6a2 2 0 0 1-1.4-.6l-1.6-1.5L7 16A5 5 0 0 1 7 6zm0 3a.9.9 0 0 0-.9.9V10H5.9a.9.9 0 0 0 0 1.8h.2v.2a.9.9 0 0 0 1.8 0v-.2h.2a.9.9 0 0 0 0-1.8h-.2v-.1A.9.9 0 0 0 7 9zm8.5.6a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm2 2.4a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
-    </svg>
-  );
-}
-
-export function ChevronIcon({ className }: P) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className={className} fill="currentColor">
-      <path d="M9 6.5v11a1 1 0 0 0 1.6.8l7-5.5a1 1 0 0 0 0-1.6l-7-5.5A1 1 0 0 0 9 6.5z" />
-    </svg>
-  );
-}
+export const ChevronIcon = ({ className }: P) => <MaskIcon src="/icons/Icon_ChunkyArrow.svg" className={className} />;

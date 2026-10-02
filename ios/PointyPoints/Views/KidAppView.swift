@@ -128,7 +128,7 @@ private struct TabBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            side(.stats, "Stats", "chart.pie.fill")
+            side(.stats, "Stats", "IconThumbsUp")
             Button { tab = .tasks } label: {
                 Image(systemName: "checkmark.square.fill")
                     .font(.system(size: 26, weight: .semibold))
@@ -140,7 +140,7 @@ private struct TabBar: View {
             }
             .padding(.vertical, -12)
             .accessibilityLabel("Tasks")
-            side(.arcade, "Arcade", "gamecontroller.fill")
+            side(.arcade, "Arcade", "IconGame")
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
@@ -152,7 +152,10 @@ private struct TabBar: View {
     private func side(_ which: KidAppView.Tab, _ label: String, _ icon: String) -> some View {
         Button { tab = which } label: {
             HStack(spacing: 6) {
-                Image(systemName: icon).foregroundStyle(Theme.palette.strong)
+                Image(icon)
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                    .foregroundStyle(Theme.palette.strong)
                 Text(label)
                     .font(.rounded(13, .semibold))
                     .foregroundStyle(tab == which ? Theme.palette.textStrong : Theme.palette.text)

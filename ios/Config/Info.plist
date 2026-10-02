@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Figtree: the kid app's font, same as the web (OFL — Fonts/OFL.txt). -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>Figtree-Variable.ttf</string>
+	</array>
 	<!-- Lets debug builds talk to `npm run dev` at http://localhost:3000. -->
 	<key>NSAppTransportSecurity</key>
 	<dict>

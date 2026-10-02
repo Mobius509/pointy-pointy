@@ -57,8 +57,10 @@ private struct CelebrateCard: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
-                Text("🔥")
-                    .font(.system(size: 42))
+                Image("Fire3D")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 54, height: 54)
                     .frame(width: 75, height: 75)
                     .background(Theme.palette.strongDeep, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 Text("Your points have been approved! Nice work. Let's celebrate!")
@@ -66,7 +68,10 @@ private struct CelebrateCard: View {
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: "play.fill").foregroundStyle(.white)
+                Image("IconChunkyArrow")
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                    .foregroundStyle(.white)
             }
             .padding(14)
             .padding(.trailing, 6)
