@@ -84,7 +84,16 @@ export default async function ParentOverviewPage({
 
       const streaks = (
         await getKidStreaks({ householdId: household.id, kidProfileId: kid.id, timezone: household.timezone })
-      ).map(({ streak, run }) => ({ name: streak.name, days: run.length, needed: streak.days_required }));
+      ).map((ks) => ({
+        id: ks.streak.id,
+        name: ks.streak.name,
+        days: ks.run.length,
+        needed: ks.streak.days_required,
+        excusedToday: ks.excusedToday,
+        excusedYesterday: ks.excusedYesterday,
+        canCountToday: ks.canCountToday,
+        canCountYesterday: ks.canCountYesterday,
+      }));
 
       return {
         kid,
