@@ -46,3 +46,4 @@ some are CC BY-NC (no commercial use).
 | claw-down.m4a | PS_Robot_Joint_Movment_01 (first half) | poundsounduk | https://freesound.org/s/641097/ |
 | claw-open.m4a | PS_Robot_Joint_Movment_01 (second half) | poundsounduk | https://freesound.org/s/641097/ |
 | claw-move-1.m4a, claw-move-2.m4a | Electric scooter (two short pieces) | ienba | https://freesound.org/s/697379/ |
+| whoopsie.m4a | Whoopsie (high pitch), loudness-normalized | deleted_user_3424813 | https://freesound.org/s/274829/ |

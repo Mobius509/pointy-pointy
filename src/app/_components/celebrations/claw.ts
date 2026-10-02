@@ -93,19 +93,35 @@ type Images = {
   balls: (HTMLImageElement | HTMLCanvasElement)[]; // the colored ones
   pearl: HTMLImageElement | null;
   emojis: (HTMLImageElement | null)[];
+  platform: HTMLImageElement | null; // the block-stack platform, for the floor and chute wall
 };
 
 async function loadImages(): Promise<Images> {
   const keys = Object.keys(ART) as (keyof typeof ART)[];
-  const [parts, red, pearl, emojis] = await Promise.all([
+  const [parts, red, pearl, emojis, platform] = await Promise.all([
     Promise.all(keys.map((k) => loadImage(ART[k].src))),
     loadImage(BALL_SRCS[0]),
     loadImage(BALL_SRCS[1]),
     Promise.all(EMOJI_SOURCES.map((s) => loadImage(s))),
+    loadImage("/anims/platform.webp"),
   ]);
   const balls: (HTMLImageElement | HTMLCanvasElement)[] = [];
   if (red) for (const t of TINTS) balls.push(tinted(red, t));
-  return { parts: Object.fromEntries(keys.map((k, i) => [k, parts[i]])) as Images["parts"], balls, pearl, emojis };
+  return { parts: Object.fromEntries(keys.map((k, i) => [k, parts[i]])) as Images["parts"], balls, pearl, emojis, platform };
+}
+
+// The platform art as a bar of any length without stretching its rounded
+// ends: the ends keep their shape and only the middle stretches. Drawn
+// along +x from (x, y) at the given thickness; rotate the canvas for a
+// vertical bar.
+function drawBar(ctx: CanvasRenderingContext2D, art: HTMLImageElement, x: number, y: number, length: number, thick: number) {
+  const sw = art.naturalWidth;
+  const sh = art.naturalHeight;
+  const cap = sh * 0.55; // the rounded end, in art px
+  const dc = Math.min(cap * (thick / sh), length / 2); // on screen
+  ctx.drawImage(art, 0, 0, cap, sh, x, y, dc, thick);
+  ctx.drawImage(art, cap, 0, sw - cap * 2, sh, x + dc - 0.5, y, length - dc * 2 + 1, thick);
+  ctx.drawImage(art, sw - cap, 0, cap, sh, x + length - dc, y, dc, thick);
 }
 
 const sparkle = (x: number, y: number, count = 28) =>
@@ -132,7 +148,10 @@ async function createClaw(
   const img = await loadImages();
   const k = Math.min(0.42, W / 890); // art px → screen px
   const r = BALL_RADIUS * k;
-  const floorY = area.y + area.h;
+  // The floor is a platform bar along the bottom; balls sit on top of it.
+  const barT = Math.max(14, r * 0.5);
+  const floorY = area.y + area.h - barT;
+  const wallT = barT * 0.8; // the chute wall
   // The chute is wide enough that the claw can sit over it without an arm
   // running off the screen.
   const clawHalf = CLAW_HALF_WIDTH * k;
@@ -148,7 +167,7 @@ async function createClaw(
   M.Composite.add(engine.world, [
     wall(area.x + area.w / 2, floorY + 20, area.w + 200, 40), // floor
     wall(area.x + area.w + 20, area.y + area.h / 2, 40, area.h * 2), // right wall
-    wall(pileLeft, floorY - 40, 10, 80), // chute divider
+    wall(pileLeft, floorY - 40, wallT, 80), // chute divider
   ]);
 
   const balls: Ball[] = [];
@@ -452,7 +471,7 @@ async function createClaw(
           M.Body.setVelocity(b.body, { x: swayV * 2, y: 0 });
           M.Composite.add(engine.world, b.body);
           balls.push(b);
-          void playSound("pop");
+          void playSound("whoops");
         }
         if (rod <= restRod) {
           state = held ? "carry" : "roam";
@@ -582,12 +601,21 @@ async function createClaw(
     ctx.beginPath();
     ctx.roundRect(area.x, floorY - 80, chuteW - 6, 80, [16, 16, 0, 0]);
     ctx.fill();
-    // Divider and floor line.
-    ctx.fillStyle = color("primary", 0.25);
-    ctx.beginPath();
-    ctx.roundRect(pileLeft - 5, floorY - 80, 10, 80, 5);
-    ctx.roundRect(area.x, floorY - 4, area.w, 8, 4);
-    ctx.fill();
+    // Chute wall and floor, drawn with the platform art.
+    if (img.platform) {
+      ctx.save();
+      ctx.translate(pileLeft + wallT / 2, floorY - 80);
+      ctx.rotate(Math.PI / 2);
+      drawBar(ctx, img.platform, 0, 0, 80 + barT / 2, wallT);
+      ctx.restore();
+      drawBar(ctx, img.platform, area.x, floorY, area.w, barT);
+    } else {
+      ctx.fillStyle = color("primary", 0.25);
+      ctx.beginPath();
+      ctx.roundRect(pileLeft - wallT / 2, floorY - 80, wallT, 80, wallT / 2);
+      ctx.roundRect(area.x, floorY, area.w, barT, barT / 2);
+      ctx.fill();
+    }
 
     for (const b of balls) drawBall(b, b.body.position.x, b.body.position.y, b.body.angle);
     if (doomed) {

@@ -196,7 +196,7 @@ export const CELEBRATIONS: Celebration[] = [
     hidesStage: true,
     game: { kind: "score", icon: "🎁", label: "points", lives: 5, start: playClawGame },
     name: "Claw machine",
-    description: "Tap to drop the claw and grab prize balls — each pops open with an emoji and points. Keep playing: five tries — prizes, bombs, extra tries and rare specials (golden, magnet, slow-mo, jackpot, shake-up, sneaky, mystery, skull, super bonus).",
+    description: "Tap to drop the claw and grab prize balls — each pops open with an emoji and points. Keep playing: five tries — prizes, bombs, extra tries and rare specials (golden, magnet, iron claw, sticky claw, slow-mo, jackpot, shake-up, sneaky, mystery, skull, super bonus).",
     play: playClaw,
   },
   {
