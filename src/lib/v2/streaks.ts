@@ -260,13 +260,13 @@ export async function countStreakDay(
 //
 // Tickets pile up; each one is a single play. Using one starts a game
 // (random, or the kid's pick once a streak has run two weeks) and needs a
-// streak going. The ticket is burned when the kid closes the game, or
-// ARCADE_PLAY_MINUTES after it was used, whichever comes first — until then
-// (say the page reloads) that game is still theirs to play. Leaving the game
-// open doesn't stretch it: the game stops itself at `endsAt` too.
+// streak going. The ticket is burned when the kid closes the game, or a day
+// (ARCADE_PLAY_MINUTES) after it was used, whichever comes first — until
+// then (say the page reloads) that game is still theirs to play. Leaving the
+// game open doesn't stretch it: the game stops itself at `endsAt` too.
 // Columns: `claimed_at` = used, `games` = [the game], `expires_at` = closed.
 
-export const ARCADE_PLAY_MINUTES = 10;
+export const ARCADE_PLAY_MINUTES = 24 * 60;
 const playEnds = (claimedAt: string) => new Date(new Date(claimedAt).getTime() + ARCADE_PLAY_MINUTES * 60_000).toISOString();
 
 export type Arcade = {

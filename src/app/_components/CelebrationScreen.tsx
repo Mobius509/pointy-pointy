@@ -56,6 +56,9 @@ export type CelebrationItem = {
 // How long "Keep playing" after a celebration lasts (an arcade ticket's
 // time comes from the server — ARCADE_PLAY_MINUTES).
 const KEEP_PLAYING_MINUTES = 5;
+// The playtime countdown shows for the last this-many seconds (all of Keep
+// playing's 5 minutes; just the end of an arcade ticket's day).
+const SHOW_COUNTDOWN_SECONDS = 10 * 60;
 
 export function CelebrationScreen({
   avatarSrc,
@@ -87,7 +90,7 @@ export function CelebrationScreen({
   // "game": open straight into the mini game (the kid's Arcade) — no
   // celebration, no points; Done closes it.
   mode?: "celebration" | "game";
-  // When playing has to stop (ms since 1970) — an arcade ticket's time is
+  // When playing has to stop (ms since 1970) — an arcade ticket's day is
   // up. "Keep playing" after a celebration gets KEEP_PLAYING_MINUTES from
   // the first tap. Either way the game stops itself then: no "Play again".
   playUntil?: number;
@@ -411,7 +414,7 @@ export function CelebrationScreen({
                 ⏱ {timeLeft}s
               </div>
             )}
-            {!timesUp && secondsLeft !== null && secondsLeft > 0 && (
+            {!timesUp && secondsLeft !== null && secondsLeft > 0 && secondsLeft <= SHOW_COUNTDOWN_SECONDS && (
               <div
                 aria-label={`${Math.ceil(secondsLeft / 60)} minutes of playtime left`}
                 title="Playtime left"
