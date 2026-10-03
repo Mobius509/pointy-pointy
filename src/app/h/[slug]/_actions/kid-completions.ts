@@ -124,7 +124,7 @@ export async function submitHighScoreAction(
 export async function redeemArcadeTicketAction(
   slug: string,
   picked: string | null,
-): Promise<{ ok: true; ticketId: string; game: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; ticketId: string; game: string; endsAt: string } | { ok: false; error: string }> {
   let ctx;
   try {
     ctx = await requireKidSessionForSlug(slug);

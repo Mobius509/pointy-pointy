@@ -260,16 +260,21 @@ export async function countStreakDay(
 //
 // Tickets pile up; each one is a single play. Using one starts a game
 // (random, or the kid's pick once a streak has run two weeks) and needs a
-// streak going. The ticket is burned when the kid closes the game — until
-// then (say the page reloads) that game is still theirs to play.
+// streak going. The ticket is burned when the kid closes the game, or
+// ARCADE_PLAY_MINUTES after it was used, whichever comes first — until then
+// (say the page reloads) that game is still theirs to play. Leaving the game
+// open doesn't stretch it: the game stops itself at `endsAt` too.
 // Columns: `claimed_at` = used, `games` = [the game], `expires_at` = closed.
+
+export const ARCADE_PLAY_MINUTES = 10;
+const playEnds = (claimedAt: string) => new Date(new Date(claimedAt).getTime() + ARCADE_PLAY_MINUTES * 60_000).toISOString();
 
 export type Arcade = {
   tickets: number; // unused tickets
   mode: ArcadeMode; // what using one does right now
   streakDays: number; // best current streak
   pickAt: number; // streak days that let the kid pick the game
-  playing: { ticketId: string; game: ArcadeGameId } | null; // used, not closed yet
+  playing: { ticketId: string; game: ArcadeGameId; endsAt: string } | null; // used, not closed yet
 };
 
 const modeFor = (streaks: KidStreak[]) =>
@@ -293,10 +298,22 @@ export async function getArcade(ctx: KidContext, streaks?: KidStreak[]): Promise
   }
   let playing: Arcade["playing"] = null;
   let tickets = 0;
+  const timedOut: string[] = [];
   for (const t of data ?? []) {
     const game = (t.games as string[] | null)?.[0];
     if (!t.claimed_at) tickets++;
-    else if (!playing && game && isArcadeGame(game)) playing = { ticketId: t.id as string, game };
+    else if (playEnds(t.claimed_at as string) <= new Date().toISOString()) timedOut.push(t.id as string);
+    else if (!playing && game && isArcadeGame(game))
+      playing = { ticketId: t.id as string, game, endsAt: playEnds(t.claimed_at as string) };
+  }
+  // Out of time but never closed (left open, or the page was shut): spent.
+  if (timedOut.length) {
+    const { error: closeError } = await supabaseV2Admin
+      .from("arcade_tickets")
+      .update({ expires_at: new Date().toISOString() })
+      .in("id", timedOut)
+      .is("expires_at", null);
+    if (closeError) console.error("[arcade] closing timed-out tickets", closeError);
   }
   return { tickets, playing, ...mode };
 }
@@ -307,7 +324,7 @@ export async function getArcade(ctx: KidContext, streaks?: KidStreak[]): Promise
 export async function redeemArcadeTicket(
   ctx: KidContext,
   picked: string | null,
-): Promise<{ ok: true; ticketId: string; game: ArcadeGameId } | { ok: false; error: string }> {
+): Promise<{ ok: true; ticketId: string; game: ArcadeGameId; endsAt: string } | { ok: false; error: string }> {
   const arcade = await getArcade(ctx);
   if (arcade.playing) return { ok: true, ...arcade.playing };
   if (arcade.tickets === 0) return { ok: false, error: "No tickets left — keep your streak going to earn more!" };
@@ -332,15 +349,16 @@ export async function redeemArcadeTicket(
     .maybeSingle();
   if (error) return { ok: false, error: error.message };
   if (!next) return { ok: false, error: "No tickets left." };
+  const claimedAt = new Date().toISOString();
   const { data: used, error: useError } = await supabaseV2Admin
     .from("arcade_tickets")
-    .update({ games: [game], claimed_at: new Date().toISOString() })
+    .update({ games: [game], claimed_at: claimedAt })
     .eq("id", next.id)
     .is("claimed_at", null) // no double-spending from two taps
     .select("id");
   if (useError) return { ok: false, error: useError.message };
   if (!used?.length) return { ok: false, error: "That ticket's already been used — try again." };
-  return { ok: true, ticketId: next.id as string, game };
+  return { ok: true, ticketId: next.id as string, game, endsAt: playEnds(claimedAt) };
 }
 
 // Closing the game burns the ticket.
