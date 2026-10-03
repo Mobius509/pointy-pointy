@@ -136,17 +136,100 @@ export function loadImage(src?: string): Promise<HTMLImageElement | null> {
   });
 }
 
-// A copy of `img` with a CSS filter baked in, e.g. a hue-rotate tint
-// (browsers without canvas filters just get the original color).
+// A copy of `img` with a CSS filter baked in, e.g. a hue-rotate tint. Safari
+// (so every iPhone, and the iOS app's web view) ignores canvas filters, so
+// there the same color math is done on the pixels instead — otherwise every
+// tinted ball, bubble and treat would come out the art's own color.
 export function tinted(img: HTMLImageElement | HTMLCanvasElement, filter: string): HTMLCanvasElement | HTMLImageElement {
   const c = document.createElement("canvas");
   c.width = img instanceof HTMLImageElement ? img.naturalWidth : img.width;
   c.height = img instanceof HTMLImageElement ? img.naturalHeight : img.height;
-  const g = c.getContext("2d");
+  const g = c.getContext("2d", { willReadFrequently: true });
   if (!g || !c.width || !c.height) return img;
-  g.filter = filter;
+  if (canvasFilters()) {
+    g.filter = filter;
+    g.drawImage(img, 0, 0);
+    return c;
+  }
   g.drawImage(img, 0, 0);
+  const steps = filterSteps(filter);
+  if (!steps.length) return c;
+  let pixels: ImageData;
+  try {
+    pixels = g.getImageData(0, 0, c.width, c.height);
+  } catch {
+    return c; // cross-origin image: can't read pixels
+  }
+  const d = pixels.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3]) continue;
+    let r = d[i] / 255;
+    let gr = d[i + 1] / 255;
+    let b = d[i + 2] / 255;
+    for (const m of steps) {
+      [r, gr, b] = [
+        clamp01(m[0] * r + m[1] * gr + m[2] * b),
+        clamp01(m[3] * r + m[4] * gr + m[5] * b),
+        clamp01(m[6] * r + m[7] * gr + m[8] * b),
+      ];
+    }
+    d[i] = r * 255;
+    d[i + 1] = gr * 255;
+    d[i + 2] = b * 255;
+  }
+  g.putImageData(pixels, 0, 0);
   return c;
+}
+
+const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+// Whether canvas filters work here: invert a white pixel and see.
+let filtersWork: boolean | null = null;
+function canvasFilters(): boolean {
+  if (filtersWork !== null) return filtersWork;
+  const c = document.createElement("canvas");
+  c.width = c.height = 1;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  if (!g || !("filter" in g)) return (filtersWork = false);
+  g.fillStyle = "#fff";
+  g.fillRect(0, 0, 1, 1);
+  const probe = document.createElement("canvas");
+  probe.width = probe.height = 1;
+  const pg = probe.getContext("2d", { willReadFrequently: true });
+  if (!pg) return (filtersWork = false);
+  pg.filter = "invert(1)";
+  pg.drawImage(c, 0, 0);
+  return (filtersWork = pg.getImageData(0, 0, 1, 1).data[0] < 128);
+}
+
+// The filter functions we use (hue-rotate, saturate, grayscale, brightness),
+// as the CSS spec's color matrices, in order.
+function filterSteps(filter: string): number[][] {
+  const steps: number[][] = [];
+  for (const [, fn, raw] of filter.matchAll(/([a-z-]+)\(([^)]*)\)/g)) {
+    const n = parseFloat(raw);
+    const amount = raw.trim().endsWith("%") ? n / 100 : n;
+    if (fn === "hue-rotate") {
+      const a = (n * Math.PI) / 180; // degrees
+      const cos = Math.cos(a);
+      const sin = Math.sin(a);
+      steps.push([
+        0.213 + cos * 0.787 - sin * 0.213, 0.715 - cos * 0.715 - sin * 0.715, 0.072 - cos * 0.072 + sin * 0.928,
+        0.213 - cos * 0.213 + sin * 0.143, 0.715 + cos * 0.285 + sin * 0.14, 0.072 - cos * 0.072 - sin * 0.283,
+        0.213 - cos * 0.213 - sin * 0.787, 0.715 - cos * 0.715 + sin * 0.715, 0.072 + cos * 0.928 + sin * 0.072,
+      ]);
+    } else if (fn === "saturate" || fn === "grayscale") {
+      const s = fn === "saturate" ? amount : 1 - Math.min(1, amount);
+      steps.push([
+        0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s,
+        0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s,
+        0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s,
+      ]);
+    } else if (fn === "brightness") {
+      steps.push([amount, 0, 0, 0, amount, 0, 0, 0, amount]);
+    }
+  }
+  return steps;
 }
 
 // A copy of `img` cropped to its visible pixels (drops the empty margin
