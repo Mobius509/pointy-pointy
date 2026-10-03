@@ -28,7 +28,7 @@ export function Arcade({
   preview?: boolean;
   kidName?: string;
 }) {
-  const [playing, setPlaying] = useState<{ ticketId: string; game: string } | null>(null);
+  const [playing, setPlaying] = useState<{ ticketId: string; game: string; endsAt: string } | null>(null);
   const [spin, setSpin] = useState(false); // the surprise-game dialog
   const [confirm, setConfirm] = useState<string | null>(null); // picked game, to confirm
   const { tickets, mode, streakDays, pickAt } = arcade;
@@ -142,6 +142,7 @@ export function Arcade({
           key={playing.ticketId}
           mode="game"
           effectId={playing.game}
+          playUntil={Date.parse(playing.endsAt)}
           avatarSrc={avatarSrc}
           total={0}
           items={[]}
@@ -171,9 +172,9 @@ function SurpriseDialog({
 }: {
   slug: string;
   onClose: () => void;
-  onPlay: (p: { ticketId: string; game: string }) => void;
+  onPlay: (p: { ticketId: string; game: string; endsAt: string }) => void;
 }) {
-  const [won, setWon] = useState<{ ticketId: string; game: string } | null>(null);
+  const [won, setWon] = useState<{ ticketId: string; game: string; endsAt: string } | null>(null);
   const [spinning, setSpinning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -188,7 +189,7 @@ function SurpriseDialog({
         await new Promise((r) => setTimeout(r, 70 + i * 12));
       }
       setSpinning(null);
-      setWon({ ticketId: res.ticketId, game: res.game });
+      setWon({ ticketId: res.ticketId, game: res.game, endsAt: res.endsAt });
     });
 
   const shown = spinning ?? won?.game;
@@ -225,7 +226,7 @@ function PickDialog({
   game: string;
   tickets: number;
   onClose: () => void;
-  onPlay: (p: { ticketId: string; game: string }) => void;
+  onPlay: (p: { ticketId: string; game: string; endsAt: string }) => void;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -247,7 +248,7 @@ function PickDialog({
               setError(null);
               const res = await redeemArcadeTicketAction(slug, game);
               if (!res.ok) return setError(res.error);
-              onPlay({ ticketId: res.ticketId, game: res.game });
+              onPlay({ ticketId: res.ticketId, game: res.game, endsAt: res.endsAt });
             })
           }
           className="btn-primary btn-lg flex-1"

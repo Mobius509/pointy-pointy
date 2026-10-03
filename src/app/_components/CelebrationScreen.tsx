@@ -53,6 +53,10 @@ export type CelebrationItem = {
   isBonus: boolean;
 };
 
+// How long "Keep playing" after a celebration lasts (an arcade ticket's
+// time comes from the server — ARCADE_PLAY_MINUTES).
+const KEEP_PLAYING_MINUTES = 5;
+
 export function CelebrationScreen({
   avatarSrc,
   total,
@@ -64,6 +68,7 @@ export function CelebrationScreen({
   onSubmitHighScore,
   onClose,
   mode = "celebration",
+  playUntil,
 }: {
   avatarSrc: string;
   total: number;
@@ -82,6 +87,10 @@ export function CelebrationScreen({
   // "game": open straight into the mini game (the kid's Arcade) — no
   // celebration, no points; Done closes it.
   mode?: "celebration" | "game";
+  // When playing has to stop (ms since 1970) — an arcade ticket's time is
+  // up. "Keep playing" after a celebration gets KEEP_PLAYING_MINUTES from
+  // the first tap. Either way the game stops itself then: no "Play again".
+  playUntil?: number;
 }) {
   const gameOnly = mode === "game";
   const [headline] = useState(() => pick(HEADLINES));
@@ -136,14 +145,42 @@ export function CelebrationScreen({
     });
   };
   const stopGame = useRef<() => void>(() => {});
+  const [deadline, setDeadline] = useState<number | null>(playUntil ?? null);
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const outOfTime = secondsLeft !== null && secondsLeft <= 0;
   const keepPlaying = () => {
     unlockAudio();
+    setDeadline((d) => d ?? Date.now() + KEEP_PLAYING_MINUTES * 60_000);
     setPlaying(true);
     setRound((n) => n + 1);
   };
+  // Playtime's limit: tick down, and when it's up end the round (the score
+  // still counts) and don't offer another.
+  const timesUpRef = useRef(false);
+  timesUpRef.current = timesUp;
+  useEffect(() => {
+    if (!playing || deadline === null) return;
+    const tick = () => {
+      const left = Math.ceil((deadline - Date.now()) / 1000);
+      setSecondsLeft(left);
+      if (left <= 0) {
+        clearInterval(timer);
+        if (!timesUpRef.current) endRound();
+      }
+    };
+    const timer = setInterval(tick, 1000);
+    tick();
+    return () => clearInterval(timer);
+    // endRound only touches refs and state setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, deadline]);
   // Start once the counter is on screen, so collected candy knows where to fly.
   useEffect(() => {
     if (!playing) return;
+    if (deadline !== null && deadline <= Date.now()) {
+      setTimesUp(true); // out of time before it even started
+      return;
+    }
     onScore(0);
     setTimesUp(false);
     setNewBest(false);
@@ -374,6 +411,17 @@ export function CelebrationScreen({
                 ⏱ {timeLeft}s
               </div>
             )}
+            {!timesUp && secondsLeft !== null && secondsLeft > 0 && (
+              <div
+                aria-label={`${Math.ceil(secondsLeft / 60)} minutes of playtime left`}
+                title="Playtime left"
+                className={`rounded-full bg-white px-3 py-2 text-sm font-bold shadow-sm tabular-nums ${
+                  secondsLeft <= 30 ? "text-rose-600" : "text-pp-muted"
+                }`}
+              >
+                {gameOnly ? "🎟️" : "⏳"} {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+              </div>
+            )}
           </div>
         )}
 
@@ -400,16 +448,29 @@ export function CelebrationScreen({
                 )
               )}
               <div className="mt-6 flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRound((n) => n + 1)}
-                  className="btn-primary btn-lg w-full rounded-2xl"
-                >
-                  Play again
-                </button>
-                <button type="button" onClick={onClose} className="btn-secondary w-full">
-                  Done
-                </button>
+                {outOfTime ? (
+                  <>
+                    <p className="font-semibold text-pp-primary">
+                      {gameOnly ? "That's all the time on this ticket! 🎟️" : "That's playtime for now!"}
+                    </p>
+                    <button type="button" onClick={onClose} className="btn-primary btn-lg w-full rounded-2xl">
+                      Done
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setRound((n) => n + 1)}
+                      className="btn-primary btn-lg w-full rounded-2xl"
+                    >
+                      Play again
+                    </button>
+                    <button type="button" onClick={onClose} className="btn-secondary w-full">
+                      Done
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
