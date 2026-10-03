@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
+import { EmojiField } from "../_components/EmojiField";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
 import {
   getActiveGoalForKid,
@@ -107,10 +108,7 @@ export default async function ParentGoalPage({
                 className="input"
               />
             </div>
-            <div>
-              <label className="label">Emoji</label>
-              <input name="emoji" defaultValue={active.emoji ?? ""} maxLength={16} className="input text-center" placeholder="🐶" />
-            </div>
+            <EmojiField defaultValue={active.emoji} />
             <button type="submit" className="btn-secondary">
               Save
             </button>
@@ -186,10 +184,7 @@ export default async function ParentGoalPage({
               className="input"
             />
           </div>
-          <div>
-            <label className="label">Emoji</label>
-            <input name="emoji" maxLength={16} className="input text-center" placeholder="🐶" />
-          </div>
+          <EmojiField />
           <button type="submit" className="btn-soft">
             Start goal
           </button>

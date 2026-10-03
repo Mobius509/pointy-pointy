@@ -1,4 +1,5 @@
 import type { V2Goal, V2GoalMilestone } from "@/lib/v2/data";
+import { EmojiField } from "./EmojiField";
 import {
   createMilestoneAction,
   deleteMilestoneAction,
@@ -73,10 +74,7 @@ export function MilestonesManager({
                       className="input w-full"
                     />
                   </div>
-                  <div className="min-w-0">
-                    <label className="label">Emoji</label>
-                    <input name="emoji" defaultValue={m.emoji ?? ""} maxLength={16} className="input w-full text-center" placeholder="🍨" />
-                  </div>
+                  <EmojiField defaultValue={m.emoji} />
                   <button type="submit" className="btn-secondary">
                     Save
                   </button>
@@ -144,12 +142,7 @@ export function MilestonesManager({
             placeholder="500"
           />
         </div>
-        <div className="min-w-0">
-          <label className="label" htmlFor="ms-new-emoji">
-            Emoji
-          </label>
-          <input id="ms-new-emoji" name="emoji" maxLength={16} className="input w-full text-center" placeholder="🍨" />
-        </div>
+        <EmojiField />
         <button type="submit" className="btn-soft">
           Add milestone
         </button>

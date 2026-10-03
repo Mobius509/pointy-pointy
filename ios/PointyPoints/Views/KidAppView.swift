@@ -34,11 +34,13 @@ struct KidAppView: View {
                     .overlay(Theme.palette.page.opacity(0.35))
                     .mask(
                         LinearGradient(
-                            stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.55), .init(color: .clear, location: 1)],
+                            stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.7), .init(color: .clear, location: 1)],
                             startPoint: .top, endPoint: .bottom
                         )
                     )
-                    .frame(height: geo.safeAreaInsets.top + 28)
+                    .opacity(0.5)
+                    // Tucked just under the clock and status icons.
+                    .frame(height: geo.safeAreaInsets.top + 6)
                     .offset(y: -geo.safeAreaInsets.top)
             }
             .allowsHitTesting(false)
