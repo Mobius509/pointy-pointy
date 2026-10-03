@@ -200,7 +200,7 @@ private struct GoalRingCard: View {
                 if let goal = today.goal { (goalPct, goal.name, "Towards \(goal.name)", goal.emoji) } else { (0, "points", "", nil) }
             VStack(spacing: 0) {
                 Ring(pct: ring.pct, points: progress, label: ring.label, emoji: ring.emoji)
-                    .frame(width: 262)
+                    .frame(width: 262, height: 262)
                     .padding(.top, 46)
                 if ring.caption.isEmpty {
                     Spacer().frame(height: 46)
@@ -318,8 +318,10 @@ private struct GoalModule: View {
             VStack(spacing: 0) {
                 // The ring draws on (round from the bottom) as the card
                 // opens, rather than growing.
+                // Full size always (as on the web): the closing card clips
+                // and fades it rather than squeezing it.
                 Ring(pct: card.pct, points: card.points, label: card.label, emoji: card.emoji, draw: drawOn(o))
-                    .frame(width: 262)
+                    .frame(width: 262, height: 262)
                     .padding(.top, 46)
                     .opacity(max(0, min(1, (o - 0.12) * 2.2)))
                     .frame(maxWidth: .infinity)
@@ -342,9 +344,9 @@ private struct GoalModule: View {
 
 /// A thick ring with rounded ends, starting at the bottom: the dark part is
 /// what they've earned, then a little gap, then the paler rest still to go
-/// (as on the web). It draws on clockwise — the dark part sweeps round with
-/// the milestone's (or goal's) emoji riding its front, then the pale part
-/// follows — the first time it's mostly on screen. `draw` (0–1) holds it
+/// (as on the web). The pale part is always there; the dark part draws on
+/// into it, clockwise from the bottom, with the milestone's (or goal's)
+/// emoji riding its front — the first time it's mostly on screen. `draw` (0–1) holds it
 /// part-drawn, for the goal module's hand-over.
 private struct Ring: View {
     let pct: Int
@@ -365,6 +367,8 @@ private struct Ring: View {
                         .kidFont(64)
                         .foregroundStyle(Theme.palette.text)
                         .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                     Text(label)
                         .kidFont(14)
                         .foregroundStyle(Theme.palette.text)
@@ -406,16 +410,18 @@ private struct RingArcs: View, Animatable {
         let stroke = size * 24 / 280
         let gap = (pct > 0 && pct < 100) ? 0.0343 : 0 // room for the round ends, as a fraction
         let filled = max(0, Double(pct) / 100 - gap / 2)
-        let sweep = max(0, min(1, progress))
-        let shownFilled = min(filled, sweep)
-        let restTo = min(1 - gap, sweep)
+        // The pale part is always there; the dark part draws into it from
+        // the bottom, the pale part's start pulling back ahead of it
+        // (keeping the gap).
+        let shownFilled = filled * max(0, min(1, progress))
+        let lead = shownFilled + gap * min(1, shownFilled / max(0.0001, gap)) // where the pale part starts
         let r = (size - stroke) / 2
         let tip = Double.pi / 2 + 2 * Double.pi * shownFilled // clockwise from the bottom
         ZStack {
             ZStack {
-                if restTo > filled + gap + 0.002 {
+                if 1 - gap > lead + 0.002 {
                     Circle()
-                        .trim(from: filled + gap, to: restTo)
+                        .trim(from: lead, to: 1 - gap)
                         .stroke(Theme.palette.track, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
                 }
                 if shownFilled > 0.002 {
@@ -426,7 +432,7 @@ private struct RingArcs: View, Animatable {
             }
             .padding(stroke / 2)
             .rotationEffect(.degrees(90)) // start at the bottom
-            if let emoji, !emoji.isEmpty, sweep > 0 {
+            if let emoji, !emoji.isEmpty {
                 Text(emoji)
                     .font(.system(size: 38))
                     .position(x: size / 2 + r * cos(tip), y: size / 2 + r * sin(tip))

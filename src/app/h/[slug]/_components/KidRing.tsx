@@ -7,10 +7,10 @@ import { useEffect, useRef, useState } from "react";
 //
 // A thick ring with rounded ends, starting at the bottom: the dark part is
 // what they've earned, then a little gap, then the paler rest still to go.
-// It draws on clockwise — the dark part sweeps round with the milestone's
-// (or goal's) emoji riding its front, then the pale part follows — the
-// first time it comes into view. `draw` (0–1) holds it part-drawn, for the
-// goal module's hand-over.
+// The pale part is always there; the dark part draws on into it, clockwise
+// from the bottom, with the milestone's (or goal's) emoji riding its front —
+// the first time it comes into view. `draw` (0–1) holds it part-drawn, for
+// the goal module's hand-over.
 export function Ring({
   pct,
   points,
@@ -32,9 +32,11 @@ export function Ring({
   const gap = pct > 0 && pct < 100 ? stroke * 1.2 : 0; // room for the round ends
   const filled = Math.max(0, (c * pct) / 100 - gap / 2);
   const restEnd = c - gap; // where the pale part stops, short of the start
-  const sweep = c * Math.max(0, Math.min(1, intro.value * draw)); // how far round it's drawn
-  const shownFilled = Math.min(filled, sweep);
-  const shownRest = Math.max(0, Math.min(restEnd, sweep) - (filled + gap));
+  // The pale part is always there; the dark part draws into it from the
+  // bottom, the pale part's start pulling back ahead of it (keeping the gap).
+  const shownFilled = filled * Math.max(0, Math.min(1, intro.value * draw));
+  const lead = shownFilled + gap * Math.min(1, shownFilled / Math.max(1, gap)); // where the pale part starts
+  const shownRest = Math.max(0, restEnd - lead);
   // The front of the dark part: clockwise from the bottom (in % of the box).
   const tip = Math.PI / 2 + (2 * Math.PI * shownFilled) / c;
   const at = (v: number) => `${((size / 2 + r * v) / size) * 100}%`;
@@ -51,7 +53,7 @@ export function Ring({
             strokeWidth={stroke}
             strokeLinecap="round"
             strokeDasharray={`${shownRest} ${c}`}
-            strokeDashoffset={-(filled + gap)}
+            strokeDashoffset={-lead}
           />
         )}
         {shownFilled > 0.5 && (
@@ -71,7 +73,7 @@ export function Ring({
         <span className="text-[64px] font-medium leading-none text-kid-text tabular-nums">{points.toLocaleString()}</span>
         <span className="mt-1.5 text-[14px] font-medium text-kid-text">{label}</span>
       </div>
-      {emoji && sweep > 0 && (
+      {emoji && (
         <span
           aria-hidden
           className="absolute -translate-x-1/2 -translate-y-1/2 text-[38px] leading-none"
