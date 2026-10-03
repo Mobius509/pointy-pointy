@@ -53,13 +53,14 @@ export function serializeTodayView(view: KidTodayView) {
       avatarUrl: avatarSrc(kid.avatar_emoji),
     },
     goal: goal
-      ? { id: goal.id, name: goal.name, targetPoints: goal.target_points }
+      ? { id: goal.id, name: goal.name, targetPoints: goal.target_points, emoji: goal.emoji ?? null }
       : null,
     progress,
     milestones: milestones.map((m) => ({
       id: m.id,
       name: m.name,
       points: m.points,
+      emoji: m.emoji,
     })),
     items,
     pendingProposals: pendingProposals.map((p) => ({

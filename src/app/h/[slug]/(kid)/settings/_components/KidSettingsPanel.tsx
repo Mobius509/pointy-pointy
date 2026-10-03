@@ -185,7 +185,7 @@ export function KidSettingsPanel({
   };
 
   return (
-    <section className="rounded-[32px] bg-kid-card p-6 sm:p-8">
+    <section className="rounded-[32px] bg-white p-6 sm:p-8">
       {/* Avatar */}
       <h2
         className="text-pp-primary leading-tight"

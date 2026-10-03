@@ -43,15 +43,16 @@
   /* The kid app's pastel palette (default lavender). Each kid picks their
      own hue; the kid layout overrides these from src/lib/kid-palette.ts
      (the iOS app mirrors the same values in Theme.swift). */
-  --kid-card: 235 216 246; /* #EBD8F6 the big cards */
-  --kid-card-inner: 239 224 248; /* #EFE0F8 a card in a card, ring track */
-  --kid-card-soft: 249 243 252; /* #F9F3FC near-white card, tab bar */
-  --kid-strong: 178 107 251; /* #B26BFB celebrate card, ring, headings */
-  --kid-strong-deep: 155 86 224; /* #9B56E0 tiles on a strong card */
-  --kid-track: 227 201 249; /* #E3C9F9 soft accents */
-  --kid-text: 118 55 184; /* #7637B8 body text, filled dots */
+  --kid-page: 244 217 246; /* #F4D9F6 the page behind the cards */
+  --kid-chip: 230 203 232; /* #E6CBE8 round buttons on the page */
+  --kid-panel: 212 183 247; /* #D4B7F7 goal module, arcade ticket */
+  --kid-panel-soft: 229 212 249; /* #E5D4F9 a closed card in the goal module */
+  --kid-track: 239 226 253; /* #EFE2FD ring track, streak day pills */
+  --kid-strong: 138 107 252; /* #8A6BFC celebrate card, ring, buttons, nav */
+  --kid-strong-deep: 118 88 248; /* #7658F8 tiles on a strong card */
+  --kid-text: 119 54 183; /* #7736B7 headings and body text */
   --kid-text-strong: 105 25 185; /* #6919B9 big numbers */
-  --kid-nav: 16 1 32; /* #100120 the dark tab bar */
+  --kid-nav: 30 3 58; /* #1E033A the dark tab bar */
 }
 
 html,
@@ -185,6 +186,12 @@ body {
     background-color: currentColor;
     -webkit-mask: var(--icon) center / contain no-repeat;
     mask: var(--icon) center / contain no-repeat;
+  }
+  /* The arcade ticket's scalloped shape (public/ui/TicketShapeUI.svg), in
+     the element's background color. */
+  .kid-ticket {
+    -webkit-mask: url(/ui/TicketShapeUI.svg) center / 100% 100% no-repeat;
+    mask: url(/ui/TicketShapeUI.svg) center / 100% 100% no-repeat;
   }
 }
 

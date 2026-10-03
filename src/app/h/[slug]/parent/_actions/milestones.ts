@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
+import { parseEmoji, writeWithEmoji } from "@/lib/emoji";
 
 // All milestone actions are parent-only (gated by requireHouseholdAccess).
 // Kids see milestones on their progress bar but can't add/remove them.
@@ -57,14 +58,14 @@ export async function createMilestoneAction(formData: FormData) {
     .maybeSingle();
   const sort_order = (max?.sort_order ?? 0) + 10;
 
-  const { error } = await supabaseV2Admin.from("goal_milestones").insert({
+  await writeWithEmoji((row) => supabaseV2Admin.from("goal_milestones").insert(row), {
     household_id: household.id,
     goal_id: goalId,
     name,
     points,
     sort_order,
+    emoji: parseEmoji(formData.get("emoji")),
   });
-  if (error) throw error;
 
   revalidatePath(`/h/${slug}/parent/goal`);
   revalidatePath(`/h/${slug}`);
@@ -96,12 +97,10 @@ export async function updateMilestoneAction(formData: FormData) {
     throw new Error("Milestone must be less than the goal's target.");
   }
 
-  const { error } = await supabaseV2Admin
-    .from("goal_milestones")
-    .update({ name, points })
-    .eq("id", id)
-    .eq("household_id", household.id);
-  if (error) throw error;
+  await writeWithEmoji(
+    (row) => supabaseV2Admin.from("goal_milestones").update(row).eq("id", id).eq("household_id", household.id),
+    { name, points, emoji: parseEmoji(formData.get("emoji")) },
+  );
 
   revalidatePath(`/h/${slug}/parent/goal`);
   revalidatePath(`/h/${slug}`);

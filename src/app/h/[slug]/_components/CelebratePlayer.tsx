@@ -48,8 +48,8 @@ export function CelebratePlayer({
 
   if (!approvals.length) {
     return (
-      <section className="mt-10 rounded-[32px] bg-kid-card p-8 text-center">
-        <p className="text-[22px] font-medium text-kid-strong">All caught up! 🎉</p>
+      <section className="mt-10 rounded-[32px] bg-white p-8 text-center">
+        <p className="text-[22px] font-medium text-kid-text">All caught up! 🎉</p>
         <p className="mt-2 text-kid-text">Nothing new to celebrate right now.</p>
         <Link href={`/h/${slug}`} onClick={(e) => ((window as unknown as IosBridge).webkit ? (e.preventDefault(), leave()) : null)} className="btn-primary btn-lg mt-6">
           Back home

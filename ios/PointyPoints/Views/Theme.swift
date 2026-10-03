@@ -19,19 +19,20 @@ struct KidPalette: Equatable {
     /// sampled exactly (kid-palette.ts KID_TOKENS). A kid's color turns every
     /// hue by the same amount.
     private static let tokens: [String: (l: Double, c: Double, h: Double)] = [
-        "card": (0.9067, 0.0451, 313.3), // #EBD8F6
-        "cardInner": (0.9258, 0.0358, 313.05), // #EFE0F8
-        "cardSoft": (0.9713, 0.0135, 314.76), // #F9F3FC
-        "strong": (0.6703, 0.2097, 304.4), // #B36BFB
-        "strongDeep": (0.5983, 0.2037, 303.87), // #9B56E0
-        "track": (0.8728, 0.0707, 309.33), // #E3C9F9
-        "text": (0.4871, 0.1933, 302.81), // #7736B7
-        "textStrong": (0.4448, 0.2206, 298.94), // #6919B9
-        "nav": (0.1422, 0.0687, 303.51), // #100120
+        "page": (0.9161, 0.0484, 323.83), // #F4D9F6 the page behind the cards
+        "chip": (0.8734, 0.049, 323.85), // #E6CBE8 round buttons on the page
+        "panel": (0.8259, 0.0932, 305.11), // #D4B7F7 goal module, arcade ticket
+        "panelSoft": (0.8951, 0.0531, 306.08), // #E5D4F9 a closed card in the goal module
+        "track": (0.9312, 0.0386, 307.23), // #EFE2FD ring track, streak day pills
+        "strong": (0.6316, 0.2067, 288.92), // #8A6BFC celebrate card, ring, buttons, nav
+        "strongDeep": (0.5827, 0.2268, 285.56), // #7658F8 tiles on a strong card
+        "text": (0.4871, 0.1933, 302.81), // #7736B7 headings and body text
+        "textStrong": (0.4448, 0.2206, 298.94), // #6919B9 big numbers
+        "nav": (0.199, 0.0976, 300.0), // #1E033A the dark tab bar
     ]
 
     let hue: Int
-    let card, cardInner, cardSoft, strong, strongDeep, track, text, textStrong, nav: Color
+    let page, chip, panel, panelSoft, track, strong, strongDeep, text, textStrong, nav: Color
 
     init(hue: Int) {
         let h = ((hue % 360) + 360) % 360
@@ -40,12 +41,13 @@ struct KidPalette: Equatable {
             let t = Self.tokens[name]!
             return Self.oklch(t.l, t.c, t.h + Double(h - Self.defaultHue))
         }
-        card = make("card")
-        cardInner = make("cardInner")
-        cardSoft = make("cardSoft")
+        page = make("page")
+        chip = make("chip")
+        panel = make("panel")
+        panelSoft = make("panelSoft")
+        track = make("track")
         strong = make("strong")
         strongDeep = make("strongDeep")
-        track = make("track")
         text = make("text")
         textStrong = make("textStrong")
         nav = make("nav")
@@ -111,10 +113,10 @@ enum Theme {
     // Older names, now from the palette.
     static var orange: Color { palette.strong } // headings, buttons
     static var rust: Color { palette.textStrong } // strong text
-    static var cream: Color { palette.cardSoft } // near-white fills
-    static var peach: Color { palette.card } // soft fills
+    static var cream: Color { palette.track } // near-white fills
+    static var peach: Color { palette.panelSoft } // soft fills
     static var sand: Color { palette.text.opacity(0.75) } // secondary text
-    static var divider: Color { palette.cardInner }
+    static var divider: Color { palette.panelSoft }
 
     static let pendingBackground = Color(hex: 0xFEF3C7)
     static let pendingText = Color(hex: 0x92400E)
@@ -152,7 +154,8 @@ extension Font {
 
 // MARK: - Shared pieces
 
-/// Rounded card used for every section, like the web view.
+/// Rounded card used for every section, like the web view: white, on the
+/// palette's page color.
 struct Card<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -160,7 +163,7 @@ struct Card<Content: View>: View {
         content
             .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.peach, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .background(.white, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
     }
 }
 

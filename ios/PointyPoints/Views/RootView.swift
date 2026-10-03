@@ -5,7 +5,7 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            Color.white.ignoresSafeArea()
+            Theme.palette.page.ignoresSafeArea()
 
             switch model.screen {
             case .connect: ConnectView()

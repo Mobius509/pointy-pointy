@@ -48,6 +48,7 @@ export type V2Goal = {
   target_points: number;
   started_at: string;
   redeemed_at: string | null;
+  emoji?: string | null; // v2_0011
 };
 
 export type V2GoalMilestone = {
@@ -57,6 +58,7 @@ export type V2GoalMilestone = {
   name: string;
   points: number;
   sort_order: number;
+  emoji: string | null; // v2_0011
 };
 
 // ============================================================================
@@ -143,12 +145,17 @@ export async function getMilestonesForGoal(
   householdId: string,
   goalId: string,
 ): Promise<V2GoalMilestone[]> {
-  const { data, error } = await supabaseV2Admin
-    .from("goal_milestones")
-    .select("id, household_id, goal_id, name, points, sort_order")
-    .eq("household_id", householdId)
-    .eq("goal_id", goalId)
-    .order("points", { ascending: true });
+  const query = (cols: string) =>
+    supabaseV2Admin
+      .from("goal_milestones")
+      .select(cols)
+      .eq("household_id", householdId)
+      .eq("goal_id", goalId)
+      .order("points", { ascending: true });
+  let { data, error } = await query("id, household_id, goal_id, name, points, sort_order, emoji");
+  // Before migration v2_0011 there's no emoji column.
+  if (error && (error.code === "42703" || error.code === "PGRST204"))
+    ({ data, error } = await query("id, household_id, goal_id, name, points, sort_order"));
   if (error) {
     // Postgres error code 42P01 = "undefined_table". Supabase surfaces it
     // as `error.code === "42P01"` on the PostgREST response.
@@ -160,7 +167,7 @@ export async function getMilestonesForGoal(
     }
     throw error;
   }
-  return (data as V2GoalMilestone[]) ?? [];
+  return ((data ?? []) as unknown as V2GoalMilestone[]).map((m) => ({ ...m, emoji: m.emoji ?? null }));
 }
 
 export async function getAllGoalsForKid(

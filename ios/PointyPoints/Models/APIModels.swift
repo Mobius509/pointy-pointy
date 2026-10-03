@@ -28,12 +28,14 @@ struct Goal: Codable, Hashable {
     let id: String
     let name: String
     let targetPoints: Int
+    let emoji: String? // shown on the goal ring
 }
 
 struct Milestone: Codable, Identifiable, Hashable {
     let id: String
     let name: String
     let points: Int
+    let emoji: String? // shown on the goal ring
 }
 
 enum ItemState: String, Codable {
@@ -67,9 +69,30 @@ struct Proposal: Codable, Identifiable, Hashable {
 
 /// A day of this week on the streak card.
 struct StreakDay: Codable, Hashable {
-    enum State: String, Codable { case done, missed, today, upcoming }
+    enum State: String, Codable {
+        case done, missed, today, upcoming
+        case rest // a weekend in a streak that skips them
+
+        // A state a newer server adds reads as "still to come".
+        init(from decoder: Decoder) throws {
+            self = State(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .upcoming
+        }
+    }
     let day: String // YYYY-MM-DD
     let state: State
+}
+
+/// The kid's arcade: tickets, and what using one does right now.
+struct ArcadeInfo: Codable, Hashable {
+    struct Playing: Codable, Hashable {
+        let game: String
+        let name: String?
+        let icon: String?
+        let art: String? // the game's 3D icon (a site path)
+    }
+    let tickets: Int
+    let mode: String // "locked" | "random" | "pick"
+    let playing: Playing?
 }
 
 struct StreakInfo: Codable, Identifiable, Hashable {
@@ -107,6 +130,7 @@ struct TodayResponse: Codable {
     let hue: Int?
     let greeting: String?
     let pendingCelebration: [PendingCelebration]?
+    let arcade: ArcadeInfo?
 }
 
 struct KidSettings: Codable {

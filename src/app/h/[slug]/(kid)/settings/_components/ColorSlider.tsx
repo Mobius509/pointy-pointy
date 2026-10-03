@@ -41,8 +41,8 @@ export function ColorSlider({ slug, initialHue }: { slug: string; initialHue: nu
 
   const track = `linear-gradient(90deg, ${STOPS.map((h) => kidPalette(h).strong).join(", ")})`;
   return (
-    <section className="rounded-[32px] bg-kid-card p-6">
-      <h2 className="text-[20px] font-medium text-kid-strong">My color</h2>
+    <section className="rounded-[32px] bg-white p-6">
+      <h2 className="text-[20px] font-medium text-kid-text">My color</h2>
       <p className="mt-1 text-[14px] text-kid-text">Slide to pick your color. Everything changes to match!</p>
       <input
         type="range"

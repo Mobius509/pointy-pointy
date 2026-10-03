@@ -31,7 +31,8 @@ export function MilestonesManager({
       </h3>
       <p className="text-pp-muted mt-1 text-[12px]">
         Add small rewards along the way to {goal.name.toLowerCase()}. They
-        show as dots on the progress bar — they light up when reached.
+        show as dots on the progress bar — they light up when reached. Add
+        an emoji to show it on the goal ring too.
       </p>
 
       {milestones.length > 0 ? (
@@ -45,7 +46,7 @@ export function MilestonesManager({
               >
                 <form
                   action={updateMilestoneAction}
-                  className="grid gap-2 sm:grid-cols-[1fr_8rem_auto_auto] sm:items-end"
+                  className="grid gap-2 sm:grid-cols-[1fr_8rem_4rem_auto_auto] sm:items-end"
                 >
                   <input type="hidden" name="slug" value={slug} />
                   <input type="hidden" name="id" value={m.id} />
@@ -71,6 +72,10 @@ export function MilestonesManager({
                       required
                       className="input w-full"
                     />
+                  </div>
+                  <div className="min-w-0">
+                    <label className="label">Emoji</label>
+                    <input name="emoji" defaultValue={m.emoji ?? ""} maxLength={16} className="input w-full text-center" placeholder="🍨" />
                   </div>
                   <button type="submit" className="btn-secondary">
                     Save
@@ -107,7 +112,7 @@ export function MilestonesManager({
 
       <form
         action={createMilestoneAction}
-        className="mt-4 grid gap-2 sm:grid-cols-[1fr_8rem_auto] sm:items-end"
+        className="mt-4 grid gap-2 sm:grid-cols-[1fr_8rem_4rem_auto] sm:items-end"
       >
         <input type="hidden" name="slug" value={slug} />
         <input type="hidden" name="goal_id" value={goal.id} />
@@ -138,6 +143,12 @@ export function MilestonesManager({
             className="input w-full"
             placeholder="500"
           />
+        </div>
+        <div className="min-w-0">
+          <label className="label" htmlFor="ms-new-emoji">
+            Emoji
+          </label>
+          <input id="ms-new-emoji" name="emoji" maxLength={16} className="input w-full text-center" placeholder="🍨" />
         </div>
         <button type="submit" className="btn-soft">
           Add milestone

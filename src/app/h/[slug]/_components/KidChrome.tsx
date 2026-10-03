@@ -8,8 +8,8 @@ import { KidTabBar } from "./KidTabBar";
 import { GearIcon } from "./KidIcons";
 
 // The kid app's frame: their color (the palette as CSS variables — see
-// src/lib/kid-palette.ts), the Figtree font, the top bar (family name,
-// settings, initials menu) and the floating tab bar. A phone-width column
+// src/lib/kid-palette.ts), the Figtree font, the top bar (settings,
+// initials menu) and the floating tab bar. A phone-width column
 // on every screen size, like the iOS app. `embedded`: inside the iOS app's
 // web view, which draws its own bars. `preview`: a parent's "Kid view"
 // (look, don't touch).
@@ -33,25 +33,24 @@ export function KidChrome({
   const vars = kidThemeVars(hue);
   const style = vars as CSSProperties;
   return (
-    <div data-kid-chrome style={style} className={`${figtree.variable} font-kid min-h-screen bg-white text-kid-text`}>
+    <div data-kid-chrome style={style} className={`${figtree.variable} font-kid min-h-screen bg-kid-page text-kid-text`}>
       {/* Dialogs, celebrations and games draw outside this box: give the
           page root the same colors while the kid app is open (not in a
           parent's preview — that would recolor the parent pages). */}
       {!preview && <KidThemeRoot vars={vars} />}
-      <div className={`mx-auto w-full max-w-[440px] px-3 ${embedded || preview ? "pt-3 pb-6" : "pt-4 pb-32"}`}>
+      <div className={`mx-auto w-full max-w-[440px] px-4 ${embedded || preview ? "pt-3 pb-6" : "pt-4 pb-32"}`}>
         {!embedded && (
-          <header className="flex items-center justify-between gap-3 px-3 pb-2">
-            <span className="text-[13px] font-medium text-kid-strong truncate">{householdName}</span>
-            <div className="flex items-center gap-2 shrink-0">
+          <header className="flex items-center justify-end gap-3 pb-2" aria-label={householdName}>
+            <div className="relative z-10 flex items-center gap-2 shrink-0">
               {preview ? (
-                <span className="grid size-10 place-items-center rounded-full bg-kid-card text-kid-strong">
+                <span className="grid size-10 place-items-center rounded-full bg-kid-chip text-kid-strong">
                   <GearIcon className="size-5" />
                 </span>
               ) : (
                 <Link
                   href={`/h/${slug}/settings`}
                   aria-label="Settings"
-                  className="grid size-10 place-items-center rounded-full bg-kid-card text-kid-strong transition active:scale-95"
+                  className="grid size-10 place-items-center rounded-full bg-kid-chip text-kid-strong transition active:scale-95"
                 >
                   <GearIcon className="size-5" />
                 </Link>

@@ -31,7 +31,7 @@ struct SettingsView: View {
                 }
                 .padding(16)
             }
-            .background(Color.white)
+            .background(Theme.palette.page)
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

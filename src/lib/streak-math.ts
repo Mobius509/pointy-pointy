@@ -109,10 +109,10 @@ export function arcadeMode(runs: { length: number; skipWeekends: boolean }[]): {
   return { mode: pick ? "pick" : best > 0 ? "random" : "locked", streakDays: best, pickAt };
 }
 
-// This week (Monday on) for the streak card's dots: each day done, missed,
-// today (not done yet) or still to come. Weekends are left out of a streak
-// that skips them.
-export type WeekDay = { day: string; state: "done" | "missed" | "today" | "upcoming" };
+// This week (Monday on) for the streak card's day pills: each day done,
+// missed, today (not done yet), still to come, or a rest day (a weekend in a
+// streak that skips them).
+export type WeekDay = { day: string; state: "done" | "missed" | "today" | "upcoming" | "rest" };
 export function streakWeek(
   taskIds: string[],
   doneDays: Map<string, Set<string>>,
@@ -125,10 +125,17 @@ export function streakWeek(
   const week: WeekDay[] = [];
   for (let i = 0; i < 7; i++) {
     const day = addDays(monday, i);
-    if (day0.rest(day)) continue;
     week.push({
       day,
-      state: day0.done(day) ? "done" : day < today ? "missed" : day === today ? "today" : "upcoming",
+      state: day0.rest(day)
+        ? "rest"
+        : day0.done(day)
+          ? "done"
+          : day < today
+            ? "missed"
+            : day === today
+              ? "today"
+              : "upcoming",
     });
   }
   return week;

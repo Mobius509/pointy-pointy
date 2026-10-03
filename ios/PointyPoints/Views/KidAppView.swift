@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The signed-in kid app: top bar (family name, settings, initials menu),
+/// The signed-in kid app: top bar (settings, initials menu),
 /// the Stats · Tasks · Arcade tabs, and the floating tab bar — the same as
 /// the web kid app (src/app/h/[slug]/(kid)/, KidChrome + KidTabBar).
 struct KidAppView: View {
@@ -14,10 +14,10 @@ struct KidAppView: View {
     var body: some View {
         @Bindable var model = model
         ZStack(alignment: .bottom) {
-            Color.white.ignoresSafeArea()
+            Theme.palette.page.ignoresSafeArea()
 
             switch tab {
-            case .stats: page { StatsView(openTasks: { tab = .tasks }) }
+            case .stats: page { StatsView(openTasks: { tab = .tasks }, openArcade: { tab = .arcade }) }
             case .tasks: page { TasksView() }
             case .arcade: ArcadeTab(topBar: topBar)
             }
@@ -25,10 +25,10 @@ struct KidAppView: View {
             TabBar(tab: $tab)
                 .padding(.bottom, 8)
         }
-        // Content scrolls under a soft white strip behind the clock.
+        // Content scrolls under a soft strip behind the clock.
         .overlay(alignment: .top) {
             GeometryReader { geo in
-                Color.white.opacity(0.92)
+                Theme.palette.page.opacity(0.92)
                     .frame(height: geo.safeAreaInsets.top)
                     .offset(y: -geo.safeAreaInsets.top)
             }
@@ -43,7 +43,7 @@ struct KidAppView: View {
                     Task { await model.refresh() }
                 }
                 .ignoresSafeArea()
-                .background(Theme.palette.card.ignoresSafeArea())
+                .background(Theme.palette.page.ignoresSafeArea())
             }
         }
         .task {
@@ -64,7 +64,7 @@ struct KidAppView: View {
                 if let error = model.errorMessage { ErrorBanner(message: error) }
                 content()
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 16)
             .padding(.bottom, 110)
             .frame(maxWidth: 440)
             .frame(maxWidth: .infinity)
@@ -74,16 +74,12 @@ struct KidAppView: View {
 
     private var topBar: some View {
         HStack {
-            Text(model.today?.householdName ?? model.household?.household.name ?? "")
-                .font(.rounded(13))
-                .foregroundStyle(Theme.palette.strong)
-                .lineLimit(1)
             Spacer()
             Button { showSettings = true } label: {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 18))
                     .frame(width: 40, height: 40)
-                    .background(Theme.palette.card, in: Circle())
+                    .background(Theme.palette.chip, in: Circle())
             }
             .foregroundStyle(Theme.palette.strong)
             .accessibilityLabel("Settings")
@@ -96,12 +92,13 @@ struct KidAppView: View {
                 Text(model.today?.initials.flatMap { $0.isEmpty ? nil : $0 } ?? "🙂")
                     .font(.rounded(17))
                     .frame(width: 40, height: 40)
-                    .background(Theme.palette.card, in: Circle())
+                    .background(Theme.palette.chip, in: Circle())
                     .foregroundStyle(Theme.palette.strong)
             }
         }
-        .padding(.horizontal, 12)
         .padding(.top, 4)
+        .zIndex(1) // over the avatar, which reaches up beside it
+        .accessibilityLabel(model.today?.householdName ?? model.household?.household.name ?? "")
     }
 }
 
@@ -146,7 +143,7 @@ private struct TabBar: View {
             Button { tab = .tasks } label: {
                 Image(systemName: "checkmark.square.fill")
                     .symbolRenderingMode(.palette)
-                    .foregroundStyle(Theme.palette.strong, Theme.palette.cardSoft)
+                    .foregroundStyle(Theme.palette.strong, .white)
                     .font(.system(size: 28, weight: .semibold))
                     .frame(width: 59, height: 59)
                     .background(Theme.palette.strong, in: Circle())
@@ -206,14 +203,14 @@ struct TasksView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Today's tasks")
                 .font(.rounded(28))
-                .foregroundStyle(Theme.palette.strong)
+                .foregroundStyle(Theme.palette.text)
                 .padding(.horizontal, 12)
             if let today = model.today {
                 VStack { ChecklistView(items: today.items) }
                     .padding(16)
                     .background(.white, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
                     .padding(12)
-                    .background(Theme.palette.card, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+                    .background(.white, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
                 ProposalCard(pending: today.pendingProposals)
             } else {
                 ProgressView().frame(maxWidth: .infinity).padding(.top, 80)

@@ -42,7 +42,7 @@ export function KidTabBar({ slug, disabled = false }: { slug: string; disabled?:
   };
 
   const center = (
-    <span className="grid size-[59px] place-items-center rounded-full bg-kid-strong text-kid-card-soft">
+    <span className="grid size-[59px] place-items-center rounded-full bg-kid-strong text-white">
       <CheckIcon className="size-[30px]" />
     </span>
   );

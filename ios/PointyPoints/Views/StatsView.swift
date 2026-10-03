@@ -2,11 +2,14 @@ import SwiftUI
 import UIKit
 
 /// The kid app's home (Stats): greeting with the avatar, "let's celebrate"
-/// when approvals are waiting, this week's streak, and the goal ring.
-/// Mirrors the web's KidStats (src/app/h/[slug]/_components/KidStats.tsx).
+/// when approvals are waiting, this week's streak, the goal ring and their
+/// arcade tickets. Mirrors the web's KidStats
+/// (src/app/h/[slug]/_components/KidStats.tsx).
 struct StatsView: View {
     @Environment(AppModel.self) private var model
     var openTasks: () -> Void
+    var openArcade: () -> Void
+    @State private var pageEnd: CGFloat = 0 // where the content ends, on screen
 
     var body: some View {
         if let today = model.today {
@@ -21,7 +24,15 @@ struct StatsView: View {
                 if let streak = today.streaks?.first, let week = streak.week {
                     StreakWeekCard(streak: streak, week: week, items: today.items, openTasks: openTasks)
                 }
-                GoalRingCard(today: today)
+                GoalRingCard(today: today, pageEnd: pageEnd)
+                if let arcade = today.arcade {
+                    TicketCard(arcade: arcade, artURL: arcade.playing?.art.flatMap { model.link?.resolve($0) }, open: openArcade)
+                        .padding(.top, 12)
+                }
+            }
+            .background(alignment: .bottom) {
+                Color.clear.frame(height: 0)
+                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { pageEnd = $0 }
             }
         } else {
             ProgressView().frame(maxWidth: .infinity).padding(.top, 120)
@@ -35,19 +46,20 @@ private struct GreetingCard: View {
 
     var body: some View {
         Text(greeting)
-            .font(.rounded(33))
-            .lineSpacing(-2)
-            .foregroundStyle(Theme.palette.strong)
+            .font(.rounded(27))
+            .lineSpacing(-2.7)
+            .foregroundStyle(Theme.palette.text)
+            .frame(maxWidth: 240, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 28)
-            .padding(.top, 72)
-            .padding(.bottom, 28)
-            .background(Theme.palette.card, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .padding(.horizontal, 24)
+            .padding(.top, 89)
+            .padding(.bottom, 24)
+            .background(.white, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
             .overlay(alignment: .topLeading) {
-                AvatarImage(url: avatarURL, size: 150)
-                    .offset(x: 20, y: -96)
+                AvatarImage(url: avatarURL, size: 190)
+                    .offset(x: -13, y: -99)
             }
-            .padding(.top, 88)
+            .padding(.top, 32)
     }
 }
 
@@ -56,29 +68,33 @@ private struct CelebrateCard: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            HStack(spacing: 20) {
                 AnimatedFire()
-                    .frame(width: 58, height: 58)
-                    .frame(width: 75, height: 75)
+                    .frame(width: 60, height: 60)
+                    .frame(width: 86, height: 101)
                     .background(Theme.palette.strongDeep, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 Text("Your points have been approved! Nice work. Let's celebrate!")
-                    .font(.rounded(17))
+                    .font(.rounded(16))
+                    .lineSpacing(3)
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.leading)
+                    .frame(maxWidth: 175, alignment: .leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Image("IconChunkyArrow")
                     .resizable()
-                    .frame(width: 24, height: 24)
+                    .frame(width: 32, height: 32)
                     .foregroundStyle(.white)
             }
-            .padding(14)
-            .padding(.trailing, 6)
-            .background(Theme.palette.strong, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .padding(24)
+            .padding(.trailing, -12)
+            .background(Theme.palette.strong, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
         }
         .buttonStyle(.plain)
     }
 }
 
+/// "This week's streak": a pill per day — ✓ done, ✗ missed, grey for a rest
+/// day — and how many tasks are left today.
 private struct StreakWeekCard: View {
     let streak: StreakInfo
     let week: [StreakDay]
@@ -93,42 +109,68 @@ private struct StreakWeekCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 0) {
             Text("This week's streak")
-                .font(.rounded(17))
-                .foregroundStyle(Theme.palette.strong)
-            HStack(spacing: 16) {
-                ForEach(week, id: \.day) { day in dot(day.state) }
+                .font(.rounded(18))
+                .foregroundStyle(Theme.palette.text)
+            HStack(spacing: 8) {
+                ForEach(week, id: \.day) { pill($0) }
             }
-            .frame(maxWidth: .infinity)
+            .padding(.top, 18)
+            .padding(.bottom, 10)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(streak.name): \(week.filter { $0.state == .done }.count) days done this week")
             Button(action: openTasks) {
                 Text(label)
-                    .font(.rounded(15))
-                    .foregroundStyle(Theme.palette.text)
+                    .font(.rounded(16))
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .background(.white, in: Capsule())
+                    .padding(.vertical, 12)
+                    .background(Theme.palette.strong, in: Capsule())
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 28)
-        .padding(.vertical, 20)
-        .background(Theme.palette.card, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
+        .padding(.bottom, 24)
+        .background(.white, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
     }
 
-    @ViewBuilder private func dot(_ state: StreakDay.State) -> some View {
-        switch state {
-        case .done:
-            Circle().fill(Theme.palette.text).overlay(Circle().inset(by: 1.5).stroke(.white, lineWidth: 3)).frame(width: 40, height: 40)
-        case .today:
-            Circle().fill(.white).overlay(Circle().inset(by: 1).stroke(Theme.palette.strong, lineWidth: 2)).frame(width: 40, height: 40)
-        case .missed:
-            Circle().fill(.white.opacity(0.5)).frame(width: 40, height: 40)
-        case .upcoming:
-            Circle().fill(.white).frame(width: 40, height: 40)
+    private func pill(_ day: StreakDay) -> some View {
+        let rest = day.state == .rest
+        return ZStack(alignment: rest ? .center : .bottom) {
+            Capsule().fill(rest ? Color(hex: 0xF1F1F1) : Theme.palette.track)
+            if day.state == .today {
+                Capsule().strokeBorder(Theme.palette.strong.opacity(0.5), lineWidth: 2)
+            }
+            Text(letter(day.day))
+                .font(.rounded(18))
+                .foregroundStyle(rest ? Color(hex: 0xBDBDBD) : Theme.palette.text)
+                .padding(.bottom, rest ? 0 : 10)
         }
+        .overlay(alignment: .top) {
+            switch day.state {
+            case .done:
+                Image("IconCheckmark").resizable().frame(width: 20, height: 20)
+                    .foregroundStyle(Theme.palette.strong).padding(.top, 4)
+            case .missed:
+                Image("IconNope").resizable().frame(width: 20, height: 20).padding(.top, 4)
+            default: EmptyView()
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 70)
+    }
+
+    /// "m", "t", "w"… for a YYYY-MM-DD day.
+    private func letter(_ day: String) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone(identifier: "UTC")
+        guard let date = f.date(from: day) else { return "" }
+        f.dateFormat = "EEEEE"
+        f.locale = Locale(identifier: "en_US")
+        return f.string(from: date).lowercased()
     }
 }
 
@@ -137,6 +179,7 @@ private struct StreakWeekCard: View {
 /// cards hand over as the kid scrolls (GoalModule), like the web.
 private struct GoalRingCard: View {
     let today: TodayResponse
+    let pageEnd: CGFloat
 
     var body: some View {
         let progress = today.progress
@@ -148,22 +191,27 @@ private struct GoalRingCard: View {
             GoalModule(
                 milestone: .init(
                     pct: pct(Double(progress - prev) / Double(max(1, next.points - prev))),
-                    caption: "Towards your next milestone", points: progress, label: next.name),
-                goal: .init(pct: goalPct, caption: "Towards \(goal.name)", points: progress, label: goal.name)
+                    caption: "Towards your next milestone", points: progress, label: next.name, emoji: next.emoji),
+                goal: .init(pct: goalPct, caption: "Towards \(goal.name)", points: progress, label: goal.name, emoji: goal.emoji),
+                pageEnd: pageEnd
             )
         } else {
-            let ring: (pct: Int, label: String, caption: String) =
-                if let goal = today.goal { (goalPct, goal.name, "Towards \(goal.name)") } else { (0, "points", "") }
-            VStack(spacing: 16) {
-                Ring(pct: ring.pct, points: progress, label: ring.label)
-                if !ring.caption.isEmpty { GoalRow(pct: ring.pct, caption: ring.caption) }
+            let ring: (pct: Int, label: String, caption: String, emoji: String?) =
+                if let goal = today.goal { (goalPct, goal.name, "Towards \(goal.name)", goal.emoji) } else { (0, "points", "", nil) }
+            VStack(spacing: 0) {
+                Ring(pct: ring.pct, points: progress, label: ring.label, emoji: ring.emoji)
+                    .frame(width: 262)
+                    .padding(.top, 46)
+                if ring.caption.isEmpty {
+                    Spacer().frame(height: 46)
+                } else {
+                    GoalRow(pct: ring.pct, caption: ring.caption).frame(height: GoalModule.rowOpen)
+                }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 28)
-            .padding(.bottom, 24)
+            .frame(maxWidth: .infinity)
             .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .padding(18)
-            .background(Theme.palette.card, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
+            .padding(24)
+            .background(Theme.palette.panel, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
         }
     }
 
@@ -177,99 +225,104 @@ private struct GoalRow: View {
 
     var body: some View {
         HStack {
-            Text("\(pct)%").font(.rounded(34)).foregroundStyle(Theme.palette.textStrong)
+            Text("\(pct)%").font(.rounded(37)).foregroundStyle(Theme.palette.textStrong)
             Spacer()
             Text(caption)
-                .font(.rounded(13))
+                .font(.rounded(14))
                 .foregroundStyle(Theme.palette.textStrong)
                 .multilineTextAlignment(.trailing)
         }
+        .padding(.horizontal, 19)
     }
 }
 
-/// The bottom of Stats: two cards — the next milestone and the big goal. One
-/// is open (white, a big ring above its row) and the other is just its row.
+/// The goal module: two cards — the next milestone and the big goal. One is
+/// open (white, a big ring above its row) and the other is just its row.
 /// Scrolling down hands over from the milestone to the goal; tapping the
 /// closed one opens it. They always add up to the same height, so nothing
 /// jumps. Same as the web's GoalModule.
 ///
 /// The hand-over only starts once the whole module is in view (above the tab
-/// bar). Then it holds still while the kid scrolls through `handover` points
-/// of room below it, the cards swapping as they go — and the page ends.
+/// bar), then runs over the next `handover` points of scrolling (or what's
+/// left of the page, if that's less). A page too short to scroll it is
+/// tap-only.
 private struct GoalModule: View {
     struct Card {
         let pct: Int
         let caption: String
         let points: Int
         let label: String
+        let emoji: String?
     }
 
     let milestone: Card
     let goal: Card
+    let pageEnd: CGFloat // where the page's content ends, on screen
     @State private var p: Double = 0 // 0: milestone open … 1: goal open
-    @State private var top: CGFloat = 0
-    @State private var height: CGFloat = 0 // the module's own height
-    @State private var hold: CGFloat = 0 // points it's held down by, while handing over
+    @State private var bottom: CGFloat = 0 // the module's bottom, on screen
     @State private var tappedAt: CGFloat? // where the module was when a card was tapped
 
-    private static let ringArea: CGFloat = 300
+    static let ringArea: CGFloat = 310
+    static let rowOpen: CGFloat = 85
+    static let rowClosed: CGFloat = 98
     private static let handover: CGFloat = 260 // points of scrolling the hand-over takes
     private static let tabBarZone: CGFloat = 110 // the bottom of the screen the tab bar covers
+    private static let pagePadding: CGFloat = 110 // the room under the content (KidAppView.page)
     private static var screenHeight: CGFloat {
         (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.screen.bounds.height ?? 874
     }
 
     var body: some View {
         let e = p * p * (3 - 2 * p) // smoothstep
-        VStack(spacing: 0) {
-            VStack(spacing: 14) {
-                panel(milestone, openness: 1 - e, closed: Theme.palette.cardInner) { open(0) }
-                panel(goal, openness: e, closed: Theme.palette.cardSoft) { open(1) }
-            }
-            .padding(18)
-            .background(Theme.palette.card, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
-            .offset(y: hold)
-            // The room the hand-over scrolls through.
-            Color.clear.frame(height: Self.handover)
+        VStack(spacing: 2) {
+            panel(milestone, openness: 1 - e) { open(0) }
+            panel(goal, openness: e) { open(1) }
         }
-        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { y in
-            top = y
-            // How far into the hand-over: 0 until the module's bottom is in
-            // view above the tab bar, then on through `handover` points.
-            let s = max(0, min(Self.handover, Self.screenHeight - Self.tabBarZone - (y + height)))
-            hold = s
-            if let tapped = tappedAt {
-                if abs(y - tapped) < 40 { return } // a tap's choice holds until they scroll on
-                tappedAt = nil
-            }
-            p = s / Self.handover
+        .padding(24)
+        .background(Theme.palette.panel, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
+        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).maxY } action: { y in
+            bottom = y
+            update()
         }
+        .onChange(of: pageEnd) { update() }
+    }
+
+    private func update() {
+        // How far past "all in view" the module has scrolled, and how much
+        // scrolling the page has in all from there.
+        let s = Self.screenHeight - Self.tabBarZone - bottom
+        let left = max(0, pageEnd + Self.pagePadding - Self.screenHeight)
+        let room = min(Self.handover, max(0, s) + left)
+        guard room >= 40 else { return }
+        if let tapped = tappedAt {
+            if abs(bottom - tapped) < 40 { return } // a tap's choice holds until they scroll on
+            tappedAt = nil
+        }
+        p = max(0, min(1, s / room))
     }
 
     private func open(_ target: Double) {
-        tappedAt = top
+        tappedAt = bottom
         withAnimation(.easeInOut(duration: 0.38)) { p = target }
     }
 
-    private func panel(_ card: Card, openness o: Double, closed: Color, action: @escaping () -> Void) -> some View {
+    private func panel(_ card: Card, openness o: Double, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 0) {
-                Ring(pct: card.pct, points: card.points, label: card.label)
-                    .frame(width: 260)
+                Ring(pct: card.pct, points: card.points, label: card.label, emoji: card.emoji)
+                    .frame(width: 262)
                     .scaleEffect(0.35 + 0.65 * o, anchor: .top)
-                    .padding(.top, 28)
+                    .padding(.top, 46)
                     .opacity(max(0, min(1, (o - 0.12) * 2.2)))
                     .frame(maxWidth: .infinity)
                     .frame(height: Self.ringArea * o, alignment: .top)
                     .clipped()
                 GoalRow(pct: card.pct, caption: card.caption)
-                    .padding(.horizontal, 24)
-                    .frame(height: 84)
+                    .frame(height: Self.rowClosed + (Self.rowOpen - Self.rowClosed) * o)
             }
             .background(
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(closed)
+                    .fill(Theme.palette.panelSoft)
                     .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).fill(.white.opacity(o)))
             )
             .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
@@ -279,19 +332,23 @@ private struct GoalModule: View {
     }
 }
 
-/// A thick ring with rounded ends: the filled part, a little gap, then the
-/// rest in a paler color (as on the web).
+/// A thick ring with rounded ends, starting at the bottom: the filled part,
+/// a little gap, then the rest in a paler color (as on the web). The
+/// milestone's (or goal's) emoji rides on the tip of the filled part.
 private struct Ring: View {
     let pct: Int
     let points: Int
     let label: String
+    var emoji: String? = nil
 
     var body: some View {
         GeometryReader { geo in
             let size = min(geo.size.width, geo.size.height)
-            let stroke = size * 0.1
-            let gap = (pct > 0 && pct < 100) ? 0.035 : 0 // room for the round ends, as a fraction
+            let stroke = size * 24 / 280
+            let gap = (pct > 0 && pct < 100) ? 0.0343 : 0 // room for the round ends, as a fraction
             let filled = max(0, Double(pct) / 100 - gap / 2)
+            let r = (size - stroke) / 2
+            let tip = Double.pi / 2 + 2 * Double.pi * filled // clockwise from the bottom
             ZStack {
                 ZStack {
                     if filled + gap < 1 {
@@ -306,16 +363,23 @@ private struct Ring: View {
                     }
                 }
                 .padding(stroke / 2)
-                .rotationEffect(.degrees(-90)) // start at the top
-                VStack(spacing: 4) {
+                .rotationEffect(.degrees(90)) // start at the bottom
+                VStack(spacing: 6) {
                     Text(points.formatted())
                         .font(.rounded(64))
                         .foregroundStyle(Theme.palette.text)
                         .monospacedDigit()
                     Text(label)
-                        .font(.rounded(12))
+                        .font(.rounded(14))
                         .foregroundStyle(Theme.palette.text)
                         .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 32)
+                if let emoji, !emoji.isEmpty {
+                    Text(emoji)
+                        .font(.system(size: 38))
+                        .position(x: size / 2 + r * cos(tip), y: size / 2 + r * sin(tip))
+                        .accessibilityHidden(true)
                 }
             }
             .frame(width: size, height: size)
@@ -323,5 +387,84 @@ private struct Ring: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .frame(maxWidth: 280)
+    }
+}
+
+/// "Arcade Tickets": how many they have, and what the arcade is up to —
+/// closed (no tickets), locked (no streak going), open, or the game they're
+/// in the middle of. Tapping it opens the Arcade tab. The scalloped ticket
+/// is the exported shape (TicketShape, public/ui/TicketShapeUI.svg).
+private struct TicketCard: View {
+    let arcade: ArcadeInfo
+    let artURL: URL?
+    let open: () -> Void
+
+    var body: some View {
+        Button(action: open) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Arcade Tickets")
+                    .font(.rounded(18))
+                    .foregroundStyle(Theme.palette.text)
+                    .frame(height: 24)
+                line.padding(.top, 16)
+                Text("\(arcade.tickets)")
+                    .font(.rounded(68))
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.palette.textStrong)
+                    .frame(height: 117)
+                line
+                HStack(spacing: 12) {
+                    Text("Arcade is currently")
+                        .font(.rounded(18))
+                        .foregroundStyle(Theme.palette.text)
+                        .lineLimit(1)
+                        .fixedSize()
+                    Spacer(minLength: 0)
+                    status
+                        .font(.rounded(15))
+                        .foregroundStyle(Theme.palette.text)
+                        .lineLimit(1)
+                        .padding(.horizontal, 16)
+                        .frame(minWidth: 141)
+                        .frame(height: 37)
+                        .background(.white, in: Capsule())
+                }
+                .frame(height: 63)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 38)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .aspectRatio(370 / 282.4, contentMode: .fit)
+            .background(Image("TicketShape").resizable().foregroundStyle(Theme.palette.panel))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var line: some View {
+        Rectangle().fill(Theme.palette.strong.opacity(0.6)).frame(height: 1)
+    }
+
+    @ViewBuilder private var status: some View {
+        if let playing = arcade.playing {
+            HStack(spacing: 6) {
+                if let artURL {
+                    AsyncImage(url: artURL) { $0.resizable().scaledToFit() } placeholder: { Color.clear }
+                        .frame(width: 34, height: 34)
+                        .padding(.vertical, -8)
+                } else {
+                    Text(playing.icon ?? "🎮")
+                }
+                Text(playing.name ?? playing.game)
+            }
+        } else if arcade.tickets == 0 {
+            Text("Closed")
+        } else if arcade.mode == "locked" {
+            Text("Locked 🔒")
+        } else if arcade.mode == "pick" {
+            Text("Open · you pick!")
+        } else {
+            Text("Open")
+        }
     }
 }

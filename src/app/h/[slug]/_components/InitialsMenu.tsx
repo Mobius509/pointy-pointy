@@ -31,19 +31,19 @@ export function InitialsMenu({ slug, initials, disabled = false }: { slug: strin
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="grid size-10 place-items-center rounded-full bg-kid-card text-[17px] font-medium text-kid-strong transition active:scale-95"
+        className="grid size-10 place-items-center rounded-full bg-kid-chip text-[17px] font-medium text-kid-strong transition active:scale-95"
       >
         {initials || "🙂"}
       </button>
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-12 z-50 w-44 overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-kid-card animate-celebrate-pop-in"
+          className="absolute right-0 top-12 z-50 w-44 overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-kid-panel animate-celebrate-pop-in"
         >
           <Link
             role="menuitem"
             href={`/h/${slug}/settings`}
-            className="block px-4 py-3 text-[15px] font-medium text-kid-text hover:bg-kid-card-soft"
+            className="block px-4 py-3 text-[15px] font-medium text-kid-text hover:bg-kid-track"
             onClick={() => setOpen(false)}
           >
             Settings
@@ -53,7 +53,7 @@ export function InitialsMenu({ slug, initials, disabled = false }: { slug: strin
             <button
               role="menuitem"
               type="submit"
-              className="block w-full px-4 py-3 text-left text-[15px] font-medium text-kid-text hover:bg-kid-card-soft"
+              className="block w-full px-4 py-3 text-left text-[15px] font-medium text-kid-text hover:bg-kid-track"
             >
               Sign out
             </button>

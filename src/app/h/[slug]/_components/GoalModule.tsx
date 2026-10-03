@@ -3,26 +3,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Ring } from "./KidRing";
 
-// The bottom of Stats: two cards — the next milestone and the big goal. One
-// is open (white, a big ring above its "N% Towards …" row) and the other is
-// just its row. Scrolling down hands over from the milestone to the goal;
-// tapping the closed one opens it. The two always add up to the same height,
-// so nothing jumps. Mirrors GoalModule in the iOS StatsView.
+// The goal module on Stats: two cards — the next milestone and the big
+// goal. One is open (white, a big ring above its "N% Towards …" row) and the
+// other is just its row. Scrolling down hands over from the milestone to the
+// goal; tapping the closed one opens it. The two always add up to the same
+// height, so nothing jumps. Mirrors GoalModule in the iOS StatsView.
 //
 // The hand-over only starts once the whole module is in view (above the tab
-// bar). Then it holds still while the kid scrolls through HANDOVER px of room
-// below it, the cards swapping as they go — and the page ends.
-const RING_AREA = 300; // px above the row when a card is fully open
+// bar), then runs over the next HANDOVER px of scrolling (or what's left of
+// the page, if that's less). A page too short to scroll it is tap-only.
+const RING_AREA = 310; // px above the row when a card is fully open
+const ROW_OPEN = 85; // px: the "N% Towards …" row under an open ring
+const ROW_CLOSED = 98; // px: a closed card
 const HANDOVER = 260; // px of scrolling the hand-over takes
 const TAB_BAR_ZONE = 110; // px at the bottom of the screen the tab bar covers
 
-type Card = { pct: number; caption: string; points: number; label: string };
+type Card = { pct: number; caption: string; points: number; label: string; emoji: string | null };
 
 export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card }) {
-  const box = useRef<HTMLDivElement>(null); // the module plus the room below it
   const card = useRef<HTMLElement>(null);
   const [p, setP] = useState(0); // 0: milestone open … 1: goal open
-  const [hold, setHold] = useState(0); // px the module is held down by, while handing over
   const pRef = useRef(0);
   const manual = useRef<number | null>(null); // scrollY when a card was tapped
   const anim = useRef(0);
@@ -31,14 +31,16 @@ export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card })
     pRef.current = v;
     setP(v);
   };
-  // How far into the hand-over the scroll is: 0 until the module's bottom
-  // is in view above the tab bar, then on through HANDOVER px.
+  // How far through the hand-over the scroll is (0–1), or null when the
+  // page can't scroll far enough for one.
   const scrolledIn = useCallback(() => {
-    const el = box.current;
-    const mod = card.current;
-    if (!el || !mod) return 0;
-    const bottom = el.getBoundingClientRect().top + mod.offsetHeight; // where it'd be, not held
-    return Math.max(0, Math.min(HANDOVER, window.innerHeight - TAB_BAR_ZONE - bottom));
+    const el = card.current;
+    if (!el) return null;
+    const bottom = el.getBoundingClientRect().bottom + window.scrollY; // on the page
+    const start = Math.max(0, bottom - (window.innerHeight - TAB_BAR_ZONE)); // scrollY when it's all in view
+    const room = Math.min(HANDOVER, document.documentElement.scrollHeight - window.innerHeight - start);
+    if (room < 40) return null;
+    return Math.max(0, Math.min(1, (window.scrollY - start) / room));
   }, []);
 
   useEffect(() => {
@@ -46,13 +48,13 @@ export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card })
     const update = () => {
       raf = 0;
       const s = scrolledIn();
-      setHold(s);
+      if (s === null) return;
       if (manual.current !== null) {
         if (Math.abs(window.scrollY - manual.current) < 40) return; // a tap's choice holds until they scroll on
         manual.current = null;
       }
       cancelAnimationFrame(anim.current);
-      set(s / HANDOVER);
+      set(s);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -85,30 +87,14 @@ export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card })
 
   const e = p * p * (3 - 2 * p); // smoothstep
   return (
-    <div ref={box} style={{ paddingBottom: HANDOVER }}>
-      <section
-        ref={card}
-        style={{ transform: `translateY(${hold}px)` }}
-        className="space-y-3.5 rounded-[36px] bg-kid-card p-[18px]"
-      >
-        <Panel card={milestone} openness={1 - e} closedBg="var(--kid-card-inner)" onOpen={() => open(0)} />
-        <Panel card={goal} openness={e} closedBg="var(--kid-card-soft)" onOpen={() => open(1)} />
-      </section>
-    </div>
+    <section ref={card} className="space-y-0.5 rounded-[36px] bg-kid-panel p-6">
+      <Panel card={milestone} openness={1 - e} onOpen={() => open(0)} />
+      <Panel card={goal} openness={e} onOpen={() => open(1)} />
+    </section>
   );
 }
 
-function Panel({
-  card,
-  openness,
-  closedBg,
-  onOpen,
-}: {
-  card: Card;
-  openness: number;
-  closedBg: string;
-  onOpen: () => void;
-}) {
+function Panel({ card, openness, onOpen }: { card: Card; openness: number; onOpen: () => void }) {
   const ring = 0.35 + 0.65 * openness; // ring size, as a share of full
   return (
     <button
@@ -116,19 +102,22 @@ function Panel({
       onClick={onOpen}
       aria-expanded={openness > 0.5}
       className="block w-full overflow-hidden rounded-[28px] text-left"
-      style={{ backgroundColor: `color-mix(in srgb, white ${Math.round(openness * 100)}%, rgb(${closedBg}))` }}
+      style={{ backgroundColor: `color-mix(in srgb, white ${Math.round(openness * 100)}%, rgb(var(--kid-panel-soft)))` }}
     >
       <div style={{ height: RING_AREA * openness }} className="relative overflow-hidden">
         <div
-          className="absolute left-1/2 top-7 origin-top"
-          style={{ width: 260, transform: `translateX(-50%) scale(${ring})`, opacity: Math.max(0, Math.min(1, (openness - 0.12) * 2.2)) }}
+          className="absolute left-1/2 top-[46px] origin-top"
+          style={{ width: 262, transform: `translateX(-50%) scale(${ring})`, opacity: Math.max(0, Math.min(1, (openness - 0.12) * 2.2)) }}
         >
-          <Ring pct={card.pct} points={card.points} label={card.label} />
+          <Ring pct={card.pct} points={card.points} label={card.label} emoji={card.emoji} />
         </div>
       </div>
-      <div className="flex h-[84px] items-center justify-between gap-4 px-6">
-        <span className="text-[34px] font-medium leading-none text-kid-text-strong">{card.pct}%</span>
-        <span className="text-right text-[13px] font-medium text-kid-text-strong">{card.caption}</span>
+      <div
+        style={{ height: ROW_CLOSED + (ROW_OPEN - ROW_CLOSED) * openness }}
+        className="flex items-center justify-between gap-4 px-[19px]"
+      >
+        <span className="text-[37px] font-medium leading-none text-kid-text-strong">{card.pct}%</span>
+        <span className="text-right text-[14px] font-medium text-kid-text-strong">{card.caption}</span>
       </div>
     </button>
   );

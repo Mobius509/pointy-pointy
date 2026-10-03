@@ -72,8 +72,8 @@ export default async function KidViewPreviewPage({
         <div className="mt-4 overflow-hidden rounded-[32px]">
           <KidChrome slug={slug} hue={home.hue} householdName={home.householdName} initials={home.initials} preview>
             <KidStats slug={slug} home={home} preview />
-            <h2 className="mt-8 px-3 text-[22px] font-medium text-kid-strong">Tasks</h2>
-            <section className="mt-2 rounded-[32px] bg-kid-card p-3">
+            <h2 className="mt-8 px-3 text-[22px] font-medium text-kid-text">Tasks</h2>
+            <section className="mt-2 rounded-[32px] bg-white p-3">
               <div className="rounded-[26px] bg-white p-4">
                 <V2DailyChecklist slug={slug} items={home.view.items} readOnly />
               </div>

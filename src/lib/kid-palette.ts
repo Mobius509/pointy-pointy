@@ -5,7 +5,7 @@
 //
 // Defined in OKLCH (lightness, chroma, hue) so every hue looks equally
 // light; plain HSL would make yellows glare and blues go muddy. The base
-// values are sampled from the kid home mock (lavender).
+// values are sampled from the kid home mock (lavender cards on a pink page).
 //
 // Plain data + math, no imports: used by the server (CSS variables on the
 // kid layout), the browser (live preview on the settings slider) and
@@ -19,15 +19,16 @@ export const DEFAULT_HUE = BASE_HUE;
 // degrees — sampled exactly, so the default palette reproduces the design's
 // hex colors). A kid's color turns every hue by the same amount.
 export const KID_TOKENS = {
-  card: { l: 0.9067, c: 0.0451, h: 313.3 }, // #EBD8F6 the big pastel cards
-  cardInner: { l: 0.9258, c: 0.0358, h: 313.05 }, // #EFE0F8 a card in a card
-  cardSoft: { l: 0.9713, c: 0.0135, h: 314.76 }, // #F9F3FC near-white card
-  strong: { l: 0.6703, c: 0.2097, h: 304.4 }, // #B36BFB celebrate card, ring, nav icons & labels
-  strongDeep: { l: 0.5983, c: 0.2037, h: 303.87 }, // #9B56E0 tiles on a strong card
-  track: { l: 0.8728, c: 0.0707, h: 309.33 }, // #E3C9F9 the ring's paler part
-  text: { l: 0.4871, c: 0.1933, h: 302.81 }, // #7736B7 body text, filled dots
+  page: { l: 0.9161, c: 0.0484, h: 323.83 }, // #F4D9F6 the page behind the cards
+  chip: { l: 0.8734, c: 0.049, h: 323.85 }, // #E6CBE8 the round buttons on the page (settings, initials)
+  panel: { l: 0.8259, c: 0.0932, h: 305.11 }, // #D4B7F7 the goal module and the arcade ticket
+  panelSoft: { l: 0.8951, c: 0.0531, h: 306.08 }, // #E5D4F9 a closed card in the goal module
+  track: { l: 0.9312, c: 0.0386, h: 307.23 }, // #EFE2FD the ring's paler part, the streak's day pills
+  strong: { l: 0.6316, c: 0.2067, h: 288.92 }, // #8A6BFC celebrate card, ring, buttons, nav icons & labels
+  strongDeep: { l: 0.5827, c: 0.2268, h: 285.56 }, // #7658F8 tiles on a strong card
+  text: { l: 0.4871, c: 0.1933, h: 302.81 }, // #7736B7 headings and body text
   textStrong: { l: 0.4448, c: 0.2206, h: 298.94 }, // #6919B9 big numbers
-  nav: { l: 0.1422, c: 0.0687, h: 303.51 }, // #100120 the dark tab bar
+  nav: { l: 0.199, c: 0.0976, h: 300.0 }, // #1E033A the dark tab bar
 } as const;
 
 export type KidToken = keyof typeof KID_TOKENS;
@@ -46,7 +47,7 @@ export function kidPalette(hue: number | null | undefined): KidPalette {
   return out;
 }
 
-// CSS variables for the kid layout: "--kid-card: 235 216 246" (channels, so
+// CSS variables for the kid layout: "--kid-panel: 212 183 247" (channels, so
 // Tailwind's opacity modifiers work — see tailwind.config.ts).
 export function kidCssVars(hue: number | null | undefined): Record<string, string> {
   const p = kidPalette(hue);
@@ -66,13 +67,13 @@ const PP_FROM_KID: Record<string, KidToken | "white"> = {
   "primary-strong": "textStrong",
   accent: "strong",
   muted: "strongDeep",
-  line: "track",
-  tint: "card",
-  "tint-hover": "track",
-  soft: "cardSoft",
-  hover: "cardSoft",
-  "bg-top": "card",
-  "bg-bottom": "cardSoft",
+  line: "panel",
+  tint: "panelSoft",
+  "tint-hover": "panel",
+  soft: "track",
+  hover: "track",
+  "bg-top": "page",
+  "bg-bottom": "page",
 };
 
 // Everything the kid app sets: --kid-* and the --pp-* brand colors.

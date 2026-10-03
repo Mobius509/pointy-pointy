@@ -37,7 +37,7 @@ export default async function KidSettingsPage({
 
   return (
     <div className="space-y-2.5 pt-2">
-      <h1 className="px-3 text-[28px] font-medium text-kid-strong">Settings</h1>
+      <h1 className="px-3 text-[28px] font-medium text-kid-text">Settings</h1>
       <ColorSlider slug={slug} initialHue={home.hue} />
       <KidSettingsPanel
         slug={slug}

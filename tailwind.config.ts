@@ -25,9 +25,10 @@ const config: Config = {
         // globals.css (:root --kid-*), overridden per kid by the kid layout
         // (src/lib/kid-palette.ts).
         kid: {
-          card: "rgb(var(--kid-card) / <alpha-value>)",
-          "card-inner": "rgb(var(--kid-card-inner) / <alpha-value>)",
-          "card-soft": "rgb(var(--kid-card-soft) / <alpha-value>)",
+          page: "rgb(var(--kid-page) / <alpha-value>)",
+          chip: "rgb(var(--kid-chip) / <alpha-value>)",
+          panel: "rgb(var(--kid-panel) / <alpha-value>)",
+          "panel-soft": "rgb(var(--kid-panel-soft) / <alpha-value>)",
           strong: "rgb(var(--kid-strong) / <alpha-value>)",
           "strong-deep": "rgb(var(--kid-strong-deep) / <alpha-value>)",
           track: "rgb(var(--kid-track) / <alpha-value>)",

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
+import { parseEmoji, writeWithEmoji } from "@/lib/emoji";
 
 function parseTarget(raw: FormDataEntryValue | null): number {
   const n = Number(raw);
@@ -31,13 +32,13 @@ export async function startNewGoalAction(formData: FormData) {
     .is("redeemed_at", null);
   if (closeErr) throw closeErr;
 
-  const { error } = await supabaseV2Admin.from("goals").insert({
+  await writeWithEmoji((row) => supabaseV2Admin.from("goals").insert(row), {
     household_id: household.id,
     kid_profile_id: kidProfileId,
     name,
     target_points: target,
+    emoji: parseEmoji(formData.get("emoji")),
   });
-  if (error) throw error;
 
   revalidatePath(`/h/${slug}/parent/goal`);
   revalidatePath(`/h/${slug}/parent`);
@@ -54,12 +55,10 @@ export async function updateGoalAction(formData: FormData) {
   if (!name) throw new Error("Name required.");
   const target = parseTarget(formData.get("target_points"));
 
-  const { error } = await supabaseV2Admin
-    .from("goals")
-    .update({ name, target_points: target })
-    .eq("id", id)
-    .eq("household_id", household.id);
-  if (error) throw error;
+  await writeWithEmoji(
+    (row) => supabaseV2Admin.from("goals").update(row).eq("id", id).eq("household_id", household.id),
+    { name, target_points: target, emoji: parseEmoji(formData.get("emoji")) },
+  );
 
   revalidatePath(`/h/${slug}/parent/goal`);
   revalidatePath(`/h/${slug}`);

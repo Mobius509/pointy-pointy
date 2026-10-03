@@ -20,3 +20,11 @@ export type ArcadeGameId = (typeof ARCADE_GAMES)[number]["id"];
 
 export const isArcadeGame = (id: string): id is ArcadeGameId => ARCADE_GAMES.some((g) => g.id === id);
 export const arcadeGameName = (id: string) => ARCADE_GAMES.find((g) => g.id === id)?.name ?? id;
+
+// The 3D icon for a game (public/games/<id>.webp, made from the exported
+// art in public/icons/3dIcon_*.png). Games without one yet use their emoji.
+// The iOS app has the same set in its asset catalog (Game3D-<id>).
+const GAMES_WITH_ART: readonly ArcadeGameId[] = ["pinata", "worm", "chomper", "mole", "asteroids", "flappy", "stack"];
+export const arcadeGameArt = (id: string): string | null =>
+  (GAMES_WITH_ART as readonly string[]).includes(id) ? `/games/${id}.webp` : null;
+export const arcadeGameIcon = (id: string) => ARCADE_GAMES.find((g) => g.id === id)?.icon ?? "🎮";

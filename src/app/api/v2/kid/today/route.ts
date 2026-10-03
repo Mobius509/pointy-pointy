@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getKidHome } from "@/lib/v2/kid-home";
 import { jsonError, requireKidFromRequest, serializeTodayView } from "@/lib/v2/kid-api";
+import { arcadeGameArt, arcadeGameIcon, arcadeGameName } from "@/lib/games";
 
 // Everything the kid app shows: profile, goal + progress, milestones, this
 // period's checklist, pending "did something extra", streaks (with this
@@ -30,7 +31,17 @@ export async function GET(req: Request) {
       week,
       broken,
     })),
-    arcade: home.arcade,
+    arcade: {
+      ...home.arcade,
+      // The game they're in the middle of, with its name, emoji and 3D art
+      // (for the ticket card's "Arcade is currently").
+      playing: home.arcade.playing && {
+        ...home.arcade.playing,
+        name: arcadeGameName(home.arcade.playing.game),
+        icon: arcadeGameIcon(home.arcade.playing.game),
+        art: arcadeGameArt(home.arcade.playing.game),
+      },
+    },
     householdName: home.householdName,
     initials: home.initials,
     hue: home.hue,

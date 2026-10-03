@@ -82,7 +82,7 @@ export default async function ParentGoalPage({
           </SectionPill>
           <form
             action={updateGoalAction}
-            className="mt-4 grid gap-3 sm:grid-cols-[1fr_8rem_auto] sm:items-end"
+            className="mt-4 grid gap-3 sm:grid-cols-[1fr_8rem_4rem_auto] sm:items-end"
           >
             <input type="hidden" name="slug" value={slug} />
             <input type="hidden" name="id" value={active.id} />
@@ -106,6 +106,10 @@ export default async function ParentGoalPage({
                 required
                 className="input"
               />
+            </div>
+            <div>
+              <label className="label">Emoji</label>
+              <input name="emoji" defaultValue={active.emoji ?? ""} maxLength={16} className="input text-center" placeholder="🐶" />
             </div>
             <button type="submit" className="btn-secondary">
               Save
@@ -157,7 +161,7 @@ export default async function ParentGoalPage({
         </p>
         <form
           action={startNewGoalAction}
-          className="mt-4 grid gap-3 sm:grid-cols-[1fr_8rem_auto] sm:items-end"
+          className="mt-4 grid gap-3 sm:grid-cols-[1fr_8rem_4rem_auto] sm:items-end"
         >
           <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="kid_profile_id" value={selectedKid.id} />
@@ -181,6 +185,10 @@ export default async function ParentGoalPage({
               required
               className="input"
             />
+          </div>
+          <div>
+            <label className="label">Emoji</label>
+            <input name="emoji" maxLength={16} className="input text-center" placeholder="🐶" />
           </div>
           <button type="submit" className="btn-soft">
             Start goal
