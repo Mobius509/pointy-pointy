@@ -1,6 +1,7 @@
 import "server-only";
 import { supabaseV2Admin } from "@/lib/supabase/v2-admin";
 import { greeting } from "@/lib/greetings";
+import { GAMES_WITH_ART, arcadeGameArt, arcadeGameName, type ArcadeGameId } from "@/lib/games";
 import { normalizeHue } from "@/lib/kid-palette";
 import { localTimeInTimezone, todayInTimezone } from "@/lib/time";
 import { getKidInitials } from "@/lib/v2/high-scores";
@@ -21,6 +22,9 @@ export type KidHome = {
   greeting: string;
   // Approvals the kid hasn't celebrated yet (on any device).
   pendingCelebration: RecentApproval[];
+  // The game shown on the arcade ticket card: the one they're playing, or
+  // a random one (for now — a taste of what's in the arcade).
+  ticketGame: { game: ArcadeGameId; name: string; art: string | null };
 };
 
 // Columns added by migration v2_0009: until it's run, behave as before
@@ -70,7 +74,13 @@ export async function getKidHome(ctx: KidContext): Promise<KidHome | null> {
     hue,
     greeting: text,
     pendingCelebration,
+    ticketGame: ticketGame(arcade.playing?.game),
   };
+}
+
+function ticketGame(playing?: ArcadeGameId): KidHome["ticketGame"] {
+  const game = playing ?? GAMES_WITH_ART[Math.floor(Math.random() * GAMES_WITH_ART.length)];
+  return { game, name: arcadeGameName(game), art: arcadeGameArt(game) };
 }
 
 export async function getKidHue(kidProfileId: string): Promise<number> {

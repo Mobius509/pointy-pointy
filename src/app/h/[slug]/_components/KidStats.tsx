@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { avatarSrc } from "@/lib/avatar";
-import { arcadeGameArt, arcadeGameIcon, arcadeGameName } from "@/lib/games";
+import { arcadeGameIcon } from "@/lib/games";
 import type { KidHome } from "@/lib/v2/kid-home";
 import { CelebrateCard } from "./CelebrateCard";
 import { GoalModule } from "./GoalModule";
@@ -153,24 +153,24 @@ function GoalRingCard({ home }: { home: KidHome }) {
 // in the middle of. Tapping it opens the Arcade tab.
 function TicketCard({ slug, home, preview }: { slug: string; home: KidHome; preview: boolean }) {
   const { tickets, mode, playing } = home.arcade;
-  const art = playing && arcadeGameArt(playing.game);
-  const status = playing ? (
+  const label = playing
+    ? home.ticketGame.name
+    : tickets === 0
+      ? "Closed"
+      : mode === "locked"
+        ? "Locked 🔒"
+        : mode === "pick"
+          ? "Open · you pick!"
+          : "Open";
+  const status = (
     <>
-      {art ? (
-        <img src={art} alt="" className="-my-2 h-[34px] w-auto" />
+      {home.ticketGame.art ? (
+        <img src={home.ticketGame.art} alt="" className="-my-2 h-[34px] w-auto" />
       ) : (
-        <span aria-hidden>{arcadeGameIcon(playing.game)}</span>
+        <span aria-hidden>{arcadeGameIcon(home.ticketGame.game)}</span>
       )}
-      <span className="truncate">{arcadeGameName(playing.game)}</span>
+      <span className="truncate">{label}</span>
     </>
-  ) : tickets === 0 ? (
-    "Closed"
-  ) : mode === "locked" ? (
-    "Locked 🔒"
-  ) : mode === "pick" ? (
-    "Open · you pick!"
-  ) : (
-    "Open"
   );
   const inner = (
     <>

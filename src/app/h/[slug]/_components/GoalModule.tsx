@@ -95,7 +95,10 @@ export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card })
 }
 
 function Panel({ card, openness, onOpen }: { card: Card; openness: number; onOpen: () => void }) {
-  const ring = 0.35 + 0.65 * openness; // ring size, as a share of full
+  // The ring draws on (round from the bottom) as the card opens, rather
+  // than growing.
+  const d = Math.max(0, Math.min(1, (openness - 0.3) / 0.7));
+  const draw = d * d * (3 - 2 * d);
   return (
     <button
       type="button"
@@ -106,10 +109,10 @@ function Panel({ card, openness, onOpen }: { card: Card; openness: number; onOpe
     >
       <div style={{ height: RING_AREA * openness }} className="relative overflow-hidden">
         <div
-          className="absolute left-1/2 top-[46px] origin-top"
-          style={{ width: 262, transform: `translateX(-50%) scale(${ring})`, opacity: Math.max(0, Math.min(1, (openness - 0.12) * 2.2)) }}
+          className="absolute left-1/2 top-[46px] -translate-x-1/2"
+          style={{ width: 262, opacity: Math.max(0, Math.min(1, (openness - 0.12) * 2.2)) }}
         >
-          <Ring pct={card.pct} points={card.points} label={card.label} emoji={card.emoji} />
+          <Ring pct={card.pct} points={card.points} label={card.label} emoji={card.emoji} draw={draw} />
         </div>
       </div>
       <div

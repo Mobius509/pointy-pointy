@@ -90,9 +90,16 @@ struct ArcadeInfo: Codable, Hashable {
         let icon: String?
         let art: String? // the game's 3D icon (a site path)
     }
+    /// The game on the ticket card: the one being played, or a random one.
+    struct Featured: Codable, Hashable {
+        let game: String
+        let name: String
+        let art: String?
+    }
     let tickets: Int
     let mode: String // "locked" | "random" | "pick"
     let playing: Playing?
+    let featured: Featured?
 }
 
 struct StreakInfo: Codable, Identifiable, Hashable {

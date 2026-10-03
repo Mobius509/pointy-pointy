@@ -26,7 +26,7 @@ struct StatsView: View {
                 }
                 GoalRingCard(today: today, pageEnd: pageEnd)
                 if let arcade = today.arcade {
-                    TicketCard(arcade: arcade, artURL: arcade.playing?.art.flatMap { model.link?.resolve($0) }, open: openArcade)
+                    TicketCard(arcade: arcade, artURL: (arcade.featured?.art ?? arcade.playing?.art).flatMap { model.link?.resolve($0) }, open: openArcade)
                         .padding(.top, 12)
                 }
             }
@@ -301,6 +301,11 @@ private struct GoalModule: View {
         p = max(0, min(1, s / room))
     }
 
+    private func drawOn(_ o: Double) -> Double {
+        let d = max(0, min(1, (o - 0.3) / 0.7))
+        return d * d * (3 - 2 * d)
+    }
+
     private func open(_ target: Double) {
         tappedAt = bottom
         withAnimation(.easeInOut(duration: 0.38)) { p = target }
@@ -309,9 +314,10 @@ private struct GoalModule: View {
     private func panel(_ card: Card, openness o: Double, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 0) {
-                Ring(pct: card.pct, points: card.points, label: card.label, emoji: card.emoji)
+                // The ring draws on (round from the bottom) as the card
+                // opens, rather than growing.
+                Ring(pct: card.pct, points: card.points, label: card.label, emoji: card.emoji, draw: drawOn(o))
                     .frame(width: 262)
-                    .scaleEffect(0.35 + 0.65 * o, anchor: .top)
                     .padding(.top, 46)
                     .opacity(max(0, min(1, (o - 0.12) * 2.2)))
                     .frame(maxWidth: .infinity)
@@ -332,38 +338,26 @@ private struct GoalModule: View {
     }
 }
 
-/// A thick ring with rounded ends, starting at the bottom: the filled part,
-/// a little gap, then the rest in a paler color (as on the web). The
-/// milestone's (or goal's) emoji rides on the tip of the filled part.
+/// A thick ring with rounded ends, starting at the bottom: the dark part is
+/// what they've earned, then a little gap, then the paler rest still to go
+/// (as on the web). It draws on clockwise — the dark part sweeps round with
+/// the milestone's (or goal's) emoji riding its front, then the pale part
+/// follows — the first time it's mostly on screen. `draw` (0–1) holds it
+/// part-drawn, for the goal module's hand-over.
 private struct Ring: View {
     let pct: Int
     let points: Int
     let label: String
     var emoji: String? = nil
+    var draw: Double = 1
+    @State private var intro: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         GeometryReader { geo in
             let size = min(geo.size.width, geo.size.height)
-            let stroke = size * 24 / 280
-            let gap = (pct > 0 && pct < 100) ? 0.0343 : 0 // room for the round ends, as a fraction
-            let filled = max(0, Double(pct) / 100 - gap / 2)
-            let r = (size - stroke) / 2
-            let tip = Double.pi / 2 + 2 * Double.pi * filled // clockwise from the bottom
             ZStack {
-                ZStack {
-                    if filled + gap < 1 {
-                        Circle()
-                            .trim(from: filled + gap, to: 1 - gap)
-                            .stroke(Theme.palette.track, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
-                    }
-                    if filled > 0 {
-                        Circle()
-                            .trim(from: 0, to: filled)
-                            .stroke(Theme.palette.strong, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
-                    }
-                }
-                .padding(stroke / 2)
-                .rotationEffect(.degrees(90)) // start at the bottom
+                RingArcs(pct: pct, emoji: emoji, size: size, progress: intro * draw)
                 VStack(spacing: 6) {
                     Text(points.formatted())
                         .font(.rounded(64))
@@ -375,18 +369,69 @@ private struct Ring: View {
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 32)
-                if let emoji, !emoji.isEmpty {
-                    Text(emoji)
-                        .font(.system(size: 38))
-                        .position(x: size / 2 + r * cos(tip), y: size / 2 + r * sin(tip))
-                        .accessibilityHidden(true)
-                }
             }
             .frame(width: size, height: size)
             .frame(maxWidth: .infinity)
         }
         .aspectRatio(1, contentMode: .fit)
         .frame(maxWidth: 280)
+        // Draw on once it's mostly on screen (above the tab bar).
+        .onGeometryChange(for: Bool.self) { proxy in
+            let f = proxy.frame(in: .global)
+            let screen = (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.screen.bounds.height ?? 874
+            return f.height > 0 && f.minY + f.height * 0.6 < screen - 110 && f.maxY - f.height * 0.6 > 0
+        } action: { visible in
+            guard visible, intro == 0 else { return }
+            if reduceMotion { intro = 1 } else { withAnimation(.easeOut(duration: 1.2)) { intro = 1 } }
+        }
+    }
+}
+
+/// The ring's two arcs and the emoji, `progress` (0–1) of the way round —
+/// animatable, so the emoji rides the front as it draws on.
+private struct RingArcs: View, Animatable {
+    let pct: Int
+    let emoji: String?
+    let size: CGFloat
+    var progress: Double
+
+    var animatableData: Double {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    var body: some View {
+        let stroke = size * 24 / 280
+        let gap = (pct > 0 && pct < 100) ? 0.0343 : 0 // room for the round ends, as a fraction
+        let filled = max(0, Double(pct) / 100 - gap / 2)
+        let sweep = max(0, min(1, progress))
+        let shownFilled = min(filled, sweep)
+        let restTo = min(1 - gap, sweep)
+        let r = (size - stroke) / 2
+        let tip = Double.pi / 2 + 2 * Double.pi * shownFilled // clockwise from the bottom
+        ZStack {
+            ZStack {
+                if restTo > filled + gap + 0.002 {
+                    Circle()
+                        .trim(from: filled + gap, to: restTo)
+                        .stroke(Theme.palette.track, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
+                }
+                if shownFilled > 0.002 {
+                    Circle()
+                        .trim(from: 0, to: shownFilled)
+                        .stroke(Theme.palette.strong, style: StrokeStyle(lineWidth: stroke, lineCap: .round))
+                }
+            }
+            .padding(stroke / 2)
+            .rotationEffect(.degrees(90)) // start at the bottom
+            if let emoji, !emoji.isEmpty, sweep > 0 {
+                Text(emoji)
+                    .font(.system(size: 38))
+                    .position(x: size / 2 + r * cos(tip), y: size / 2 + r * sin(tip))
+                    .accessibilityHidden(true)
+            }
+        }
+        .frame(width: size, height: size)
     }
 }
 
@@ -445,26 +490,26 @@ private struct TicketCard: View {
         Rectangle().fill(Theme.palette.strong.opacity(0.6)).frame(height: 1)
     }
 
-    @ViewBuilder private var status: some View {
-        if let playing = arcade.playing {
-            HStack(spacing: 6) {
-                if let artURL {
-                    AsyncImage(url: artURL) { $0.resizable().scaledToFit() } placeholder: { Color.clear }
-                        .frame(width: 34, height: 34)
-                        .padding(.vertical, -8)
-                } else {
-                    Text(playing.icon ?? "🎮")
-                }
-                Text(playing.name ?? playing.game)
+    /// The game's 3D icon (the one being played, or a random one) and what
+    /// the arcade is up to.
+    private var status: some View {
+        HStack(spacing: 6) {
+            if let artURL {
+                AsyncImage(url: artURL) { $0.resizable().scaledToFit() } placeholder: { Color.clear }
+                    .frame(width: 34, height: 34)
+                    .padding(.vertical, -8)
+            } else if let icon = arcade.playing?.icon {
+                Text(icon)
             }
-        } else if arcade.tickets == 0 {
-            Text("Closed")
-        } else if arcade.mode == "locked" {
-            Text("Locked 🔒")
-        } else if arcade.mode == "pick" {
-            Text("Open · you pick!")
-        } else {
-            Text("Open")
+            Text(label)
         }
+    }
+
+    private var label: String {
+        if let playing = arcade.playing { return playing.name ?? playing.game }
+        if arcade.tickets == 0 { return "Closed" }
+        if arcade.mode == "locked" { return "Locked 🔒" }
+        if arcade.mode == "pick" { return "Open · you pick!" }
+        return "Open"
     }
 }

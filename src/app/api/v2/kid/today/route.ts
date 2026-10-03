@@ -41,6 +41,8 @@ export async function GET(req: Request) {
         icon: arcadeGameIcon(home.arcade.playing.game),
         art: arcadeGameArt(home.arcade.playing.game),
       },
+      // The game on the ticket card (the one being played, or a random one).
+      featured: home.ticketGame,
     },
     householdName: home.householdName,
     initials: home.initials,
