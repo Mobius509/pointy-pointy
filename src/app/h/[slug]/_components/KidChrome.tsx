@@ -33,12 +33,12 @@ export function KidChrome({
   const vars = kidThemeVars(hue);
   const style = vars as CSSProperties;
   return (
-    <div data-kid-chrome style={style} className={`${figtree.variable} font-kid min-h-screen bg-kid-page text-kid-text`}>
+    <div data-kid-chrome style={style} className={`${figtree.variable} font-kid min-h-screen bg-kid-page tracking-[-0.02em] text-kid-text`}>
       {/* Dialogs, celebrations and games draw outside this box: give the
           page root the same colors while the kid app is open (not in a
           parent's preview — that would recolor the parent pages). */}
       {!preview && <KidThemeRoot vars={vars} />}
-      <div className={`mx-auto w-full max-w-[440px] px-4 ${embedded || preview ? "pt-3 pb-6" : "pt-4 pb-32"}`}>
+      <div className={`mx-auto w-full max-w-[440px] px-4 ${embedded || preview ? "pt-3 pb-6" : "pt-4 pb-40"}`}>
         {!embedded && (
           <header className="flex items-center justify-end gap-3 pb-2" aria-label={householdName}>
             <div className="relative z-10 flex items-center gap-2 shrink-0">

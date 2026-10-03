@@ -25,11 +25,20 @@ struct KidAppView: View {
             TabBar(tab: $tab)
                 .padding(.bottom, 8)
         }
-        // Content scrolls under a soft strip behind the clock.
+        // Content scrolls under a blurred strip behind the clock that fades
+        // out at its bottom edge.
         .overlay(alignment: .top) {
             GeometryReader { geo in
-                Theme.palette.page.opacity(0.92)
-                    .frame(height: geo.safeAreaInsets.top)
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .overlay(Theme.palette.page.opacity(0.35))
+                    .mask(
+                        LinearGradient(
+                            stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.55), .init(color: .clear, location: 1)],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                    .frame(height: geo.safeAreaInsets.top + 28)
                     .offset(y: -geo.safeAreaInsets.top)
             }
             .allowsHitTesting(false)
@@ -65,7 +74,7 @@ struct KidAppView: View {
                 content()
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 110)
+            .padding(.bottom, 145)
             .frame(maxWidth: 440)
             .frame(maxWidth: .infinity)
         }
@@ -90,7 +99,7 @@ struct KidAppView: View {
                 }
             } label: {
                 Text(model.today?.initials.flatMap { $0.isEmpty ? nil : $0 } ?? "🙂")
-                    .font(.rounded(17))
+                    .kidFont(17)
                     .frame(width: 40, height: 40)
                     .background(Theme.palette.chip, in: Circle())
                     .foregroundStyle(Theme.palette.strong)
@@ -113,7 +122,7 @@ private struct ArcadeTab<TopBar: View>: View {
             topBar.frame(maxWidth: 440)
             if let request = model.webRequest(.arcade) {
                 WebPlayView(request: request)
-                    .padding(.bottom, 90)
+                    .padding(.bottom, 125)
             }
         }
     }
@@ -121,9 +130,13 @@ private struct ArcadeTab<TopBar: View>: View {
 
 /// The floating tab bar: Stats · the big ✓ (Tasks) · Arcade. A dark bar
 /// with a hump in the middle that holds the big button — custom-drawn
-/// (NavShape), the same shape and colors as the web's KidTabBar.
+/// (NavShape), the same shape, size and colors as the web's KidTabBar.
 private struct TabBar: View {
     @Binding var tab: KidAppView.Tab
+
+    static let width: CGFloat = 358, height: CGFloat = 103
+    private static let barTop: CGFloat = 30.28 // where the bar part starts (the hump is above it)
+    private static let peakX: CGFloat = 179.745 // the hump's peak — the big button centers on it
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -136,32 +149,32 @@ private struct TabBar: View {
                 Spacer()
                 side(.arcade, "Arcade", "IconGame", iconFirst: false)
             }
-            .padding(.horizontal, 16)
-            .frame(height: 46.45) // the bar part of the shape: y 19.6 – 66.05
-            .padding(.top, 19.6)
+            .padding(.horizontal, 26)
+            .frame(height: Self.height - Self.barTop)
+            .padding(.top, Self.barTop)
             // The big ✓ fills the hump.
             Button { tab = .tasks } label: {
                 Image(systemName: "checkmark.square.fill")
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(Theme.palette.strong, .white)
-                    .font(.system(size: 28, weight: .semibold))
-                    .frame(width: 59, height: 59)
+                    .font(.system(size: 38, weight: .semibold))
+                    .frame(width: 88, height: 88)
                     .background(Theme.palette.strong, in: Circle())
             }
-            .padding(.top, 3)
-            .offset(x: 128.18 - 257 / 2) // centered on the hump's peak
+            .padding(.top, 5)
+            .offset(x: Self.peakX - Self.width / 2) // centered on the hump's peak
             .accessibilityLabel("Tasks")
             .accessibilityAddTraits(tab == .tasks ? .isSelected : [])
         }
-        .frame(width: 257, height: 67)
+        .frame(width: Self.width, height: Self.height)
     }
 
     private func side(_ which: KidAppView.Tab, _ label: String, _ icon: String, iconFirst: Bool) -> some View {
         Button { tab = which } label: {
-            HStack(spacing: 6) {
-                if iconFirst { Image(icon).resizable().frame(width: 22, height: 22) }
-                Text(label).font(.rounded(14, .bold))
-                if !iconFirst { Image(icon).resizable().frame(width: 22, height: 22) }
+            HStack(spacing: 8) {
+                if iconFirst { Image(icon).resizable().frame(width: 27, height: 27) }
+                Text(label).kidFont(17, .bold)
+                if !iconFirst { Image(icon).resizable().frame(width: 27, height: 27) }
             }
             .foregroundStyle(Theme.palette.strong)
         }
@@ -169,27 +182,24 @@ private struct TabBar: View {
     }
 }
 
-/// The tab bar's outline: a 257 × 67 pill-ended bar with a hump in the
-/// middle — the exported design (public/icons/UI_Navigation.svg), scaled to
-/// the frame. Same path as the web.
+/// The tab bar's outline: a pill-ended bar with a hump in the middle — the
+/// exported design (public/ui/UI_Navigation.svg, 358 × 103), scaled to the
+/// frame. Same path as the web.
 struct NavShape: Shape {
     func path(in rect: CGRect) -> Path {
-        let sx = rect.width / 257, sy = rect.height / 67
+        let sx = rect.width / 358, sy = rect.height / 103
         func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: rect.minX + x * sx, y: rect.minY + y * sy) }
         var path = Path()
-        path.move(to: p(129.193, 0))
-        path.addCurve(to: p(148.387, 7.26144), control1: p(136.554, 0), control2: p(143.274, 2.74254))
-        path.addCurve(to: p(171.638, 19.5977), control1: p(155.113, 13.2047), control2: p(162.663, 19.5977))
-        path.addLine(to: p(233.142, 19.5977))
-        path.addCurve(to: p(256.367, 42.8232), control1: p(245.969, 19.5978), control2: p(256.367, 29.9963))
-        path.addCurve(to: p(233.142, 66.0498), control1: p(256.367, 55.6504), control2: p(245.969, 66.0497))
-        path.addLine(to: p(23.2256, 66.0498))
-        path.addCurve(to: p(0, 42.8232), control1: p(10.3985, 66.0497), control2: p(0, 55.6504))
-        path.addCurve(to: p(23.2256, 19.5977), control1: p(0.00023, 29.9963), control2: p(10.3986, 19.5978))
-        path.addLine(to: p(84.7292, 19.5977))
-        path.addCurve(to: p(107.98, 7.26144), control1: p(93.7043, 19.5977), control2: p(101.254, 13.2047))
-        path.addCurve(to: p(127.174, 0), control1: p(113.093, 2.74253), control2: p(119.813, 0))
-        path.addLine(to: p(129.193, 0))
+        path.move(to: p(179.745, 0))
+        path.addCurve(to: p(262.925, 30.2812), control1: p(222.055, 0), control2: p(219.723, 28.4916))
+        path.addLine(to: p(320.932, 30.2812))
+        path.addCurve(to: p(358, 66.6411), control1: p(341.404, 30.2812), control2: p(358, 46.5602))
+        path.addCurve(to: p(320.932, 103), control1: p(358, 86.7217), control2: p(341.404, 103))
+        path.addLine(to: p(37.0676, 103))
+        path.addCurve(to: p(0, 66.6411), control1: p(16.596, 103), control2: p(0.00027, 86.7217))
+        path.addCurve(to: p(37.0676, 30.2812), control1: p(0, 46.5602), control2: p(16.5959, 30.2812))
+        path.addLine(to: p(91.3469, 30.2812))
+        path.addCurve(to: p(179.745, 0), control1: p(139.927, 28.4918), control2: p(137.435, 0.00019))
         path.closeSubpath()
         return path
     }
@@ -202,7 +212,7 @@ struct TasksView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Today's tasks")
-                .font(.rounded(28))
+                .kidFont(28)
                 .foregroundStyle(Theme.palette.text)
                 .padding(.horizontal, 12)
             if let today = model.today {

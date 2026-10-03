@@ -11,6 +11,10 @@ import { Ring } from "./KidRing";
 // celebrate" when approvals are waiting, this week's streak, the goal ring
 // and their arcade tickets. Mirrors the iOS app's StatsView. `preview`: a
 // parent's "Kid view".
+// TEMP (kid app 2.0 design review): show the celebrate card even with
+// nothing to celebrate. Same switch in the iOS StatsView.
+const ALWAYS_SHOW_CELEBRATE = true;
+
 export function KidStats({ slug, home, preview = false }: { slug: string; home: KidHome; preview?: boolean }) {
   const { view, streaks, greeting, pendingCelebration } = home;
   return (
@@ -23,12 +27,15 @@ export function KidStats({ slug, home, preview = false }: { slug: string; home: 
           aria-hidden
           className="absolute -left-[13px] -top-[99px] size-[190px] object-contain"
         />
-        <h1 className="max-w-[240px] text-[27px] font-medium leading-[1.1] tracking-[-0.01em] text-kid-text">
+        <h1 className="max-w-[240px] text-[28px] font-medium leading-[30px] text-kid-text">
           {greeting}
         </h1>
       </section>
 
-      {pendingCelebration.length > 0 && <CelebrateCard slug={slug} disabled={preview} />}
+      {/* For now it's always shown, so the design can be seen (it opens
+          "All caught up" when there's nothing new) — normally only while
+          approvals are waiting: pendingCelebration.length > 0. */}
+      {(ALWAYS_SHOW_CELEBRATE || pendingCelebration.length > 0) && <CelebrateCard slug={slug} disabled={preview} />}
 
       {streaks[0] && <StreakWeekCard slug={slug} home={home} preview={preview} />}
 
@@ -54,8 +61,8 @@ function StreakWeekCard({ slug, home, preview }: { slug: string; home: KidHome; 
         : `${left} Task${left === 1 ? "" : "s"} To Do Today`;
   const button = "block w-full rounded-full bg-kid-strong py-3 text-center text-[16px] font-medium text-white";
   return (
-    <section className="rounded-[36px] bg-white px-6 pb-6 pt-7">
-      <h2 className="text-[18px] font-medium leading-6 text-kid-text">This week&apos;s streak</h2>
+    <section className="rounded-[36px] bg-white p-6">
+      <h2 className="text-[19px] font-medium leading-6 text-kid-text">This week&apos;s streak</h2>
       <ol className="mb-2.5 mt-[18px] flex justify-between gap-2" aria-label={`${streak.streak.name}: this week`}>
         {streak.week.map((d) => (
           <li
@@ -162,33 +169,36 @@ function TicketCard({ slug, home, preview }: { slug: string; home: KidHome; prev
         : mode === "pick"
           ? "Open · you pick!"
           : "Open";
-  const status = (
-    <>
-      {home.ticketGame.art ? (
-        <img src={home.ticketGame.art} alt="" className="-my-2 h-[34px] w-auto" />
-      ) : (
-        <span aria-hidden>{arcadeGameIcon(home.ticketGame.game)}</span>
-      )}
-      <span className="truncate">{label}</span>
-    </>
-  );
   const inner = (
     <>
-      <h2 className="text-[18px] font-medium leading-6 text-kid-text">Arcade Tickets</h2>
+      <h2 className="text-[19px] font-medium leading-6 text-kid-text">Arcade Tickets</h2>
       <hr className="mt-4 border-kid-strong/60" />
       <p className="flex h-[117px] items-center text-[68px] font-medium leading-none text-kid-text-strong tabular-nums">
         {tickets}
       </p>
       <hr className="border-kid-strong/60" />
-      <div className="flex h-[63px] items-center justify-between gap-3">
-        <span className="whitespace-nowrap text-[18px] font-medium text-kid-text">Arcade is currently</span>
-        <span className="flex h-[37px] min-w-[141px] max-w-[60%] items-center justify-center gap-1.5 rounded-full bg-white px-4 text-[15px] font-medium text-kid-text">
-          {status}
+      <div className="relative flex h-[63px] items-center justify-between gap-3">
+        <span className="whitespace-nowrap text-[19px] font-medium text-kid-text">Arcade is currently</span>
+        <span className="relative flex h-[37px] min-w-[141px] max-w-[60%] items-center justify-center rounded-full bg-white px-4 text-[15px] font-medium text-kid-text">
+          {/* The game's 3D icon stands above the pill, its bottom on the
+              line over it. */}
+          {home.ticketGame.art ? (
+            <img
+              src={home.ticketGame.art}
+              alt=""
+              className="pointer-events-none absolute bottom-[calc(100%+13px)] right-0 h-[137px] w-[141px] object-contain object-right-bottom"
+            />
+          ) : (
+            <span aria-hidden className="absolute bottom-[calc(100%+20px)] right-4 text-[64px] leading-none">
+              {arcadeGameIcon(home.ticketGame.game)}
+            </span>
+          )}
+          <span className="truncate">{label}</span>
         </span>
       </div>
     </>
   );
-  const cls = "kid-ticket block aspect-[370/282.4] w-full bg-kid-panel px-6 pt-[38px]";
+  const cls = "kid-ticket block aspect-[370/282.4] w-full bg-kid-panel px-6 pt-[35px]"; // 24 inside the scallops (11)
   return preview ? (
     <section className={cls}>{inner}</section>
   ) : (

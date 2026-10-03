@@ -10,6 +10,7 @@ struct StatsView: View {
     var openTasks: () -> Void
     var openArcade: () -> Void
     @State private var pageEnd: CGFloat = 0 // where the content ends, on screen
+    private static let alwaysShowCelebrate = true // TEMP (kid app 2.0 design review)
 
     var body: some View {
         if let today = model.today {
@@ -18,7 +19,11 @@ struct StatsView: View {
                     greeting: today.greeting ?? "Hello \(today.kid.name)! Let's get some stuff done today",
                     avatarURL: model.link?.resolve(today.kid.avatarUrl)
                 )
-                if !(today.pendingCelebration ?? []).isEmpty {
+                // For now it's always shown, so the design can be seen (it
+                // opens "All caught up" when there's nothing new) — like the
+                // web's ALWAYS_SHOW_CELEBRATE. Normally only while approvals
+                // are waiting.
+                if Self.alwaysShowCelebrate || !(today.pendingCelebration ?? []).isEmpty {
                     CelebrateCard { model.webPage = .celebrate }
                 }
                 if let streak = today.streaks?.first, let week = streak.week {
@@ -45,10 +50,7 @@ private struct GreetingCard: View {
     let avatarURL: URL?
 
     var body: some View {
-        Text(greeting)
-            .font(.rounded(27))
-            .lineSpacing(-2.7)
-            .foregroundStyle(Theme.palette.text)
+        KidLinedText(text: greeting, size: 28, lineHeight: 30, color: Theme.palette.text)
             .frame(maxWidth: 240, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)
@@ -74,7 +76,7 @@ private struct CelebrateCard: View {
                     .frame(width: 86, height: 101)
                     .background(Theme.palette.strongDeep, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 Text("Your points have been approved! Nice work. Let's celebrate!")
-                    .font(.rounded(16))
+                    .kidFont(16)
                     .lineSpacing(3)
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.leading)
@@ -111,7 +113,7 @@ private struct StreakWeekCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("This week's streak")
-                .font(.rounded(18))
+                .kidFont(19)
                 .foregroundStyle(Theme.palette.text)
             HStack(spacing: 8) {
                 ForEach(week, id: \.day) { pill($0) }
@@ -122,7 +124,7 @@ private struct StreakWeekCard: View {
             .accessibilityLabel("\(streak.name): \(week.filter { $0.state == .done }.count) days done this week")
             Button(action: openTasks) {
                 Text(label)
-                    .font(.rounded(16))
+                    .kidFont(16)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
@@ -130,9 +132,7 @@ private struct StreakWeekCard: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 28)
-        .padding(.bottom, 24)
+        .padding(24)
         .background(.white, in: RoundedRectangle(cornerRadius: 36, style: .continuous))
     }
 
@@ -144,7 +144,7 @@ private struct StreakWeekCard: View {
                 Capsule().strokeBorder(Theme.palette.strong.opacity(0.5), lineWidth: 2)
             }
             Text(letter(day.day))
-                .font(.rounded(18))
+                .kidFont(18)
                 .foregroundStyle(rest ? Color(hex: 0xBDBDBD) : Theme.palette.text)
                 .padding(.bottom, rest ? 0 : 10)
         }
@@ -225,10 +225,10 @@ private struct GoalRow: View {
 
     var body: some View {
         HStack {
-            Text("\(pct)%").font(.rounded(37)).foregroundStyle(Theme.palette.textStrong)
+            Text("\(pct)%").kidFont(37).foregroundStyle(Theme.palette.textStrong)
             Spacer()
             Text(caption)
-                .font(.rounded(14))
+                .kidFont(14)
                 .foregroundStyle(Theme.palette.textStrong)
                 .multilineTextAlignment(.trailing)
         }
@@ -266,8 +266,8 @@ private struct GoalModule: View {
     static let rowOpen: CGFloat = 85
     static let rowClosed: CGFloat = 98
     private static let handover: CGFloat = 260 // points of scrolling the hand-over takes
-    private static let tabBarZone: CGFloat = 110 // the bottom of the screen the tab bar covers
-    private static let pagePadding: CGFloat = 110 // the room under the content (KidAppView.page)
+    private static let tabBarZone: CGFloat = 135 // the bottom of the screen the tab bar covers
+    private static let pagePadding: CGFloat = 145 // the room under the content (KidAppView.page)
     private static var screenHeight: CGFloat {
         (UIApplication.shared.connectedScenes.first as? UIWindowScene)?.screen.bounds.height ?? 874
     }
@@ -298,7 +298,9 @@ private struct GoalModule: View {
             if abs(bottom - tapped) < 40 { return } // a tap's choice holds until they scroll on
             tappedAt = nil
         }
-        p = max(0, min(1, s / room))
+        // Ease there rather than jump with every scroll step, so the rings
+        // draw on smoothly.
+        withAnimation(.easeOut(duration: 0.3)) { p = max(0, min(1, s / room)) }
     }
 
     private func drawOn(_ o: Double) -> Double {
@@ -360,11 +362,11 @@ private struct Ring: View {
                 RingArcs(pct: pct, emoji: emoji, size: size, progress: intro * draw)
                 VStack(spacing: 6) {
                     Text(points.formatted())
-                        .font(.rounded(64))
+                        .kidFont(64)
                         .foregroundStyle(Theme.palette.text)
                         .monospacedDigit()
                     Text(label)
-                        .font(.rounded(14))
+                        .kidFont(14)
                         .foregroundStyle(Theme.palette.text)
                         .multilineTextAlignment(.center)
                 }
@@ -448,37 +450,40 @@ private struct TicketCard: View {
         Button(action: open) {
             VStack(alignment: .leading, spacing: 0) {
                 Text("Arcade Tickets")
-                    .font(.rounded(18))
+                    .kidFont(19)
                     .foregroundStyle(Theme.palette.text)
                     .frame(height: 24)
                 line.padding(.top, 16)
                 Text("\(arcade.tickets)")
-                    .font(.rounded(68))
+                    .kidFont(68)
                     .monospacedDigit()
                     .foregroundStyle(Theme.palette.textStrong)
                     .frame(height: 117)
                 line
                 HStack(spacing: 12) {
                     Text("Arcade is currently")
-                        .font(.rounded(18))
+                        .kidFont(19)
                         .foregroundStyle(Theme.palette.text)
                         .lineLimit(1)
                         .fixedSize()
                     Spacer(minLength: 0)
-                    status
-                        .font(.rounded(15))
+                    Text(label)
+                        .kidFont(15)
                         .foregroundStyle(Theme.palette.text)
                         .lineLimit(1)
                         .padding(.horizontal, 16)
                         .frame(minWidth: 141)
                         .frame(height: 37)
                         .background(.white, in: Capsule())
+                        // The game's 3D icon stands above the pill, its
+                        // bottom on the line over it.
+                        .overlay(alignment: .bottomTrailing) { art.offset(y: -37 - 13) }
                 }
                 .frame(height: 63)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 24)
-            .padding(.top, 38)
+            .padding(.top, 35) // 24 inside the scallops (11)
             .frame(maxWidth: .infinity, alignment: .leading)
             .aspectRatio(370 / 282.4, contentMode: .fit)
             .background(Image("TicketShape").resizable().foregroundStyle(Theme.palette.panel))
@@ -490,18 +495,14 @@ private struct TicketCard: View {
         Rectangle().fill(Theme.palette.strong.opacity(0.6)).frame(height: 1)
     }
 
-    /// The game's 3D icon (the one being played, or a random one) and what
-    /// the arcade is up to.
-    private var status: some View {
-        HStack(spacing: 6) {
-            if let artURL {
-                AsyncImage(url: artURL) { $0.resizable().scaledToFit() } placeholder: { Color.clear }
-                    .frame(width: 34, height: 34)
-                    .padding(.vertical, -8)
-            } else if let icon = arcade.playing?.icon {
-                Text(icon)
-            }
-            Text(label)
+    /// The game's 3D icon: the one being played, or a random one.
+    @ViewBuilder private var art: some View {
+        if let artURL {
+            AsyncImage(url: artURL) { $0.resizable().scaledToFit() } placeholder: { Color.clear }
+                .frame(width: 141, height: 137, alignment: .bottomTrailing)
+                .allowsHitTesting(false)
+        } else if let icon = arcade.playing?.icon {
+            Text(icon).font(.system(size: 64)).padding(.trailing, 16)
         }
     }
 

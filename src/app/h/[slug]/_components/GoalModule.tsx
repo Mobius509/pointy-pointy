@@ -16,7 +16,8 @@ const RING_AREA = 310; // px above the row when a card is fully open
 const ROW_OPEN = 85; // px: the "N% Towards …" row under an open ring
 const ROW_CLOSED = 98; // px: a closed card
 const HANDOVER = 260; // px of scrolling the hand-over takes
-const TAB_BAR_ZONE = 110; // px at the bottom of the screen the tab bar covers
+const TAB_BAR_ZONE = 135; // px at the bottom of the screen the tab bar covers
+const GLIDE_MS = 140; // how quickly the cards catch up with the scroll (time constant)
 
 type Card = { pct: number; caption: string; points: number; label: string; emoji: string | null };
 
@@ -43,6 +44,24 @@ export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card })
     return Math.max(0, Math.min(1, (window.scrollY - start) / room));
   }, []);
 
+  // Scrolling sets where the hand-over should be; the cards ease there
+  // (rather than jumping with every scroll step), so the rings draw on
+  // smoothly.
+  const target = useRef(0);
+  const glide = useCallback(() => {
+    cancelAnimationFrame(anim.current);
+    let last = performance.now();
+    const step = (now: number) => {
+      const dt = Math.min(64, now - last);
+      last = now;
+      const from = pRef.current;
+      const next = from + (target.current - from) * (1 - Math.exp(-dt / GLIDE_MS));
+      set(Math.abs(target.current - next) < 0.001 ? target.current : next);
+      if (pRef.current !== target.current) anim.current = requestAnimationFrame(step);
+    };
+    anim.current = requestAnimationFrame(step);
+  }, []);
+
   useEffect(() => {
     let raf = 0;
     const update = () => {
@@ -53,8 +72,8 @@ export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card })
         if (Math.abs(window.scrollY - manual.current) < 40) return; // a tap's choice holds until they scroll on
         manual.current = null;
       }
-      cancelAnimationFrame(anim.current);
-      set(s);
+      target.current = s;
+      glide();
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -68,7 +87,7 @@ export function GoalModule({ milestone, goal }: { milestone: Card; goal: Card })
       cancelAnimationFrame(raf);
       cancelAnimationFrame(anim.current);
     };
-  }, [scrolledIn]);
+  }, [scrolledIn, glide]);
 
   // Tap a card to open it (a quick ease, then it stays until they scroll).
   const open = (target: 0 | 1) => {

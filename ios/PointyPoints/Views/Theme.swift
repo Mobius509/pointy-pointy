@@ -152,6 +152,68 @@ extension Font {
         || UIFont.fontNames(forFamilyName: "Figtree").isEmpty == false
 }
 
+extension View {
+    /// The kid app's text style: Figtree at `size`, with the design's -2%
+    /// letter spacing (as on the web, where it's set once for the whole kid
+    /// app).
+    func kidFont(_ size: CGFloat, _ weight: Font.Weight = .medium) -> some View {
+        font(.rounded(size, weight)).tracking(-0.02 * size)
+    }
+}
+
+/// Text with an exact line height (SwiftUI's own line spacing can only add
+/// to the font's natural height, not tighten it) — for the greeting's 28 /
+/// 30. Figtree with -2% letter spacing, wrapping to the width it's offered.
+struct KidLinedText: UIViewRepresentable {
+    let text: String
+    let size: CGFloat
+    let lineHeight: CGFloat
+    var weight: UIFont.Weight = .medium
+    let color: Color
+
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.lineBreakMode = .byWordWrapping
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return label
+    }
+
+    func updateUIView(_ label: UILabel, context: Context) {
+        label.attributedText = attributed
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
+        let width = proposal.width ?? 300
+        let fit = attributed.boundingRect(
+            with: CGSize(width: width, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin], context: nil
+        )
+        return CGSize(width: width, height: ceil(fit.height))
+    }
+
+    private var attributed: NSAttributedString {
+        var font = UIFont.systemFont(ofSize: size, weight: weight)
+        if let figtree = UIFont(name: "Figtree", size: size) {
+            font = UIFont(descriptor: figtree.fontDescriptor.addingAttributes([
+                .traits: [UIFontDescriptor.TraitKey.weight: weight],
+            ]), size: size)
+        }
+        let style = NSMutableParagraphStyle()
+        style.minimumLineHeight = lineHeight
+        style.maximumLineHeight = lineHeight
+        style.lineBreakMode = .byWordWrapping
+        return NSAttributedString(string: text, attributes: [
+            .font: font,
+            .kern: -0.02 * size,
+            .paragraphStyle: style,
+            .foregroundColor: UIColor(color),
+            // Centre the glyphs in the tightened line.
+            .baselineOffset: (lineHeight - font.lineHeight) / 4,
+        ])
+    }
+}
+
 // MARK: - Shared pieces
 
 /// Rounded card used for every section, like the web view: white, on the
