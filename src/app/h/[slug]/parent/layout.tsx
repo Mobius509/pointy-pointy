@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireHouseholdAccess } from "@/lib/v2/auth";
 import { signOutAction } from "@/app/sign-in/_actions";
 import { ParentNav } from "./_components/ParentNav";
+import { kidVersionSwitchAllowed } from "../_lib/kid-version";
 
 export const dynamic = "force-dynamic";
 
@@ -36,13 +37,13 @@ export default async function ParentAdminLayout({
 
         {/* CENTER slot — pill nav on desktop only. */}
         <div className="justify-self-center hidden sm:block">
-          <ParentNav slug={slug} variant="desktop" />
+          <ParentNav slug={slug} variant="desktop" dev={kidVersionSwitchAllowed()} />
         </div>
 
         {/* RIGHT slot — hamburger on mobile, Sign Out on desktop. */}
         <div className="justify-self-end">
           <div className="sm:hidden">
-            <ParentNav slug={slug} variant="mobile" />
+            <ParentNav slug={slug} variant="mobile" dev={kidVersionSwitchAllowed()} />
           </div>
           <form action={signOutAction} className="hidden sm:block">
             <button

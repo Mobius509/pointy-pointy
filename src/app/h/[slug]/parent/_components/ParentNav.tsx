@@ -23,12 +23,19 @@ const TABS = [
 export function ParentNav({
   slug,
   variant,
+  dev = false,
 }: {
   slug: string;
   variant: "mobile" | "desktop";
+  // Dev server / Vercel preview only (kidVersionSwitchAllowed): a link to
+  // the kid app 2.0 build. Never on the live site.
+  dev?: boolean;
 }) {
   const pathname = usePathname();
   const base = `/h/${slug}/parent`;
+  // Sets the 2.0 switch, then opens the kid app (a kid signs in there with
+  // their PIN, if one isn't already).
+  const devHref = `/api/dev/kid-version?v=2&to=/h/${slug}`;
 
   const isActive = (href: string, path: string) =>
     path === ""
@@ -55,11 +62,20 @@ export function ParentNav({
             </Link>
           );
         })}
+        {dev && (
+          <a
+            href={devHref}
+            title="Dev only — not on the live site"
+            className="ml-1 rounded-full bg-slate-900/85 px-4 py-2 font-semibold text-white hover:bg-slate-900"
+          >
+            🛠 Kid app 2.0
+          </a>
+        )}
       </nav>
     );
   }
 
-  return <MobileHamburger base={base} isActive={isActive} />;
+  return <MobileHamburger base={base} isActive={isActive} devHref={dev ? devHref : null} />;
 }
 
 // Mobile-only client component. Keeps its open/closed state and handles
@@ -68,9 +84,11 @@ export function ParentNav({
 function MobileHamburger({
   base,
   isActive,
+  devHref,
 }: {
   base: string;
   isActive: (href: string, path: string) => boolean;
+  devHref: string | null;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -159,6 +177,17 @@ function MobileHamburger({
               </Link>
             );
           })}
+
+          {devHref && (
+            <a
+              href={devHref}
+              role="menuitem"
+              title="Dev only — not on the live site"
+              className="mt-1 block rounded-xl bg-slate-900/85 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900"
+            >
+              🛠 Kid app 2.0
+            </a>
+          )}
 
           <div className="my-1 border-t border-pp-soft" />
 
