@@ -55,9 +55,9 @@ export type CelebrationItem = {
 
 // How long "Keep playing" after a celebration lasts (an arcade ticket's
 // time comes from the server — ARCADE_PLAY_MINUTES).
-const KEEP_PLAYING_MINUTES = 5;
+const KEEP_PLAYING_MINUTES = 10;
 // The playtime countdown shows for the last this-many seconds (all of Keep
-// playing's 5 minutes; just the end of an arcade ticket's day).
+// playing's 10 minutes; just the end of an arcade ticket's day).
 const SHOW_COUNTDOWN_SECONDS = 10 * 60;
 
 export function CelebrationScreen({
