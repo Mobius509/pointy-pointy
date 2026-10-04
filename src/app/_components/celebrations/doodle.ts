@@ -16,9 +16,10 @@ const TUNE = {
   spring: 1.7, // a spring throws you this much harder
   crumbleAfter: 1.1, // seconds a crumbly platform holds you
   moveSpeed: 0.12, // moving platforms, × court width per second (faster higher up)
-  rampScreens: 4, // it gets harder over each this-many screens climbed:
-  narrowest: 0.65, // platforms shrink to this share of their width…
-  widest: 1.4, // …the gaps between them grow to this many times…
+  shrink: 0.003, // every platform up is this much narrower (a share of the start width)…
+  narrowest: 0.4, // …down to this share of it
+  rampScreens: 4, // the gaps and tricky platforms build up over each this-many screens climbed:
+  widest: 1.4, // the gaps between platforms grow to this many times…
   hardAfter: 6, // …by this many steps up (then stay there)
 };
 
@@ -103,7 +104,8 @@ function createDoodle(
     return "plain";
   };
   const add = (y: number, kind: Kind, x?: number) => {
-    const w = platW * (1 - (1 - TUNE.narrowest) * hardness(y));
+    // Slowly but surely smaller, all the way up (in the game).
+    const w = platW * (opts.tricky ? Math.max(TUNE.narrowest, 1 - TUNE.shrink * count) : 1);
     platforms.push({
       n: count++,
       x: x ?? rand(court.x + w / 2, court.x + court.w - w / 2),
