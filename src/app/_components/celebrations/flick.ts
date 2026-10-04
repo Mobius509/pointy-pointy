@@ -7,17 +7,19 @@ import { playSound } from "./sounds";
 // flick's direction aims it and its speed sets how far it rolls (twice as
 // hard, about twice as far). It slows as it rolls up, bounces off the sides,
 // and drops into a hole where it runs out of steam — going up, or rolling
-// back down. Too hard and it goes over the back (a miss). The holes slide
-// side to side; big ones in front, small high-scoring ones at the back.
+// back down. A hard one bounces off the back wall and comes back down. The
+// holes slide side to side; big ones in front, small high-scoring ones at
+// the back.
 const BALL_SRC = "/anims/orb-red.webp";
 
 const TUNE = {
   slope: 0.9, // how hard the lane pulls the ball back down, × screen height per s²
   // The flick → how far the ball rolls, as a share of the way to the back:
   flickSoft: 300, // px/s: the gentlest flick that counts…
-  flickFirm: 3000, // …and a firm one, which just reaches the back
+  flickFirm: 2650, // …and a firm one, which just reaches the back
   reachSoft: 0.35, // the gentlest flick rolls this far (short of the front hole)…
-  reachMax: 1.05, // …and even the hardest no further than this (over the back)
+  reachMax: 1.25, // …and the hardest hits the back wall this hard (as a share of just reaching it)
+  backBounce: 0.8, // the back wall sends the ball back with this much of its speed
   flickWindow: 150, // ms of the swipe that set the flick (evens out wobbles)
   // A hole catches a ball that's running out of steam over it: slower than
   // this share of a back-hole roll's speed, more for a bigger hole — so the
@@ -25,7 +27,7 @@ const TUNE = {
   // longer stretch (easier) without stealing balls headed for the back.
   sink: 0.1,
   sinkPerSize: 1.6, // + this × the hole's size (its share of the lane width)
-  catchDown: 12, // rolling back down, a hole catches a ball 1 + this × its size times faster
+  catchDown: 10, // rolling back down, a hole catches a ball 1 + this × its size times faster
   holeSlide: 0.06, // how fast the holes slide, × lane width per second…
   holeSlideUp: 0.004, // …faster by this much per point scored (in the game)
   holeSlideMax: 0.22,
@@ -107,7 +109,7 @@ function createFlick(
     holes[i].catchSpeed = topSpeed * (TUNE.sink + TUNE.sinkPerSize * h.size);
     holes[i].catchDown = holes[i].catchSpeed * (1 + TUNE.catchDown * h.size);
   });
-  const backWall = lane.y + r; // past this it's over the back
+  const backWall = lane.y + r; // the ball bounces back off here
   const reach = launchY - backWall;
   let ball: Ball = newBall();
   let floater: { text: string; x: number; y: number; t: number } | null = null;
@@ -188,10 +190,9 @@ function createFlick(
           ball.vx = -Math.abs(ball.vx) * 0.7;
         }
         if (ball.y < backWall) {
-          ball.state = "gone"; // over the back
-          void playSound("whoops");
-          events.onMiss();
-          break;
+          ball.y = backWall;
+          ball.vy = Math.abs(ball.vy) * TUNE.backBounce; // off the back wall, back down the lane
+          void playSound("thud");
         }
         // Over a hole and slow enough for it (going up or rolling back
         // down): in it goes.
@@ -227,14 +228,10 @@ function createFlick(
 
   const draw = (ballsLeft?: number) => {
     ctx.clearRect(0, 0, W, H);
-    // The lane, with the gutter across the back.
+    // The lane.
     ctx.fillStyle = color("primary", 0.07);
     ctx.beginPath();
     ctx.roundRect(lane.x - 6, lane.y - 6, lane.w + 12, lane.h + 12, 22);
-    ctx.fill();
-    ctx.fillStyle = color("primary-strong", 0.18);
-    ctx.beginPath();
-    ctx.roundRect(lane.x - 6, lane.y - 6, lane.w + 12, backWall - lane.y + 6, [22, 22, 6, 6]);
     ctx.fill();
     ctx.strokeStyle = color("primary", 0.12);
     ctx.lineWidth = 2;
