@@ -77,12 +77,17 @@ export function CelebrationGallery({
   const clearName = CELEBRATIONS.find((c) => c.id === confirmClear)?.name ?? "";
   const clearBest = confirmClear ? highScores[confirmClear] : undefined;
   const [kidId, setKidId] = useState(kids[0]?.id);
-  // Which effect the preview screen should force ("" = random).
-  const [preview, setPreview] = useState<string | null>(null);
-  // A link straight to one: …/parent/settings?play=pong opens it full screen.
+  // Which effect the preview screen should force ("" = random), and
+  // whether it's the celebration or straight into its game.
+  const [preview, setPreview] = useState<{ id: string; mode: "celebration" | "game" } | null>(null);
+  // Links straight to one: …/parent/settings?play=pong opens its
+  // celebration full screen, ?game=pong goes straight into the game.
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("play");
-    if (id && CELEBRATIONS.some((c) => c.id === id)) setPreview(id);
+    const q = new URLSearchParams(window.location.search);
+    const game = q.get("game");
+    const play = q.get("play");
+    if (game && CELEBRATIONS.some((c) => c.id === game && c.game?.kind === "score")) setPreview({ id: game, mode: "game" });
+    else if (play && CELEBRATIONS.some((c) => c.id === play)) setPreview({ id: play, mode: "celebration" });
   }, []);
 
   const kid = kids.find((k) => k.id === kidId) ?? kids[0];
@@ -184,21 +189,39 @@ export function CelebrationGallery({
               )}
             </div>
             <div className="flex flex-col gap-2 shrink-0">
+              {c.game?.kind === "score" ? (
+                // A mini game: straight into the game, or its celebration.
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    unlockAudio();
+                    setPreview({ id: c.id, mode: "game" });
+                  }}
+                >
+                  Play game
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    unlockAudio();
+                    void playCelebration({ avatarSrc: src, points: SAMPLE_TOTAL }, c.id);
+                  }}
+                >
+                  Play
+                </button>
+              )}
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-secondary"
                 onClick={() => {
                   unlockAudio();
-                  void playCelebration({ avatarSrc: src, points: SAMPLE_TOTAL }, c.id);
+                  setPreview({ id: c.id, mode: "celebration" });
                 }}
               >
-                Play
-              </button>
-              <button type="button" className="btn-secondary" onClick={() => {
-                  unlockAudio();
-                  setPreview(c.id);
-                }}>
-                Full screen
+                {c.game?.kind === "score" ? "Celebration" : "Full screen"}
               </button>
             </div>
           </li>
@@ -208,7 +231,7 @@ export function CelebrationGallery({
       <div className="mt-4">
         <button type="button" className="btn-soft" onClick={() => {
             unlockAudio();
-            setPreview("");
+            setPreview({ id: "", mode: "celebration" });
           }}>
           🎲 Surprise me (what {kid?.name ?? "your kid"} sees)
         </button>
@@ -217,13 +240,14 @@ export function CelebrationGallery({
       {preview !== null && (
         <CelebrationScreen
           // Fresh screen (and effect pick) for every preview.
-          key={preview}
+          key={`${preview.mode}:${preview.id}`}
           avatarSrc={src}
           total={SAMPLE_TOTAL}
           items={SAMPLE_ITEMS}
           milestonesUnlocked={kid?.lastMilestone ? [{ name: kid.lastMilestone }] : []}
           nextUp={kid?.nextUp ?? null}
-          effectId={preview || undefined}
+          effectId={preview.id || undefined}
+          mode={preview.mode}
           highScores={highScores}
           onSubmitHighScore={
             play
