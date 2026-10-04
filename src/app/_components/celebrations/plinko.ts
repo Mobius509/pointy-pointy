@@ -53,7 +53,7 @@ const SPECIALS: Record<SpecialId, { name: string; icon: string; weight: number; 
 };
 const MYSTERY_POOL: SpecialId[] = ["multi", "rearrange", "big", "bouncy", "magnet", "bonus", "beside", "skull"];
 
-type Peg = { body: MatterNS.Body; kind: "peg" | "gold" | "bumper" | "shifter"; flash: number };
+type Peg = { body: MatterNS.Body; kind: "peg" | "gold" | "bumper" | "shifter" | "nub"; flash: number }; // nub: a bump on a side wall
 type Coin = {
   body: MatterNS.Body;
   r: number;
@@ -64,6 +64,7 @@ type Coin = {
   prevV: { x: number; y: number }; // its velocity before this frame (a big coin snapping a pin keeps it)
   stillFor: number; // seconds since it last got any further down (a stuck coin gets a nudge)
   lowest: number; // the furthest down it's been
+  slip: number; // seconds left slipping through pins (how a stuck coin gets free)
   free: boolean; // a multi-ball extra (doesn't count against the round)
 };
 type Slot = { value: number; special?: SpecialId; label?: number };
@@ -117,6 +118,9 @@ async function createPlinko(
   const pegR = Math.max(4, dx * 0.08);
   const coinR = Math.max(9, dx * 0.27);
   const BIG = 1.35; // the big coin's size (still fits between two pins)
+  const WALLS = 0x0001; // collision categories: walls/floor/dividers/coins…
+  const PINS = 0x0002; // …and pins, bumpers and wall bumps
+  const nubMin = coinR * 0.6; // the smallest ledge on a side wall
 
   const wall = (x: number, y: number, w: number, h: number, restitution = 0.2) =>
     M.Bodies.rectangle(x, y, w, h, { isStatic: true, friction: 0.05, restitution });
@@ -141,15 +145,21 @@ async function createPlinko(
     pegs = [];
     pegById.clear();
     const spots: { x: number; y: number }[] = [];
+    const lines: { y: number; first: number; last: number }[] = []; // each row's outermost pins
     for (let row = 0; row < TUNE.rows; row++) {
       const shift = shuffled ? rand(0, dx) : row % 2 ? dx / 2 : 0;
       const y = pegTop + row * dy + (shuffled ? rand(-dy * 0.12, dy * 0.12) : 0);
-      // No peg so close to a wall that a coin could wedge between them.
-      const margin = coinR * 2.4 + pegR;
+      // No peg so close to the wall (and its bump) that a coin could wedge
+      // between them.
+      const margin = coinR * 2.2 + nubMin + pegR;
+      const line = { y, first: Infinity, last: -Infinity };
       for (let x = board.x + shift; x <= board.x + board.w + 0.1; x += dx) {
         if (x < board.x + margin || x > board.x + board.w - margin) continue;
         spots.push({ x, y });
+        line.first = Math.min(line.first, x);
+        line.last = Math.max(line.last, x);
       }
+      lines.push(line);
     }
     const nBump = Math.round(rand(TUNE.bumpers[0], TUNE.bumpers[1] + 0.49));
     const nGold = Math.round(rand(TUNE.golden[0], TUNE.golden[1] + 0.49));
@@ -165,6 +175,7 @@ async function createPlinko(
       const big = kind === "bumper" || kind === "shifter";
       const body = M.Bodies.circle(s.x, s.y, big ? pegR * 2.4 : pegR, {
         isStatic: true,
+        collisionFilter: { category: PINS },
         restitution: big ? 1.25 : 0.45,
         friction: 0.02,
       });
@@ -172,6 +183,36 @@ async function createPlinko(
       pegs.push(peg);
       pegById.set(body.id, peg);
     });
+    // A bump on each side wall in every row, reaching in as far as that
+    // row's first pin allows (always leaving room for a coin between them).
+    // So the gaps down the edges zig-zag: no dropping a coin straight down
+    // the side.
+    for (const line of lines)
+      for (const [x, gap] of [
+        [board.x, line.first - board.x],
+        [board.x + board.w, board.x + board.w - line.last],
+      ]) {
+        if (!Number.isFinite(gap)) continue;
+        // A triangle ledge on the wall, sloping down and in: a coin running
+        // down the wall lands on it and slides back in toward the pins.
+        const reach = Math.max(nubMin, gap - pegR - coinR * 2.2);
+        const side = x === board.x ? 1 : -1;
+        const h = Math.max(coinR * 1.2, reach * 0.9);
+        const pts = [
+          { x, y: line.y - h },
+          { x: x + side * reach, y: line.y },
+          { x, y: line.y + h * 0.35 },
+        ];
+        const c = M.Vertices.centre(pts);
+        const body = M.Bodies.fromVertices(c.x, c.y, [pts], {
+          isStatic: true,
+          restitution: 0.4,
+          friction: 0.02,
+          collisionFilter: { category: PINS },
+        });
+        M.Body.setPosition(body, c); // fromVertices recentres on the centre of mass
+        pegs.push({ body, kind: "nub", flash: 0 });
+      }
     M.Composite.add(
       engine.world,
       pegs.map((p) => p.body),
@@ -202,6 +243,7 @@ async function createPlinko(
       prevV: { x: 0, y: 0 },
       stillFor: 0,
       lowest: dropY,
+      slip: 0,
       free,
     };
     coins.push(coin);
@@ -290,8 +332,8 @@ async function createPlinko(
   const step = (dt: number) => {
     const speed = opts.dropperSpeed() * board.w;
     dropX += dropDir * speed * dt;
-    const lo = board.x + coinR * 1.2;
-    const hi = board.x + board.w - coinR * 1.2;
+    const lo = board.x + dx * 0.6; // not right up against the walls
+    const hi = board.x + board.w - dx * 0.6;
     if (dropX < lo || dropX > hi) {
       dropDir = -dropDir;
       dropX = Math.max(lo, Math.min(hi, dropX));
@@ -321,11 +363,13 @@ async function createPlinko(
         c.stillFor = 0;
         c.lowest = Math.max(c.lowest, pos.y);
       } else if ((c.stillFor += dt) > 0.9) {
-        const toMiddle = Math.sign(board.x + board.w / 2 - pos.x) || 1;
-        M.Body.setVelocity(c.body, { x: toMiddle * rand(1.5, 2.5), y: -1 });
-        M.Body.setPosition(c.body, { x: pos.x + toMiddle * 2, y: pos.y - 2 });
-        c.stillFor = 0.3;
+        // Still stuck: let it slip through the pins for a moment and drop on.
+        c.slip = 0.3;
+        c.body.collisionFilter.mask = WALLS;
+        M.Body.setVelocity(c.body, { x: rand(-0.5, 0.5), y: 2 });
+        c.stillFor = 0;
       }
+      if (c.slip > 0 && (c.slip -= dt) <= 0) c.body.collisionFilter.mask = 0xffffffff;
     }
     const ms = Math.min(dt, 1 / 20) * 1000;
     M.Engine.update(engine, ms / 2);
@@ -410,6 +454,15 @@ async function createPlinko(
     for (const p of pegs) {
       const { x, y } = p.body.position;
       const rr = p.body.circleRadius ?? pegR;
+      if (p.kind === "nub") {
+        // The wall's triangle ledge.
+        ctx.fillStyle = color("primary", 0.4);
+        ctx.beginPath();
+        p.body.vertices.forEach((v, i) => (i ? ctx.lineTo(v.x, v.y) : ctx.moveTo(v.x, v.y)));
+        ctx.closePath();
+        ctx.fill();
+        continue;
+      }
       ctx.save();
       if (p.kind === "gold") {
         ctx.shadowColor = color("party-yellow", 0.9);
