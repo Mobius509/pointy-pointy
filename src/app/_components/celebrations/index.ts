@@ -266,7 +266,7 @@ export const CELEBRATIONS: Celebration[] = [
     hidesStage: true,
     game: { kind: "score", icon: "🪙", label: "points", lives: 1, start: playPlinkoGame },
     name: "Coin drop",
-    description: "Tap to drop coins through the pins into the slots below to collect the points. Keep playing: ten coins — slots pay 10 to 100, golden pins and bumpers pay as you bounce, and specials turn up: multi ball, rearrange the pins, a big coin that can snap pins, magnet, +1 coin, two beside, a skull and a mystery. Hit the blue bumper to slide the prizes along.",
+    description: "Tap to drop coins through the pins into the slots below to collect the points. Keep playing: ten coins — slots pay 10 to 100, golden pins (+5) and bumpers pay as you bounce, and specials turn up: multi ball, rearrange the pins, a big coin that can snap pins, a bouncy coin, magnet, +1 coin, two beside, a skull and a mystery. Hit the blue bumper to slide the prizes along.",
     play: playPlinko,
   },
 
