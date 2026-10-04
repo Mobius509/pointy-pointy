@@ -116,11 +116,14 @@ function createFlick(
   });
   const backWall = lane.y + r; // the ball bounces back off here
   const reach = launchY - backWall;
+  // Where the next ball sits: where the last one rolled back to, or (after
+  // one sinks) where the last throw started.
+  let nextX = lane.x + lane.w / 2;
   let ball: Ball = newBall();
   let floater: { text: string; x: number; y: number; t: number } | null = null;
 
   function newBall(): Ball {
-    return { x: lane.x + lane.w / 2, y: launchY, vx: 0, vy: 0, state: "ready", sinkT: 0 };
+    return { x: nextX, y: launchY, vx: 0, vy: 0, state: "ready", sinkT: 0 };
   }
 
   // Flicking: the ball follows your finger sideways while you hold it,
@@ -157,6 +160,7 @@ function createFlick(
       const a = Math.max(-0.6, Math.min(0.6, Math.atan2(vx, -vy)));
       ball.vx = Math.sin(a) * speed;
       ball.vy = -Math.cos(a) * speed;
+      nextX = ball.x;
       ball.state = "rolling";
       void playSound("flap");
     },
@@ -164,6 +168,7 @@ function createFlick(
       // Keyboard: up throws straight with a good roll.
       if (dir === "up" && ball.state === "ready" && events.canThrow()) {
         ball.vy = -topSpeed * rand(0.6, 1);
+        nextX = ball.x;
         ball.state = "rolling";
       }
       if (dir === "left" && ball.state === "ready") ball.x = clampX(ball.x - lane.w * 0.1);
@@ -210,8 +215,11 @@ function createFlick(
           ball.into = hole;
           ball.sinkT = 0;
         }
-        if (ball.y > launchY + r * 2) {
-          ball.state = "gone"; // rolled all the way back: a miss
+        if (ball.vy > 0 && ball.y >= launchY) {
+          // Rolled all the way back: a miss — and it stops right there, ready
+          // to throw again (if there's another throw).
+          nextX = Math.max(lane.x + r, Math.min(lane.x + lane.w - r, ball.x));
+          ball.state = "gone";
           void playSound("whoops");
           events.onMiss();
         }
