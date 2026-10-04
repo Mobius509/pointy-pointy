@@ -16,6 +16,7 @@ import { playPong, playPongGame } from "./pong";
 import { playDoodle, playDoodleGame } from "./doodle";
 import { playFall, playFallGame } from "./fall";
 import { playFlick, playFlickGame } from "./flick";
+import { playPlinko, playPlinkoGame } from "./plinko";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -258,6 +259,15 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Flick shot",
     description: "Flick the ball up the lane into the holes — big ones in front, small high-scoring ones at the back — to collect the points. Keep playing: ten balls, 10 to 100 a hole, and the holes slide faster as your score climbs.",
     play: playFlick,
+  },
+  {
+    id: "plinko",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🪙", label: "points", lives: 1, start: playPlinkoGame },
+    name: "Coin drop",
+    description: "Tap to drop coins through the pins into the slots below to collect the points. Keep playing: ten coins — slots pay 10 to 100, golden pins and bumpers pay as you bounce, and specials turn up: multi ball, rearrange the pins, big coin, sticky pins, magnet, +1 coin, two beside, a skull and a mystery.",
+    play: playPlinko,
   },
 
 ];
