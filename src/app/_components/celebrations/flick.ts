@@ -27,7 +27,11 @@ const TUNE = {
   // longer stretch (easier) without stealing balls headed for the back.
   sink: 0.1,
   sinkPerSize: 1.6, // + this × the hole's size (its share of the lane width)
-  catchDown: 10, // rolling back down, a hole catches a ball 1 + this × its size times faster
+  // Rolling back down over a hole, it drops in whatever its speed if it
+  // overlaps the hole by enough of itself: a quarter for the biggest hole,
+  // up to nearly a direct hit for the smallest.
+  overlapBig: 0.25,
+  overlapSmall: 0.85,
   holeSlide: 0.06, // how fast the holes slide, × lane width per second…
   holeSlideUp: 0.004, // …faster by this much per point scored (in the game)
   holeSlideMax: 0.22,
@@ -54,8 +58,8 @@ type Hole = {
   amp: number;
   phase: number;
   x: number;
-  catchSpeed: number; // catches a ball slower than this going up…
-  catchDown: number; // …or this, rolling back down
+  catchSpeed: number; // going up, catches a ball slower than this…
+  catchDown: number; // …and rolling back down, one whose center is closer than this (any speed)
   label?: number;
   ring: string;
 };
@@ -107,7 +111,12 @@ function createFlick(
   const topSpeed = Math.sqrt(2 * slope * (launchY - holes[0].y));
   HOLES.forEach((h, i) => {
     holes[i].catchSpeed = topSpeed * (TUNE.sink + TUNE.sinkPerSize * h.size);
-    holes[i].catchDown = holes[i].catchSpeed * (1 + TUNE.catchDown * h.size);
+    const sizes = HOLES.map((q) => q.size);
+    const big = Math.max(...sizes);
+    const small = Math.min(...sizes);
+    const k = big === small ? 0 : (big - h.size) / (big - small); // 0 biggest … 1 smallest
+    const overlap = TUNE.overlapBig + (TUNE.overlapSmall - TUNE.overlapBig) * k;
+    holes[i].catchDown = holes[i].r + r - overlap * 2 * r;
   });
   const backWall = lane.y + r; // the ball bounces back off here
   const reach = launchY - backWall;
@@ -194,12 +203,13 @@ function createFlick(
           ball.vy = Math.abs(ball.vy) * TUNE.backBounce; // off the back wall, back down the lane
           void playSound("thud");
         }
-        // Over a hole and slow enough for it (going up or rolling back
-        // down): in it goes.
+        // Going up: over a hole and slow enough for it. Rolling back down:
+        // overlapping a hole by enough (any speed). In it goes.
         const speed = Math.hypot(ball.vx, ball.vy);
-        const hole = holes.find(
-          (h) => speed < (ball.vy > 0 ? h.catchDown : h.catchSpeed) && Math.hypot(ball.x - h.x, ball.y - h.y) < h.r,
-        );
+        const hole = holes.find((h) => {
+          const d = Math.hypot(ball.x - h.x, ball.y - h.y);
+          return ball.vy > 0 ? d < h.catchDown : speed < h.catchSpeed && d < h.r;
+        });
         if (hole) {
           ball.state = "sinking";
           ball.into = hole;
