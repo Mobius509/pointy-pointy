@@ -503,12 +503,12 @@ async function createPlinko(
   };
 }
 
-// Celebration: some slots hold "+N" — drop coins until they've all been
-// caught. No specials, as many coins as it takes, and a slow dropper.
+// Celebration: every slot shows the next "+N", so each coin collects the
+// next bit of the points wherever it lands (five coins at most). No
+// specials, and a slow dropper.
 export async function playPlinko(opts: CelebrationOptions): Promise<void> {
   const { layer, ctx, W, H, area } = createCanvasGame("celebration");
   const chunks = [...pointChunks(opts.points ?? 0)];
-  let left = chunks.length;
   let revealed = false;
   let faded = false;
   const hint = hintBubble(layer, "Tap to drop a coin!", area.y + area.h * 0.45);
@@ -519,13 +519,13 @@ export async function playPlinko(opts: CelebrationOptions): Promise<void> {
     H,
     board,
     {
-      onSlot: (i, _coin, x, y) => {
-        const s = plinko.slots[i];
-        if (!s.label) return;
-        s.label = undefined;
+      onSlot: (_i, _coin, x, y) => {
+        if (!chunks.length) return;
+        chunks.shift();
+        label();
         sparkle(x, y);
         void playSound("powerUp");
-        if (--left === 0 && !revealed) {
+        if (!chunks.length && !revealed) {
           revealed = true;
           opts.onReveal?.();
           setTimeout(() => void playSound("cheer"), 150);
@@ -538,19 +538,11 @@ export async function playPlinko(opts: CelebrationOptions): Promise<void> {
     },
     { celebration: true, dropperSpeed: () => TUNE.dropperCelebration },
   );
-  // The chunks go on (up to three of) the middle slots, where most coins
-  // land — so it doesn't take forever to catch them all.
-  const middle = plinko.slots
-    .map((_, i) => i)
-    .sort((a, b) => Math.abs(a - (TUNE.slots - 1) / 2) - Math.abs(b - (TUNE.slots - 1) / 2))
-    .slice(0, 4)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 3);
-  chunks.forEach((c, k) => {
-    const s = plinko.slots[middle[k % middle.length]];
-    s.label = (s.label ?? 0) + c;
-  });
-  left = plinko.slots.filter((s) => s.label).length;
+  // Every slot shows the next chunk.
+  function label() {
+    for (const s of plinko.slots) s.label = chunks[0];
+  }
+  label();
 
   await new Promise<void>((finish) => {
     runLoop(layer, (dt) => {
