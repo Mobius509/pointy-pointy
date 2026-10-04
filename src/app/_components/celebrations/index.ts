@@ -12,6 +12,7 @@ import { playStack, playStackGame } from "./stack";
 import { playMarble, playMarbleGame } from "./marble";
 import { playClaw, playClawGame } from "./claw";
 import { playBubbles, playBubblesGame } from "./bubbles";
+import { playPong, playPongGame } from "./pong";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -218,6 +219,15 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Asteroids",
     description: "Tap the rocks to blast them. Keep playing: each tap fires and flies the ship — three lives.",
     play: playAsteroids,
+  },
+  {
+    id: "pong",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🏓", label: "points", lives: 3, start: playPongGame },
+    name: "Pong",
+    description: "Drag to move your paddle and hit the ball back — each hit collects some of the points. Keep playing: a point every time it gets past the computer, which gets quicker as you go. Three lives.",
+    play: playPong,
   },
 
 ];
