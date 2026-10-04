@@ -14,6 +14,7 @@ import { playClaw, playClawGame } from "./claw";
 import { playBubbles, playBubblesGame } from "./bubbles";
 import { playPong, playPongGame } from "./pong";
 import { playDoodle, playDoodleGame } from "./doodle";
+import { playFall, playFallGame } from "./fall";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -238,6 +239,15 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Sky jump",
     description: "Tap where you want to jump — your avatar hops up the platforms to grab the points. Keep playing: climb as high as you can (+1 a platform); some move, some crumble, springs throw you high. Three lives.",
     play: playDoodle,
+  },
+  {
+    id: "fall",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🪂", label: "gaps", lives: 3, start: playFallGame },
+    name: "Free fall",
+    description: "Hold to fall faster, slide to steer — slip through the gaps to grab the points. Keep playing: +1 a gap, and it keeps getting faster; clip a bar at speed and it's a crash (three lives). Grab a power orb to shoot straight down a line of gaps.",
+    play: playFall,
   },
 
 ];
