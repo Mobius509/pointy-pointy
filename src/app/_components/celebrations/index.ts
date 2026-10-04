@@ -13,6 +13,7 @@ import { playMarble, playMarbleGame } from "./marble";
 import { playClaw, playClawGame } from "./claw";
 import { playBubbles, playBubblesGame } from "./bubbles";
 import { playPong, playPongGame } from "./pong";
+import { playDoodle, playDoodleGame } from "./doodle";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -228,6 +229,15 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Pong",
     description: "Drag to move your paddle and hit the ball back — each hit collects some of the points. Keep playing: a point every time it gets past the computer, which gets quicker as you go. Three lives.",
     play: playPong,
+  },
+  {
+    id: "doodle",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🦘", label: "platforms", lives: 3, start: playDoodleGame },
+    name: "Sky jump",
+    description: "Tap where you want to jump — your avatar hops up the platforms to grab the points. Keep playing: climb as high as you can (+1 a platform); some move, some crumble, springs throw you high. Three lives.",
+    play: playDoodle,
   },
 
 ];
