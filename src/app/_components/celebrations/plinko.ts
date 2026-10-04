@@ -9,9 +9,10 @@ import { loadMatter } from "./stack";
 // go. It bounces down through the pegs (real physics) into a slot at the
 // bottom: points, or a special. Golden pins (+1) and bumpers (+2) pay out
 // as coins bounce off them. Specials: multi ball, rearrange the pins, a big
-// coin, sticky pins, a magnet, a bonus coin, "two beside" (the scores of
-// the slots either side), a skull, and a mystery. The slots' contents slide
-// along every few seconds.
+// coin (heavy — it sometimes snaps a pin clean off and keeps going), a
+// magnet, a bonus coin, "two beside" (the scores of the slots either side),
+// a skull, and a mystery. One bumper is the blue shift bumper: hitting it
+// slides the prizes along a slot.
 const COIN_SRC = "/anims/coin.webp";
 
 const TUNE = {
@@ -24,47 +25,43 @@ const TUNE = {
   dropperSpeedUp: 0.04, // …faster by this much each coin (in the game)…
   dropperSpeedMax: 0.8,
   dropperCelebration: 0.25,
-  bumpers: [2, 3], // how many, at random among the pegs
+  bumpers: [2, 3], // how many, at random among the pegs (one of them the shift bumper)
   golden: [3, 4],
   bumperPoints: 2,
   goldenPoints: 1,
   specials: [1, 3], // slots holding a special at a time (in the game)
-  shiftEvery: 4, // seconds between the slots sliding along one place
+  shiftCooldown: 0.35, // seconds before the shift bumper can shift again
   multiBall: 3, // extra coins
-  stickyHold: 0.22, // seconds a sticky pin holds the coin (each pin once)…
-  stickyMax: 6, // …up to this many pins a coin
+  snapChance: 0.15, // a big coin hitting a pin snaps it off this often (it grows back once the coin lands)
   magnetPull: 0.00004, // force toward the best slot
 };
 
-type SpecialId = "multi" | "rearrange" | "big" | "sticky" | "magnet" | "bonus" | "beside" | "skull" | "mystery";
+type SpecialId = "multi" | "rearrange" | "big" | "magnet" | "bonus" | "beside" | "skull" | "mystery";
 const SPECIALS: Record<SpecialId, { name: string; icon: string; weight: number; risky?: boolean }> = {
   multi: { name: "Multi ball!", icon: "🎱", weight: 3 },
   rearrange: { name: "Pins rearranged!", icon: "🔀", weight: 2 },
   big: { name: "Big coin next!", icon: "🪨", weight: 2 },
-  sticky: { name: "Sticky pins next!", icon: "🍯", weight: 2 },
   magnet: { name: "Magnet next!", icon: "🧲", weight: 2 },
   bonus: { name: "+1 coin!", icon: "➕", weight: 3 },
   beside: { name: "Two beside!", icon: "↔️", weight: 3 },
   skull: { name: "Skull — lose a coin!", icon: "💀", weight: 2, risky: true },
   mystery: { name: "Mystery!", icon: "❓", weight: 2 },
 };
-const MYSTERY_POOL: SpecialId[] = ["multi", "rearrange", "big", "sticky", "magnet", "bonus", "beside", "skull"];
+const MYSTERY_POOL: SpecialId[] = ["multi", "rearrange", "big", "magnet", "bonus", "beside", "skull"];
 
-type Peg = { body: MatterNS.Body; kind: "peg" | "gold" | "bumper"; flash: number };
+type Peg = { body: MatterNS.Body; kind: "peg" | "gold" | "bumper" | "shifter"; flash: number };
 type Coin = {
   body: MatterNS.Body;
   r: number;
   big: boolean;
-  sticky: boolean;
   magnet: boolean;
-  hold: number; // seconds a sticky pin is still holding it
-  heldBy: Set<number>; // pins that have already held it
+  prevV: { x: number; y: number }; // its velocity before this frame (a big coin snapping a pin keeps it)
   stillFor: number; // seconds since it last got any further down (a stuck coin gets a nudge)
   lowest: number; // the furthest down it's been
   free: boolean; // a multi-ball extra (doesn't count against the round)
 };
 type Slot = { value: number; special?: SpecialId; label?: number };
-type Mods = { big?: boolean; sticky?: boolean; magnet?: boolean };
+type Mods = { big?: boolean; magnet?: boolean };
 
 const pick = <T,>(list: [T, number][]): T => {
   const total = list.reduce((s, [, w]) => s + w, 0);
@@ -128,8 +125,12 @@ async function createPlinko(
   // shifts each row a random amount and deals new specials.
   let pegs: Peg[] = [];
   const pegById = new Map<number, Peg>();
+  const snapped: Peg[] = []; // pins a big coin snapped off (back once it lands)
+  const toSnap: { peg: Peg; coin: Coin }[] = [];
+  const bits: { x: number; y: number; vx: number; vy: number; spin: number; t: number }[] = [];
   const layPegs = (shuffled: boolean) => {
     for (const p of pegs) M.Composite.remove(engine.world, p.body);
+    snapped.length = 0;
     pegs = [];
     pegById.clear();
     const spots: { x: number; y: number }[] = [];
@@ -151,11 +152,13 @@ async function createPlinko(
       order.filter((i) => spots[i].y > pegTop + dy * 1.5 && spots[i].x > board.x + dx * 0.8 && spots[i].x < board.x + board.w - dx * 0.8).slice(0, nBump),
     );
     const goldAt = new Set(order.filter((i) => !bumpAt.has(i)).slice(0, nGold));
+    const shiftAt = [...bumpAt][0]; // one of the bumpers shifts the prizes
     spots.forEach((s, i) => {
-      const kind: Peg["kind"] = bumpAt.has(i) ? "bumper" : goldAt.has(i) ? "gold" : "peg";
-      const body = M.Bodies.circle(s.x, s.y, kind === "bumper" ? pegR * 2.4 : pegR, {
+      const kind: Peg["kind"] = i === shiftAt ? "shifter" : bumpAt.has(i) ? "bumper" : goldAt.has(i) ? "gold" : "peg";
+      const big = kind === "bumper" || kind === "shifter";
+      const body = M.Bodies.circle(s.x, s.y, big ? pegR * 2.4 : pegR, {
         isStatic: true,
-        restitution: kind === "bumper" ? 1.25 : 0.45,
+        restitution: big ? 1.25 : 0.45,
         friction: 0.02,
       });
       const peg = { body, kind, flash: 0 };
@@ -186,10 +189,8 @@ async function createPlinko(
       body,
       r,
       big: !!mods.big,
-      sticky: !!mods.sticky,
       magnet: !!mods.magnet,
-      hold: 0,
-      heldBy: new Set(),
+      prevV: { x: 0, y: 0 },
       stillFor: 0,
       lowest: dropY,
       free,
@@ -204,16 +205,20 @@ async function createPlinko(
     coinById.delete(c.body.id);
   };
 
-  // The slots (contents slide along one place every few seconds).
+  // The slots (the shift bumper slides their contents along one place).
   const slots: Slot[] = TUNE.values.map((value) => ({ value }));
   let slide = 0; // 0…1 while sliding
-  let sinceShift = 0;
+  let shiftReady = 0; // seconds until the shift bumper can shift again
   const shift = () => {
     slots.unshift(slots.pop()!);
     slide = 1;
+    shiftReady = TUNE.shiftCooldown;
   };
 
-  // Pins and bumpers pay out (and flash); sticky pins hold the coin.
+  // Pins and bumpers pay out (and flash). A big coin sometimes snaps a
+  // pin off: it tumbles away, the coin carries on through, and the pin
+  // grows back once the coin has landed.
+
   let lastThud = 0;
   M.Events.on(engine, "collisionStart", (e: MatterNS.IEventCollision<MatterNS.Engine>) => {
     for (const pair of e.pairs) {
@@ -222,14 +227,16 @@ async function createPlinko(
       if (!peg || !coin) continue;
       peg.flash = 1;
       if (peg.kind === "gold") events.onBonus(TUNE.goldenPoints, peg.body.position.x, peg.body.position.y);
-      if (peg.kind === "bumper") {
+      if (peg.kind === "bumper" || peg.kind === "shifter") {
         events.onBonus(TUNE.bumperPoints, peg.body.position.x, peg.body.position.y);
         void playSound("pop");
       }
-      if (coin.sticky && peg.kind === "peg" && !coin.heldBy.has(peg.body.id) && coin.heldBy.size < TUNE.stickyMax) {
-        coin.heldBy.add(peg.body.id);
-        coin.hold = TUNE.stickyHold;
+      if (peg.kind === "shifter" && shiftReady <= 0) {
+        shift();
+        void playSound("clawMove");
       }
+      if (coin.big && peg.kind === "peg" && Math.random() < TUNE.snapChance && !toSnap.some((t) => t.peg === peg))
+        toSnap.push({ peg, coin });
       const now = performance.now();
       if (now - lastThud > 90) {
         lastThud = now;
@@ -247,7 +254,7 @@ async function createPlinko(
     // One at a time: wait till the last one is well on its way.
     if (coins.some((c) => !c.free && c.body.position.y < pegTop + dy * 1.5)) return false;
     addCoin(dropX, { ...queued });
-    queued.big = queued.sticky = queued.magnet = false;
+    queued.big = queued.magnet = false;
     events.onDrop();
     void playSound("flap");
     return true;
@@ -279,20 +286,12 @@ async function createPlinko(
       dropDir = -dropDir;
       dropX = Math.max(lo, Math.min(hi, dropX));
     }
-    if (!opts.celebration && (sinceShift += dt) > TUNE.shiftEvery) {
-      sinceShift = 0;
-      shift();
-    }
+    shiftReady = Math.max(0, shiftReady - dt);
     slide = Math.max(0, slide - dt * 3);
     for (const p of pegs) p.flash = Math.max(0, p.flash - dt * 4);
 
     for (const c of coins) {
-      if (c.hold > 0) {
-        c.hold -= dt;
-        // Held still on the pin; let go with a little roll to one side, so
-        // it doesn't balance on top of it.
-        M.Body.setVelocity(c.body, c.hold > 0 ? { x: 0, y: 0 } : { x: (Math.random() < 0.5 ? -1 : 1) * rand(0.8, 1.4), y: 0.4 });
-      }
+      c.prevV = { x: c.body.velocity.x, y: c.body.velocity.y };
       if (c.magnet) {
         const fx = (bestSlotX() - c.body.position.x) * TUNE.magnetPull * c.body.mass;
         M.Body.applyForce(c.body, c.body.position, { x: fx, y: 0 });
@@ -301,7 +300,7 @@ async function createPlinko(
       // pin, cradled or wedged) gets a nudge — toward the middle, and a bit
       // harder each time.
       const pos = c.body.position;
-      if (c.hold > 0 || pos.y > c.lowest + 3) {
+      if (pos.y > c.lowest + 3) {
         c.stillFor = 0;
         c.lowest = Math.max(c.lowest, pos.y);
       } else if ((c.stillFor += dt) > 0.9) {
@@ -314,6 +313,25 @@ async function createPlinko(
     const ms = Math.min(dt, 1 / 20) * 1000;
     M.Engine.update(engine, ms / 2);
     M.Engine.update(engine, ms / 2);
+    // Snap! The pin breaks off and the big coin goes on as if it wasn't there.
+    for (const { peg, coin } of toSnap.splice(0)) {
+      if (!pegs.includes(peg)) continue;
+      M.Composite.remove(engine.world, peg.body);
+      pegs.splice(pegs.indexOf(peg), 1);
+      pegById.delete(peg.body.id);
+      snapped.push(peg);
+      M.Body.setVelocity(coin.body, { x: coin.prevV.x * 0.9, y: Math.max(coin.prevV.y, 1) * 0.9 });
+      const { x, y } = peg.body.position;
+      for (let i = 0; i < 2; i++) bits.push({ x, y, vx: rand(-60, 60), vy: rand(-80, -20), spin: rand(-12, 12), t: 0 });
+      void playSound("explode");
+    }
+    for (const b of bits) {
+      b.t += dt;
+      b.vy += 900 * dt;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+    }
+    while (bits.length && bits[0].t > 0.8) bits.shift();
 
     // Into a slot: pay out, and it's gone.
     for (const c of [...coins]) {
@@ -321,6 +339,15 @@ async function createPlinko(
       if (p.y > floorY - slotH * 0.55 || p.y > H + 50) {
         const slot = Math.max(0, Math.min(n - 1, Math.floor((p.x - board.x) / slotW)));
         removeCoin(c);
+        // Snapped pins grow back once no big coin is still falling.
+        if (snapped.length && !coins.some((o) => o.big)) {
+          for (const peg of snapped.splice(0)) {
+            peg.flash = 1;
+            pegs.push(peg);
+            pegById.set(peg.body.id, peg);
+            M.Composite.add(engine.world, peg.body);
+          }
+        }
         events.onSlot(slot, c, board.x + (slot + 0.5) * slotW, floorY - slotH / 2);
       }
     }
@@ -362,7 +389,13 @@ async function createPlinko(
         ctx.shadowBlur = 8 + p.flash * 12;
       }
       ctx.fillStyle =
-        p.kind === "bumper" ? color("party-pink") : p.kind === "gold" ? color("party-yellow") : color("primary", 0.55 + p.flash * 0.4);
+        p.kind === "shifter"
+          ? color("party-cyan")
+          : p.kind === "bumper"
+            ? color("party-pink")
+            : p.kind === "gold"
+              ? color("party-yellow")
+              : color("primary", 0.55 + p.flash * 0.4);
       ctx.beginPath();
       ctx.arc(x, y, rr * (1 + p.flash * 0.25), 0, Math.PI * 2);
       ctx.fill();
@@ -372,6 +405,31 @@ async function createPlinko(
         ctx.arc(x, y, rr * 0.45, 0, Math.PI * 2);
         ctx.fill();
       }
+      if (p.kind === "shifter") {
+        // Arrows: it slides the prizes along.
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        const a = rr * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(x - a, y);
+        ctx.lineTo(x + a, y);
+        ctx.moveTo(x + a * 0.45, y - a * 0.5);
+        ctx.lineTo(x + a, y);
+        ctx.lineTo(x + a * 0.45, y + a * 0.5);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // Bits of snapped pins, tumbling away.
+    for (const b of bits) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - b.t / 0.8);
+      ctx.translate(b.x, b.y);
+      ctx.rotate(b.spin * b.t);
+      ctx.fillStyle = color("primary", 0.7);
+      ctx.fillRect(-pegR, -pegR * 0.5, pegR * 2, pegR);
       ctx.restore();
     }
     // Coins.
@@ -403,7 +461,7 @@ async function createPlinko(
     const r = coinR * (queued.big ? BIG : 1);
     if (coinImg) ctx.drawImage(coinImg, dropX - r * 1.1, dropY - r * 1.1, r * 2.2, r * 2.2);
     ctx.globalAlpha = 1;
-    const tag = queued.big ? "🪨" : queued.sticky ? "🍯" : queued.magnet ? "🧲" : "";
+    const tag = queued.big ? "🪨" : queued.magnet ? "🧲" : "";
     if (tag) {
       ctx.font = "18px system-ui";
       ctx.textAlign = "center";
@@ -556,7 +614,6 @@ export function playPlinkoGame(opts: GameOptions): () => void {
           if (special === "multi") plinko.multiBall(TUNE.multiBall);
           if (special === "rearrange") plinko.rearrange();
           if (special === "big") plinko.queued.big = true;
-          if (special === "sticky") plinko.queued.sticky = true;
           if (special === "magnet") plinko.queued.magnet = true;
           if (special === "bonus") coinsLeft++;
           if (special === "beside") add(plinko.neighbours(i));
