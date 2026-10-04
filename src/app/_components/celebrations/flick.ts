@@ -6,10 +6,11 @@ import { playSound } from "./sounds";
 // Flick shot, like a skee-ball lane: flick the ball up the lane — the
 // flick's direction aims it and its speed sets how far it rolls (twice as
 // hard, about twice as far). It slows as it rolls up, bounces off the sides,
-// and drops into a hole where it runs out of steam — going up, or rolling
-// back down. A hard one bounces off the back wall and comes back down. The
-// holes slide side to side; big ones in front, small high-scoring ones at
-// the back.
+// and drops into any hole it rolls over (overlapping it enough — a big one
+// takes a glancing touch, the 100 a near-direct hit), unless it's going up
+// fast enough to make it to the next row behind. A hard one bounces off the
+// back wall and comes back down. The holes slide side to side; big ones in
+// front, small high-scoring ones at the back.
 const BALL_SRC = "/anims/orb-red.webp";
 
 const TUNE = {
@@ -21,17 +22,11 @@ const TUNE = {
   reachMax: 1.25, // …and the hardest hits the back wall this hard (as a share of just reaching it)
   backBounce: 0.8, // the back wall sends the ball back with this much of its speed
   flickWindow: 150, // ms of the swipe that set the flick (evens out wobbles)
-  // A hole catches a ball that's running out of steam over it: slower than
-  // this share of a back-hole roll's speed, more for a bigger hole — so the
-  // ball drops in about where it stops, and a big front hole catches over a
-  // longer stretch (easier) without stealing balls headed for the back.
-  sink: 0.1,
-  sinkPerSize: 1.6, // + this × the hole's size (its share of the lane width)
-  // Rolling back down over a hole, it drops in whatever its speed if it
-  // overlaps the hole by enough of itself: a quarter for the biggest hole,
-  // up to nearly a direct hit for the smallest.
+  // A ball overlapping a hole by this much of itself drops in: a quarter
+  // for the biggest hole, up to nearly a direct hit for the smallest…
   overlapBig: 0.25,
   overlapSmall: 0.85,
+  skip: 0.9, // …unless it's going up at least this share of the speed it needs to reach the next row back
   holeSlide: 0.06, // how fast the holes slide, × lane width per second…
   holeSlideUp: 0.004, // …faster by this much per point scored (in the game)
   holeSlideMax: 0.22,
@@ -58,8 +53,8 @@ type Hole = {
   amp: number;
   phase: number;
   x: number;
-  catchSpeed: number; // going up, catches a ball slower than this…
-  catchDown: number; // …and rolling back down, one whose center is closer than this (any speed)
+  catchAt: number; // catches a ball whose center comes closer than this…
+  skipSpeed: number; // …unless it's going up faster than this (Infinity at the back row: always)
   label?: number;
   ring: string;
 };
@@ -102,21 +97,22 @@ function createFlick(
     amp: h.slide * lane.w,
     phase: rand(0, Math.PI * 2),
     x: 0,
-    catchSpeed: 0,
-    catchDown: 0,
+    catchAt: 0,
+    skipSpeed: Infinity,
     ring: RING[i],
   }));
   const slope = TUNE.slope * H;
   // A ball that just reaches the top hole is going this fast at the launch.
   const topSpeed = Math.sqrt(2 * slope * (launchY - holes[0].y));
+  const sizes = HOLES.map((q) => q.size);
+  const [big, small] = [Math.max(...sizes), Math.min(...sizes)];
   HOLES.forEach((h, i) => {
-    holes[i].catchSpeed = topSpeed * (TUNE.sink + TUNE.sinkPerSize * h.size);
-    const sizes = HOLES.map((q) => q.size);
-    const big = Math.max(...sizes);
-    const small = Math.min(...sizes);
-    const k = big === small ? 0 : (big - h.size) / (big - small); // 0 biggest … 1 smallest
+    const k = big === small ? 0 : (big - h.size) / (big - small); // 0 the biggest … 1 the smallest
     const overlap = TUNE.overlapBig + (TUNE.overlapSmall - TUNE.overlapBig) * k;
-    holes[i].catchDown = holes[i].r + r - overlap * 2 * r;
+    holes[i].catchAt = holes[i].r + r - overlap * 2 * r;
+    // The next row back: a ball too slow to get there drops in here.
+    const behind = holes.filter((q) => q.y < holes[i].y - 1).map((q) => q.y);
+    if (behind.length) holes[i].skipSpeed = TUNE.skip * Math.sqrt(2 * slope * (holes[i].y - Math.max(...behind)));
   });
   const backWall = lane.y + r; // the ball bounces back off here
   const reach = launchY - backWall;
@@ -203,13 +199,12 @@ function createFlick(
           ball.vy = Math.abs(ball.vy) * TUNE.backBounce; // off the back wall, back down the lane
           void playSound("thud");
         }
-        // Going up: over a hole and slow enough for it. Rolling back down:
-        // overlapping a hole by enough (any speed). In it goes.
+        // Rolled over a hole (enough of it), and not on its way up to the
+        // next row: in it goes.
         const speed = Math.hypot(ball.vx, ball.vy);
-        const hole = holes.find((h) => {
-          const d = Math.hypot(ball.x - h.x, ball.y - h.y);
-          return ball.vy > 0 ? d < h.catchDown : speed < h.catchSpeed && d < h.r;
-        });
+        const hole = holes.find(
+          (h) => Math.hypot(ball.x - h.x, ball.y - h.y) < h.catchAt && !(ball.vy < 0 && speed > h.skipSpeed),
+        );
         if (hole) {
           ball.state = "sinking";
           ball.into = hole;
