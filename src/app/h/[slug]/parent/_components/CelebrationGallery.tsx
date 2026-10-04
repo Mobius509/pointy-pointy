@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { CELEBRATIONS, playCelebration, unlockAudio } from "@/app/_components/celebrations";
 import { CelebrationScreen, type HighScore } from "@/app/_components/CelebrationScreen";
 import { avatarSrc } from "@/lib/avatar";
@@ -79,6 +79,11 @@ export function CelebrationGallery({
   const [kidId, setKidId] = useState(kids[0]?.id);
   // Which effect the preview screen should force ("" = random).
   const [preview, setPreview] = useState<string | null>(null);
+  // A link straight to one: …/parent/settings?play=pong opens it full screen.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("play");
+    if (id && CELEBRATIONS.some((c) => c.id === id)) setPreview(id);
+  }, []);
 
   const kid = kids.find((k) => k.id === kidId) ?? kids[0];
   const src = avatarSrc(kid?.avatar_emoji);
