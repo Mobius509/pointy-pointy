@@ -54,11 +54,10 @@ export type CelebrationItem = {
 };
 
 // How long "Keep playing" after a celebration lasts (an arcade ticket's
-// time comes from the server — ARCADE_PLAY_MINUTES).
+// time comes from the server — ARCADE_PLAY_MINUTES). There's no clock on
+// screen: once the time's up, the round being played still finishes, there
+// just isn't another.
 const KEEP_PLAYING_MINUTES = 10;
-// The playtime countdown shows for the last this-many seconds (all of Keep
-// playing's 10 minutes; just the end of an arcade ticket's day).
-const SHOW_COUNTDOWN_SECONDS = 10 * 60;
 
 export function CelebrationScreen({
   avatarSrc,
@@ -149,33 +148,25 @@ export function CelebrationScreen({
   };
   const stopGame = useRef<() => void>(() => {});
   const [deadline, setDeadline] = useState<number | null>(playUntil ?? null);
-  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
-  const outOfTime = secondsLeft !== null && secondsLeft <= 0;
+  const [outOfTime, setOutOfTime] = useState(false);
   const keepPlaying = () => {
     unlockAudio();
     setDeadline((d) => d ?? Date.now() + KEEP_PLAYING_MINUTES * 60_000);
     setPlaying(true);
     setRound((n) => n + 1);
   };
-  // Playtime's limit: tick down, and when it's up end the round (the score
-  // still counts) and don't offer another.
-  const timesUpRef = useRef(false);
-  timesUpRef.current = timesUp;
+  // Playtime's limit, unseen: once it passes, the round in play carries on
+  // to its end, and then there's no "Play again".
   useEffect(() => {
     if (!playing || deadline === null) return;
-    const tick = () => {
-      const left = Math.ceil((deadline - Date.now()) / 1000);
-      setSecondsLeft(left);
-      if (left <= 0) {
-        clearInterval(timer);
-        if (!timesUpRef.current) endRound();
-      }
+    const check = () => {
+      if (Date.now() < deadline) return;
+      setOutOfTime(true);
+      clearInterval(timer);
     };
-    const timer = setInterval(tick, 1000);
-    tick();
+    const timer = setInterval(check, 1000);
+    check();
     return () => clearInterval(timer);
-    // endRound only touches refs and state setters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, deadline]);
   // Start once the counter is on screen, so collected candy knows where to fly.
   useEffect(() => {
@@ -412,17 +403,6 @@ export function CelebrationScreen({
                 }`}
               >
                 ⏱ {timeLeft}s
-              </div>
-            )}
-            {!timesUp && secondsLeft !== null && secondsLeft > 0 && secondsLeft <= SHOW_COUNTDOWN_SECONDS && (
-              <div
-                aria-label={`${Math.ceil(secondsLeft / 60)} minutes of playtime left`}
-                title="Playtime left"
-                className={`rounded-full bg-white px-3 py-2 text-sm font-bold shadow-sm tabular-nums ${
-                  secondsLeft <= 30 ? "text-rose-600" : "text-pp-muted"
-                }`}
-              >
-                {gameOnly ? "🎟️" : "⏳"} {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
               </div>
             )}
           </div>
