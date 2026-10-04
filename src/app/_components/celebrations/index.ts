@@ -15,6 +15,7 @@ import { playBubbles, playBubblesGame } from "./bubbles";
 import { playPong, playPongGame } from "./pong";
 import { playDoodle, playDoodleGame } from "./doodle";
 import { playFall, playFallGame } from "./fall";
+import { playFlick, playFlickGame } from "./flick";
 import { playParade } from "./parade";
 import { playPinata, playPinataGame } from "./pinata";
 import { playRocket } from "./rocket";
@@ -248,6 +249,15 @@ export const CELEBRATIONS: Celebration[] = [
     name: "Free fall",
     description: "Hold to fall faster, slide to steer — slip through the gaps to grab the points. Keep playing: +1 a gap, and it keeps getting faster; clip a bar at speed and it's a crash (three lives). Grab a power orb to shoot straight down a line of gaps.",
     play: playFall,
+  },
+  {
+    id: "flick",
+    revealsPoints: true,
+    hidesStage: true,
+    game: { kind: "score", icon: "🎯", label: "points", lives: 1, start: playFlickGame },
+    name: "Flick shot",
+    description: "Flick the ball up the lane into the holes — big ones in front, small high-scoring ones at the back — to collect the points. Keep playing: ten balls, 10 to 100 a hole, and the holes slide faster as your score climbs.",
+    play: playFlick,
   },
 
 ];
