@@ -7,10 +7,10 @@ import { loadMatter } from "./stack";
 
 // Coin drop (plinko): a dropper slides along the top — tap to let a coin
 // go. It bounces down through the pegs (real physics) into a slot at the
-// bottom: points, or a special. Golden pins (+1) and bumpers (+2) pay out
+// bottom: points, or a special. Golden pins (+5) and bumpers (+2) pay out
 // as coins bounce off them. Specials: multi ball, rearrange the pins, a big
 // coin (heavy — it sometimes snaps a pin clean off and keeps going), a
-// magnet, a bonus coin, "two beside" (the scores of the slots either side),
+// bouncy coin (bounces off everything, chaos), a magnet, a bonus coin, "two beside" (the scores of the slots either side),
 // a skull, and a mystery. One bumper is the blue shift bumper: hitting it
 // slides the prizes along a slot.
 const COIN_SRC = "/anims/coin.webp";
@@ -28,32 +28,38 @@ const TUNE = {
   bumpers: [2, 3], // how many, at random among the pegs (one of them the shift bumper)
   golden: [3, 4],
   bumperPoints: 2,
-  goldenPoints: 1,
+  goldenPoints: 5,
   specials: [1, 3], // slots holding a special at a time (in the game)
   shiftCooldown: 0.35, // seconds before the shift bumper can shift again
   multiBall: 3, // extra coins
+  bouncyBoost: 1.1, // a bouncy coin leaves whatever it hits this much faster…
+  bouncyMaxSpeed: 11, // …up to this…
+  bouncyFor: 4, // …for this many seconds, then it calms down to a normal coin
   snapChance: 0.15, // a big coin hitting a pin snaps it off this often (it grows back once the coin lands)
   magnetPull: 0.00004, // force toward the best slot
 };
 
-type SpecialId = "multi" | "rearrange" | "big" | "magnet" | "bonus" | "beside" | "skull" | "mystery";
+type SpecialId = "multi" | "rearrange" | "big" | "bouncy" | "magnet" | "bonus" | "beside" | "skull" | "mystery";
 const SPECIALS: Record<SpecialId, { name: string; icon: string; weight: number; risky?: boolean }> = {
   multi: { name: "Multi ball!", icon: "🎱", weight: 3 },
   rearrange: { name: "Pins rearranged!", icon: "🔀", weight: 2 },
   big: { name: "Big coin next!", icon: "🪨", weight: 2 },
+  bouncy: { name: "Bouncy coin next!", icon: "🏀", weight: 2 },
   magnet: { name: "Magnet next!", icon: "🧲", weight: 2 },
   bonus: { name: "+1 coin!", icon: "➕", weight: 3 },
   beside: { name: "Two beside!", icon: "↔️", weight: 3 },
   skull: { name: "Skull — lose a coin!", icon: "💀", weight: 2, risky: true },
   mystery: { name: "Mystery!", icon: "❓", weight: 2 },
 };
-const MYSTERY_POOL: SpecialId[] = ["multi", "rearrange", "big", "magnet", "bonus", "beside", "skull"];
+const MYSTERY_POOL: SpecialId[] = ["multi", "rearrange", "big", "bouncy", "magnet", "bonus", "beside", "skull"];
 
 type Peg = { body: MatterNS.Body; kind: "peg" | "gold" | "bumper" | "shifter"; flash: number };
 type Coin = {
   body: MatterNS.Body;
   r: number;
   big: boolean;
+  bouncy: boolean;
+  bouncyLeft: number; // seconds of extra bounce left
   magnet: boolean;
   prevV: { x: number; y: number }; // its velocity before this frame (a big coin snapping a pin keeps it)
   stillFor: number; // seconds since it last got any further down (a stuck coin gets a nudge)
@@ -61,7 +67,7 @@ type Coin = {
   free: boolean; // a multi-ball extra (doesn't count against the round)
 };
 type Slot = { value: number; special?: SpecialId; label?: number };
-type Mods = { big?: boolean; magnet?: boolean };
+type Mods = { big?: boolean; bouncy?: boolean; magnet?: boolean };
 
 const pick = <T,>(list: [T, number][]): T => {
   const total = list.reduce((s, [, w]) => s + w, 0);
@@ -127,6 +133,7 @@ async function createPlinko(
   const pegById = new Map<number, Peg>();
   const snapped: Peg[] = []; // pins a big coin snapped off (back once it lands)
   const toSnap: { peg: Peg; coin: Coin }[] = [];
+  const kick: Coin[] = []; // bouncy coins that just hit something
   const bits: { x: number; y: number; vx: number; vy: number; spin: number; t: number }[] = [];
   const layPegs = (shuffled: boolean) => {
     for (const p of pegs) M.Composite.remove(engine.world, p.body);
@@ -178,7 +185,7 @@ async function createPlinko(
   const addCoin = (x: number, mods: Mods = {}, free = false) => {
     const r = coinR * (mods.big ? BIG : 1);
     const body = M.Bodies.circle(x, dropY, r, {
-      restitution: mods.big ? 0.15 : 0.35,
+      restitution: mods.big ? 0.15 : mods.bouncy ? 1 : 0.35,
       friction: 0.02,
       frictionAir: 0.008,
       density: mods.big ? 0.006 : 0.002,
@@ -189,6 +196,8 @@ async function createPlinko(
       body,
       r,
       big: !!mods.big,
+      bouncy: !!mods.bouncy,
+      bouncyLeft: mods.bouncy ? TUNE.bouncyFor : 0,
       magnet: !!mods.magnet,
       prevV: { x: 0, y: 0 },
       stillFor: 0,
@@ -235,6 +244,7 @@ async function createPlinko(
         shift();
         void playSound("clawMove");
       }
+      if (coin.bouncyLeft > 0) kick.push(coin);
       if (coin.big && peg.kind === "peg" && Math.random() < TUNE.snapChance && !toSnap.some((t) => t.peg === peg))
         toSnap.push({ peg, coin });
       const now = performance.now();
@@ -254,7 +264,7 @@ async function createPlinko(
     // One at a time: wait till the last one is well on its way.
     if (coins.some((c) => !c.free && c.body.position.y < pegTop + dy * 1.5)) return false;
     addCoin(dropX, { ...queued });
-    queued.big = queued.magnet = false;
+    queued.big = queued.bouncy = queued.magnet = false;
     events.onDrop();
     void playSound("flap");
     return true;
@@ -292,6 +302,13 @@ async function createPlinko(
 
     for (const c of coins) {
       c.prevV = { x: c.body.velocity.x, y: c.body.velocity.y };
+      if (c.bouncyLeft > 0) {
+        c.bouncyLeft -= dt;
+        if (c.bouncyLeft <= 0) c.body.restitution = 0.35; // calmed down
+        // Never bounces off the top of the board.
+        if (c.body.position.y < board.y + c.r && c.body.velocity.y < 0)
+          M.Body.setVelocity(c.body, { x: c.body.velocity.x, y: Math.abs(c.body.velocity.y) * 0.5 });
+      }
       if (c.magnet) {
         const fx = (bestSlotX() - c.body.position.x) * TUNE.magnetPull * c.body.mass;
         M.Body.applyForce(c.body, c.body.position, { x: fx, y: 0 });
@@ -313,6 +330,16 @@ async function createPlinko(
     const ms = Math.min(dt, 1 / 20) * 1000;
     M.Engine.update(engine, ms / 2);
     M.Engine.update(engine, ms / 2);
+    // A bouncy coin flies off whatever it hit, every which way (but never
+    // so fast it leaves the board).
+    for (const c of kick.splice(0)) {
+      if (!coins.includes(c)) continue;
+      const v = c.body.velocity;
+      const boost = { x: v.x * TUNE.bouncyBoost + rand(-2, 2), y: v.y * TUNE.bouncyBoost };
+      const sp = Math.hypot(boost.x, boost.y);
+      const k = sp > TUNE.bouncyMaxSpeed ? TUNE.bouncyMaxSpeed / sp : 1;
+      M.Body.setVelocity(c.body, { x: boost.x * k, y: boost.y * k });
+    }
     // Snap! The pin breaks off and the big coin goes on as if it wasn't there.
     for (const { peg, coin } of toSnap.splice(0)) {
       if (!pegs.includes(peg)) continue;
@@ -461,7 +488,7 @@ async function createPlinko(
     const r = coinR * (queued.big ? BIG : 1);
     if (coinImg) ctx.drawImage(coinImg, dropX - r * 1.1, dropY - r * 1.1, r * 2.2, r * 2.2);
     ctx.globalAlpha = 1;
-    const tag = queued.big ? "🪨" : queued.magnet ? "🧲" : "";
+    const tag = queued.big ? "🪨" : queued.bouncy ? "🏀" : queued.magnet ? "🧲" : "";
     if (tag) {
       ctx.font = "18px system-ui";
       ctx.textAlign = "center";
@@ -606,6 +633,7 @@ export function playPlinkoGame(opts: GameOptions): () => void {
           if (special === "multi") plinko.multiBall(TUNE.multiBall);
           if (special === "rearrange") plinko.rearrange();
           if (special === "big") plinko.queued.big = true;
+          if (special === "bouncy") plinko.queued.bouncy = true;
           if (special === "magnet") plinko.queued.magnet = true;
           if (special === "bonus") coinsLeft++;
           if (special === "beside") add(plinko.neighbours(i));
